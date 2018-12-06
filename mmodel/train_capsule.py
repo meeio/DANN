@@ -5,13 +5,13 @@ from torch import nn as nn
 import torch
 
 
-
 class LossBuket(object):
     def __init__(self):
         self.value = None
 
     def loss(self):
         return self.value
+
 
 class LossHolder(object):
     def __init__(self):
@@ -29,9 +29,11 @@ class LossHolder(object):
     def fix_loss_keys(self):
         self.fixed = True
 
+
 class TrainCapsule(nn.Module):
     """this is a tool class for helping training a network
     """
+
     # global optimer type and args
     __optim_type__ = None
     __optim_args__ = None
@@ -40,11 +42,16 @@ class TrainCapsule(nn.Module):
     __decay_op__ = None
     __decay_args__ = None
 
+    # global decay op function
+    # note this function will override decay op
+    __recal_lr__ = None
+
     def __init__(self, optim_loss: LossBuket, optim_networks, tagname=None):
         super(TrainCapsule, self).__init__()
 
         self.optim_loss = optim_loss
         self.tag = tagname
+        self.epoch = 0
 
         # get all networks, and store them as list
         if not isinstance(optim_networks, tuple):
@@ -65,15 +72,17 @@ class TrainCapsule(nn.Module):
         )
 
         # init lr_schder for optimer
-        if TrainCapsule.__decay_op__ is not None:
-            self.lr_scheduler = TrainCapsule.__decay_op__(
-                self.optimer, **TrainCapsule.__decay_args__
-            )
+        if TrainCapsule.__recal_lr__ is None:
+            if TrainCapsule.__decay_op__ is not None:
+                self.lr_scheduler = TrainCapsule.__decay_op__(
+                    self.optimer, **TrainCapsule.__decay_args__
+                )
 
     def __all_networks_call(self, func_name):
         def __one_networkd_call(i):
             func = getattr(i, func_name)
             return func()
+
         map(__one_networkd_call, self.optim_network)
 
     def train_step(self):
@@ -96,13 +105,23 @@ class TrainCapsule(nn.Module):
             "Resiest %s as default lr scheduler with args %s ."
             % (decay_op.__name__, kwargs)
         )
-        
+
+    def registe_new_lr_calculator(cal):
+        TrainCapsule.__recal_lr__ = cal
+
     def decary_lr_rate(self):
-        self.lr_scheduler.step()
-        lr = 0
+        self.epoch += 1
+        
+        if self.__recal_lr__ is not None:
+            new_lr = self.__recal_lr__(self.epoch)
+            for param_group in self.optimer.param_groups:
+                param_group["lr"] = new_lr
+        else:
+            self.lr_scheduler.step()
+
         for param_group in self.optimer.param_groups:
-            lr = param_group['lr']
-        logging.info("Current >learning rate< is >%1.9f< ." % lr)
+            logging.info("Current >learning rate< is >%1.9f< ." % param_group["lr"])
+            break
 
 
 if __name__ == "__main__":

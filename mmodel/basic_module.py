@@ -220,9 +220,6 @@ class DAModule(object):
             for i in self.networks:
                 i.train()
 
-            for c in self.train_caps.values():
-                c.decary_lr_rate()
-
             # begain a epoch
             for epoch_step, (sorce, target) in enumerate(
                 zip(self.t_s_data_loader, self.t_t_data_loader)
@@ -254,6 +251,8 @@ class DAModule(object):
 
             # decay lr
             self.current_epoch += 1
+            for c in self.train_caps.values():
+                c.decary_lr_rate()
 
 
     def train_step(self, s_img, s_label, t_img):

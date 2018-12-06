@@ -28,10 +28,8 @@ class NADD(DAModule):
             torch.optim.SGD, lr=params.lr, weight_decay=0.0005, momentum=0.9
         )
 
-        self.TrainCpasule.registe_decay_op(
-            torch.optim.lr_scheduler.LambdaLR,
-            lr_lambda=lambda epoch: 1 / (1 + 10 * epoch / params.epoch) ** 0.75,
-            last_epoch=1,
+        self.TrainCpasule.registe_new_lr_calculator(
+            lambda cap, epoch: params.lr / (1 + 10 * epoch / params.epoch) ** 0.75,
         )
 
         self.regist_loss("predict", (self.F, self.C))
