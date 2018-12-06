@@ -83,8 +83,7 @@ class DomainClassifer(WeightedModule):
 
     def forward(self, x, coeff):
         x = x * 1.0
-        x.register_hook(lambda grad: grad * -1)
+        x.register_hook(lambda grad: grad * -1 * coeff)
         domain = self.predict(x)
-        domain.register_hook(lambda grad:grad * coeff)
         return domain
     
