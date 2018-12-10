@@ -116,6 +116,7 @@ class TrainCapsule(nn.Module):
             new_lr = self.__recal_lr__(self.epoch)
             for param_group in self.optimer.param_groups:
                 param_group["lr"] = new_lr
+            return
         else:
             self.lr_scheduler.step()
 

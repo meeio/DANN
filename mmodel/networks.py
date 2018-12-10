@@ -94,7 +94,10 @@ class DomainClassifer(WeightedModule):
         self.pool = nn.AdaptiveAvgPool2d(1)
         self.predict = nn.Sequential(
 
-            nn.Linear(2048, hidden_size),
+            # temp bottleneck
+            nn.Linear(2048, 256),
+
+            nn.Linear(256, hidden_size),
             nn.ReLU(True),
             nn.Dropout(0.5),
             #1

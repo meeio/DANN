@@ -10,6 +10,7 @@ from mmodel.train_capsule import TrainCapsule, LossHolder
 from mmodel.mloger import LogCapsule
 
 import mdata.dataloader as mdl
+import mdata.dataloader as mdl
 from abc import ABC, abstractclassmethod
 
 def _basic_weights_init_helper(modul, params=None):
@@ -110,6 +111,7 @@ class DAModule(ABC):
         self.networks = None
         self.golbal_step = 0
         self.current_epoch = 0
+        self.relr_everytime = False
 
         # set usefully loss function
         self.ce = nn.CrossEntropyLoss()
@@ -133,22 +135,17 @@ class DAModule(ABC):
         )
 
         # generate source and target data set for trian and test
-        s_set_name = getattr(mdl.DSNames, params.sdsname)
-        t_set_name = getattr(mdl.DSNames, params.tdsname)
+        # s_set_name = getattr(mdl.DSNames, params.sdsname)
+        # t_set_name = getattr(mdl.DSNames, params.tdsname)
 
-        self.t_s_data_set, self.t_s_data_loader = mdl.load_dataset(
-            s_set_name, params.batch_size
+        self.t_s_data_set, self.t_s_data_loader = mdl.load_img_dataset(
+            "OfficeHome", "Ar", params.batch_size
         )
-        self.t_t_data_set, self.t_t_data_loader = mdl.load_dataset(
-            t_set_name, params.batch_size
+        self.t_t_data_set, self.t_t_data_loader = mdl.load_img_dataset(
+            "OfficeHome", "Pr", params.batch_size
         )
-
-        self.v_s_data_set, self.v_s_data_loader = mdl.load_dataset(
-            s_set_name, params.batch_size, split="test"
-        )
-        self.v_t_data_set, self.v_t_data_loader = mdl.load_dataset(
-            t_set_name, params.batch_size, split="test"
-        )
+        self.v_t_data_set = self.t_t_data_set
+        self.v_t_data_loader = self.t_t_data_loader
 
         # set total train step
         self.total_step = (
@@ -255,13 +252,19 @@ class DAModule(ABC):
                     for v in self.loggers.values():
                         v.log_current_avg_loss(self.golbal_step)
 
+                if self.relr_everytime:
+                    for c in self.train_caps.values():
+                        c.decary_lr_rate()
+
+
             # after an epoch begain valid
             self.valid()
 
             # decay lr
             self.current_epoch += 1
-            for c in self.train_caps.values():
-                c.decary_lr_rate()
+            if not self.relr_everytime:
+                for c in self.train_caps.values():
+                    c.decary_lr_rate()
 
     @abstractclassmethod
     def train_step(self, s_img, s_label, t_img):

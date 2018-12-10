@@ -16,7 +16,7 @@ def get_params():
     )
 
     parser.add_argument(
-        "--batch_size", type=int, default=8, help="Size for Mini-Batch Optimization"
+        "--batch_size", type=int, default=4, help="Size for Mini-Batch Optimization"
     )
 
   
@@ -35,11 +35,11 @@ def get_params():
     parser.add_argument("--epoch", type=int, default=20, help="Epochs of train data")
 
     parser.add_argument(
-        "--sdsname", type=str, default="SVHN", help="data base we will use"
+        "--sdsname", type=str, default="Ar", help="data base we will use"
     )
 
     parser.add_argument(
-        "--tdsname", type=str, default="MNIST", help="data base we will use"
+        "--tdsname", type=str, default="Pr", help="data base we will use"
     )
 
     parser.add_argument(
@@ -62,7 +62,7 @@ def get_params():
     )
 
     parser.add_argument(
-        "--lr", type=float, default=0.01, help="Gamma for decaying lr."
+        "--lr", type=float, default=0.001, help="Gamma for decaying lr."
     )
 
     parser.add_argument(
