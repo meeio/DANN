@@ -11,12 +11,6 @@ class NADD(DAModule):
     def __init__(self, params):
         super().__ini__(params)
 
-        self.total_step = (
-            min(len(self.t_s_data_set), len(self.t_t_data_set))
-            * params.epoch
-            / params.batch_size
-        )
-
         f = FeatureExtractor(params)
         c = Classifier(params)
         d = DomainClassifer(params)
@@ -70,7 +64,8 @@ if __name__ == "__main__":
     GLOBAL._TAG_ = params.tag
 
     logging.basicConfig(
-        level=logging.INFO, format=" \t | %(levelname)s |==> %(message)s"
+        level=logging.INFO, 
+        format=" \t | %(levelname)s |==> %(message)s",
     )
 
     nadd = NADD(params)

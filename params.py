@@ -16,7 +16,7 @@ def get_params():
     )
 
     parser.add_argument(
-        "--batch_size", type=int, default=64, help="Size for Mini-Batch Optimization"
+        "--batch_size", type=int, default=8, help="Size for Mini-Batch Optimization"
     )
 
   
@@ -71,6 +71,10 @@ def get_params():
 
     parser.add_argument(
         "--sigma", type=float, default=10, help="Gamma for decaying lr."
+    )
+
+    parser.add_argument(
+        "--hidden_size", type=int, default=1024, help="Gamma for decaying lr."
     )
 
     return parser.parse_args()

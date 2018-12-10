@@ -30,7 +30,7 @@ class DSStastic():
 
 
 def load_dataset(
-    name: DSNames, batch_size, root="./data", split="train", download=False, mode="norm", size = 32
+    name: DSNames, batch_size, root="./data", split="train", download=False, mode="norm", size = 224
 ):
     """Helpper function to get `DataLoader` of specific datasets 
     
@@ -56,9 +56,13 @@ def load_dataset(
     mean = mean_std[0]
     std = mean_std[1]
 
-    trans = [transforms.ToTensor(), transforms.Normalize(mean, std)]
+    trans = [
+        transforms.Resize(size), 
+        transforms.ToTensor(), 
+        transforms.Normalize(mean, std)
+    ]
+
     if dsname == 'MNIST':
-        trans.insert(0, transforms.Resize(size))
         trans.insert(0, transforms.Grayscale(3))
     
     transform = transforms.Compose(

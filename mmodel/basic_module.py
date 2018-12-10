@@ -10,7 +10,7 @@ from mmodel.train_capsule import TrainCapsule, LossHolder
 from mmodel.mloger import LogCapsule
 
 import mdata.dataloader as mdl
-
+from abc import ABC, abstractclassmethod
 
 def _basic_weights_init_helper(modul, params=None):
     """give a module, init it's weight
@@ -61,6 +61,8 @@ class WeightedModule(nn.Module):
 
         """ init weights with torch inner function 
         """
+        if self.has_init:
+            return
 
         name = self.__class__.__name__
         str = name + "'s weights init from %s."
@@ -96,8 +98,8 @@ class WeightedModule(nn.Module):
         return os.path.abspath(f)
 
 
-class DAModule(object):
-    def __ini__(self, params):
+class DAModule(ABC):
+    def __init__(self, params):
         super().__init__()
 
         # set global dict
@@ -148,8 +150,15 @@ class DAModule(object):
             t_set_name, params.batch_size, split="test"
         )
 
+        # set total train step
+        self.total_step = (
+            min(len(self.t_s_data_set), len(self.t_t_data_set))
+            * params.epoch
+            / params.batch_size
+        )
+
         # init global label
-        self.TARGET, self.SOURCE = self.__batch_label__(params.batch_size)
+        self.TARGET, self.SOURCE = self.__batch_domain_label__(params.batch_size)
 
     def regist_loss(self, loss_name, networks):
         t = TrainCapsule(self.losses[loss_name], networks)
@@ -254,10 +263,11 @@ class DAModule(object):
             for c in self.train_caps.values():
                 c.decary_lr_rate()
 
-
+    @abstractclassmethod
     def train_step(self, s_img, s_label, t_img):
         pass
 
+    @abstractclassmethod
     def valid_step(self, img):
         pass
 
@@ -266,7 +276,7 @@ class DAModule(object):
         self.loggers[loss_name].record()
         self.train_caps[loss_name].train_step()
 
-    def __batch_label__(self, batch_size):
+    def __batch_domain_label__(self, batch_size):
         # Generate all Source and Domain label.
         SOURCE = 1
         TARGET = 0
