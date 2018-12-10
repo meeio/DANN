@@ -82,3 +82,10 @@ def load_dataset(
 
     return data_set, data_loader
 
+
+if __name__ == "__main__":
+    OH_art = ds.ImageFolder('_PUBLIC_DATASET_/OfficeHome/Art')
+    OH_Clipart = ds.ImageFolder('_PUBLIC_DATASET_/OfficeHome/Art')
+    print(OH_art.classes == OH_Clipart.classes)
+    print(OH_Clipart.class_to_idx)
+

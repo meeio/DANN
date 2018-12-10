@@ -19,10 +19,7 @@ def get_params():
         "--batch_size", type=int, default=64, help="Size for Mini-Batch Optimization"
     )
 
-    parser.add_argument(
-        "--use_am", type=bool, default=False, help="Size for Mini-Batch Optimization"
-    )
-
+  
     parser.add_argument(
         "--class_num", type=int, default=10, help="Class number of data set"
     )
