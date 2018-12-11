@@ -24,16 +24,16 @@ def _basic_weights_init_helper(modul, params=None):
         # init Conv2d with norm
         if isinstance(m, nn.Conv2d):
             init.kaiming_uniform_(m.weight)
-            init.zeros_(m.bias)
+            init.constant_(m.bias, 0)
         # init BatchNorm with norm and constant
         elif isinstance(m, nn.BatchNorm2d):
             if m.weight is not None:
                 init.normal_(m.weight, mean=1.0, std=0.02)
-                init.zeros_(m.bias)
+                init.constant_(m.bias, 0)
         # init full connect norm
         elif isinstance(m, nn.Linear):
             init.xavier_normal_(m.weight)
-            init.zeros_(m.bias)
+            init.constant_(m.bias, 0)
         elif isinstance(m, nn.Module):
             _basic_weights_init_helper(m)
 
