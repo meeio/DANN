@@ -16,12 +16,16 @@ def get_params():
     )
 
     parser.add_argument(
-        "--batch_size", type=int, default=4, help="Size for Mini-Batch Optimization"
+        "--batch_size", type=int, default=32, help="Size for Mini-Batch Optimization"
     )
 
   
     parser.add_argument(
-        "--class_num", type=int, default=10, help="Class number of data set"
+        "--class_num", type=int, default=65, help="Class number of data set"
+    )
+
+    parser.add_argument(
+        "--bottle_neck", type=int, default=256, help="Class number of data set"
     )
 
     parser.add_argument(
@@ -54,7 +58,7 @@ def get_params():
     )
 
     parser.add_argument(
-        "--log_per_epoch", type=int, default=20, help="Log per step at a epoch."
+        "--log_per_epoch", type=int, default=25, help="Log per step at a epoch."
     )
 
     parser.add_argument(

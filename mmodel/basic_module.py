@@ -23,22 +23,22 @@ def _basic_weights_init_helper(modul, params=None):
     for m in modul.children():
         # init Conv2d with norm
         if isinstance(m, nn.Conv2d):
-            init.normal_(m.weight, mean=0.0, std=0.02)
+            init.kaiming_uniform_(m.weight)
+            init.zeros_(m.bias)
         # init BatchNorm with norm and constant
         elif isinstance(m, nn.BatchNorm2d):
             if m.weight is not None:
-                init.normal_(m.weight, mean=0.0, std=0.02)
-                init.constant_(m.bias, 0)
+                init.normal_(m.weight, mean=1.0, std=0.02)
+                init.zeros_(m.bias)
         # init full connect norm
         elif isinstance(m, nn.Linear):
-            init.normal_(m.weight, mean=0.0, std=0.1)
-            init.constant_(m.bias, 0)
+            init.xavier_normal_(m.weight)
+            init.zeros_(m.bias)
         elif isinstance(m, nn.Module):
             _basic_weights_init_helper(m)
 
         if isinstance(m, WeightedModule):
             m.has_init = True
-
 
 class WeightedModule(nn.Module):
 
@@ -62,18 +62,17 @@ class WeightedModule(nn.Module):
 
         """ init weights with torch inner function 
         """
-        if self.has_init:
-            return
-
+        
         name = self.__class__.__name__
         str = name + "'s weights init from %s."
 
+        if self.has_init:
+            logging.info(str % "Pretraied Model")
+            return
+
+
         if record_path is not None:
-
             f = torch.load(record_path)
-
-            metadata = getattr(f, "_metadata", None)
-
             self.load_state_dict(f)
             logging.info(str % "check point")
 
@@ -143,7 +142,7 @@ class DAModule(ABC):
         )
         self.t_t_data_set, self.t_t_data_loader = mdl.load_img_dataset(
             "OfficeHome", "Pr", params.batch_size
-        )
+        )        
         self.v_t_data_set = self.t_t_data_set
         self.v_t_data_loader = self.t_t_data_loader
 

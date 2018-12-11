@@ -1,6 +1,6 @@
 from mmodel.basic_module import DAModule
 from mmodel.networks import *
-from mmodel.pretrained import ResNetFeatureExtrctor, AlexNetFeatureExtrctor
+from mmodel.pretrained import *
 
 import torch
 from params import get_params
@@ -15,12 +15,14 @@ class MANN(DAModule):
         self.params = params
 
         F = AlexNetFeatureExtrctor()
-        c, h, w = F.output_shape()
-        sM = MaskingLayer(c, h * w)
-        tM = MaskingLayer(c, h * w)
-        D = DomainClassifer(params)
+        B = AlexBottleNeck()
+        c, h, w = B.output_shape()
+        # sM = MaskingLayer(c, h * w)
+        # tM = MaskingLayer(c, h * w)
+        C = Classifer(params, c * h * w)
+        D = DomainClassifer(params, c * h * w)
 
-        self.F, self.sM, self.tM, self.D = self.regist_networds(F, sM, tM, D)
+        self.F, self.B, self.C, self.D = self.regist_networds(F, B, C, D)
 
         # set default optim function
         self.TrainCpasule.registe_default_optimer(
@@ -32,43 +34,47 @@ class MANN(DAModule):
         self.relr_everytime = True
 
         # registe loss function
-        self.regist_loss("L_s_d", (self.F, self.sM, self.D))
-        self.regist_loss("L_t_d", (self.F, self.tM, self.D))
+        self.regist_loss("predict", (self.F, self.B, self.C))
+        self.regist_loss("domain", (self.F, self.B, self.D))
+
+    def get_coeff(self):
+        sigma=10
+        p = self.golbal_step / self.total_step
+        llambd = (2 / (1 + np.exp(-sigma * p))) - 1
+        return llambd
 
     def through(self, img, lable=None):
-
-        M = self.tM
-        DLabel = self.TARGET
-        if lable is not None:
-            M = self.sM
-            DLabel = self.SOURCE
-
         feature = self.F(img)
+        feature = self.B(feature)
 
-        c_atten, s_atten = M(feature)
-        feature = feature * (1 + c_atten)
-        feature = feature * (1 + s_atten)
+        domain_label = self.TARGET
+        predict_loss = None
+        if lable is not None:
+            domain_label = self.SOURCE
+            predict = self.C(feature)
+            predict_loss = self.ce(predict, lable)
 
-        domain = self.D(feature)
-        d_loss = self.bce(domain, DLabel)
+        domain = self.D(feature, self.get_coeff())
+        d_loss = self.bce(domain, domain_label)
 
-        return d_loss
+        return d_loss, predict_loss
+
 
     def train_step(self, s_img, s_label, t_img):
 
-        L_s_d = self.through(s_img, s_label)
-        L_t_d = self.through(t_img)
+        s_d_loss, s_c_loss = self.through(s_img, s_label)
+        t_d_loss, _ = self.through(t_img)
 
-        self.update_loss("L_s_d", L_s_d)
-        self.update_loss("L_t_d", L_t_d)
+        self.update_loss('predict', s_c_loss)
+        self.update_loss('domain', s_d_loss + t_d_loss)
 
     def valid_step(self, img):
-        feature = self.F(img)
-        c_atten, s_atten = self.tM(feature)
-        feature *= 1 + c_atten
-        feature *= 1 + s_atten
-        predict = self.D(feature)
-        return predict
+        # feature = self.F(img)
+        # # c_atten, s_atten = self.tM(feature)
+        # feature *= 1 + c_atten
+        # feature *= 1 + s_atten
+        # predict = self.D(feature)
+        return 0
 
 
 if __name__ == "__main__":
@@ -85,9 +91,11 @@ if __name__ == "__main__":
     nadd.train()
 
     # from torchvision import models
-    # alex = models.alexnet(pretrained=True)
-    # layers = list(alex.children())[0][:-1]
+    # from torchsummary import summary
 
-    # print(layers)
-    
+    # alex = models.alexnet(pretrained=True)
+    # alex = AlexNetFeatureExtrctor()
+    # alex = AlexNetClassifier(params)
+    # summary(alex, (256, 6, 6), 64)
+    # print(alex)
 

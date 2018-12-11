@@ -3,7 +3,7 @@ import torch
 import torch.nn as nn
 import torchvision
 from torchvision import models
-from mmodel.basic_module import WeightedModule
+from mmodel.basic_module import WeightedModule, _basic_weights_init_helper
 
 
 class ResNetFeatureExtrctor(WeightedModule):
@@ -30,15 +30,32 @@ class AlexNetFeatureExtrctor(WeightedModule):
         super().__init__()
         alexnet = models.alexnet(pretrained=True)
         # return with feature shape [7,7,2048]
-        layers = list(alexnet.children())[0][:-1]
+        layers = list(alexnet.children())[0]
         
         self.feature = nn.Sequential(*layers)
         self.has_init = True
-
-        # (12): MaxPool2d(kernel_size=3, stride=2, padding=0, dilation=1, ceil_mode=False)
 
     def forward(self, inputs):
         return self.feature(inputs)
 
     def output_shape(self):
-        return (256, 13, 13)
+        return (256, 6, 6)
+
+class AlexBottleNeck(WeightedModule):
+
+    def __init__(self):
+        super().__init__()
+        alexnet = models.alexnet(pretrained=True)
+        layers = list(alexnet.children())[1][:-1]
+
+        self.extractor = nn.Sequential(*layers)
+
+        self.has_init = True
+
+    def forward(self, inputs):
+        b,_,_,_ = inputs.size()
+        feature = self.extractor(inputs.view(b,-1))
+        return feature
+    
+    def output_shape(self):
+        return (4096, 1, 1)

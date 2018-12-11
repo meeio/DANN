@@ -2,51 +2,9 @@ from torch import nn
 import torch
 from mmodel.basic_module import WeightedModule
 
-
-class SELayer(nn.Module):
-    
-    def __init__(self, channel, reduction=16):
-        super(SELayer, self).__init__()
-        self.pool = nn.AdaptiveAvgPool2d(1)
-        self.atten = nn.Sequential(
-                nn.Linear(channel, channel // reduction),
-                nn.ReLU(inplace=True),
-                nn.Linear(channel // reduction, channel),
-                nn.Sigmoid()
-        )
-
-    def forward(self, x):
-        b, c, _, _ = x.size()
-        atten = self.pool(x).view(b, c)
-        atten = self.atten(atten).view(b, c, 1, 1)
-        return  atten
-
-class CSELayer(nn.Module):
-
-    def __init__(self, spatial, reduction):
-        super(CSELayer, self).__init__()
-
-        self.pool_1d = nn.AdaptiveAvgPool1d(1)
-        self.atten = nn.Sequential(
-            nn.Linear(spatial, spatial // reduction),
-            nn.ReLU(inplace=True),
-            nn.Linear(spatial//reduction, spatial),
-            nn.Sigmoid()
-        )
-
-    def forward(self, inputs):
-        b, c, w, h = inputs.size()
-        inputs = inputs.view(b,c,w*h).permute(0,2,1)
-        pooled =  self.pool_1d(inputs).view(b, w*h)
-        # after spatil pool with shape(c, w*h)
-
-        atten = self.atten(pooled).view(b, 1, w, h)
-        return atten
-
-
 class MaskingLayer(WeightedModule):
     
-    def __init__(self, channel, spatial, s_reduction=1, c_reduction=16):
+    def __init__(self, channel, spatial, s_reduction=3, c_reduction=16):
         super(MaskingLayer, self).__init__()
 
         self.pool_1d = nn.AdaptiveAvgPool1d(1)
@@ -85,19 +43,28 @@ class MaskingLayer(WeightedModule):
         s_mask = self.spatial_mask(inputs)
         return c_mask, s_mask
 
-        
+class Classifer(WeightedModule):
+
+    def __init__(self, params, in_dim=0):
+        super().__init__()
+        self.classifer = nn.Sequential(
+            nn.Linear(in_dim, params.bottle_neck),
+            nn.Linear(params.bottle_neck, params.class_num)
+        )
+
+    def forward(self, inputs):
+        predict = self.classifer(inputs)
+        return predict
+
 class DomainClassifer(WeightedModule):
-    def __init__(self, param):
+    def __init__(self, param, in_dim=0):
         super().__init__()
 
         hidden_size = param.hidden_size
-        self.pool = nn.AdaptiveAvgPool2d(1)
         self.predict = nn.Sequential(
 
             # temp bottleneck
-            nn.Linear(2048, 256),
-
-            nn.Linear(256, hidden_size),
+            nn.Linear(in_dim, hidden_size),
             nn.ReLU(True),
             nn.Dropout(0.5),
             #1
@@ -111,9 +78,8 @@ class DomainClassifer(WeightedModule):
 
     def forward(self, inputs, coeff=0):
         # x = x * 1.0
-        # x.register_hook(lambda grad: grad * -1 * coeff)
-        b, _, _, _ = inputs.size()
-        inputs = self.pool(inputs)
+        inputs.register_hook(lambda grad: grad * -1 * coeff)
+        b = inputs.size()[0]
         domain = self.predict(inputs.view(b, -1))
         return domain
 
