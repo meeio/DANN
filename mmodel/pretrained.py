@@ -36,7 +36,10 @@ class AlexNetFeatureExtrctor(WeightedModule):
         self.has_init = True
 
     def forward(self, inputs):
-        return self.feature(inputs)
+        feature = self.feature(inputs)
+        feature.register_hook(lambda grad: grad * 0.1)
+        return feature
+
 
     def output_shape(self):
         return (256, 6, 6)
@@ -55,6 +58,7 @@ class AlexBottleNeck(WeightedModule):
     def forward(self, inputs):
         b,_,_,_ = inputs.size()
         feature = self.extractor(inputs.view(b,-1))
+        feature.register_hook(lambda grad: grad * 0.1)
         return feature
     
     def output_shape(self):

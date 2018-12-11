@@ -205,7 +205,7 @@ class DAModule(ABC):
             self.log_valid_acrr.log_current_avg_loss(self.golbal_step)
 
         # valid on target data
-        valid_a_set(self.t_s_data_loader)
+        valid_a_set(self.t_t_data_loader)
 
     def train(self):
 

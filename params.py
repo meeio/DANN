@@ -66,7 +66,7 @@ def get_params():
     )
 
     parser.add_argument(
-        "--lr", type=float, default=0.01, help="Gamma for decaying lr."
+        "--lr", type=float, default=0.001, help="Gamma for decaying lr."
     )
 
     parser.add_argument(

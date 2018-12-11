@@ -53,7 +53,6 @@ class Classifer(WeightedModule):
         )
 
     def forward(self, inputs):
-        inputs.register_hook(lambda grad: grad * 0.1)
         predict = self.classifer(inputs)
         return predict
 
