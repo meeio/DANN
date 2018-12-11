@@ -45,19 +45,23 @@ class MaskingLayer(WeightedModule):
 
 class Classifer(WeightedModule):
 
-    def __init__(self, params, in_dim=0):
+    def __init__(self, params, in_dim):
         super().__init__()
         self.classifer = nn.Sequential(
             nn.Linear(in_dim, params.bottle_neck),
+            nn.ReLU(True),
+            nn.Dropout(0.5),
+
             nn.Linear(params.bottle_neck, params.class_num)
         )
 
     def forward(self, inputs):
+        inputs.register_hook(lambda grad: grad * 0.1)
         predict = self.classifer(inputs)
         return predict
 
 class DomainClassifer(WeightedModule):
-    def __init__(self, param, in_dim=0):
+    def __init__(self, param, in_dim):
         super().__init__()
 
         hidden_size = param.hidden_size

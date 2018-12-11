@@ -147,7 +147,7 @@ class DAModule(ABC):
         self.v_t_data_loader = self.t_t_data_loader
 
         # set total train step
-        self.total_step = (
+        self.total_step = int(
             min(len(self.t_s_data_set), len(self.t_t_data_set))
             * params.epoch
             / params.batch_size

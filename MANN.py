@@ -26,7 +26,7 @@ class MANN(DAModule):
 
         # set default optim function
         self.TrainCpasule.registe_default_optimer(
-            torch.optim.SGD, lr=params.lr, weight_decay=0.0005, momentum=0.9
+            torch.optim.SGD, lr=params.lr, weight_decay=0.0005, momentum=0.5
         )
         self.TrainCpasule.registe_new_lr_calculator(
             lambda cap, step: params.lr / (1 + 10 * step / self.total_step) ** 0.75
@@ -35,7 +35,7 @@ class MANN(DAModule):
 
         # registe loss function
         self.regist_loss("predict", (self.F, self.B, self.C))
-        self.regist_loss("domain", (self.F, self.B, self.D))
+        # self.regist_loss("domain", (self.F, self.B, self.D))
 
     def get_coeff(self):
         sigma=10
@@ -66,15 +66,14 @@ class MANN(DAModule):
         t_d_loss, _ = self.through(t_img)
 
         self.update_loss('predict', s_c_loss)
-        self.update_loss('domain', s_d_loss + t_d_loss)
+        # self.update_loss('domain', s_d_loss + t_d_loss)
 
     def valid_step(self, img):
-        # feature = self.F(img)
-        # # c_atten, s_atten = self.tM(feature)
-        # feature *= 1 + c_atten
-        # feature *= 1 + s_atten
-        # predict = self.D(feature)
-        return 0
+        feature = self.F(img)
+        feature = self.B(feature)
+        predict = self.C(feature)
+
+        return predict
 
 
 if __name__ == "__main__":

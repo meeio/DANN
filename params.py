@@ -36,7 +36,7 @@ def get_params():
         "--use_gpu", type=bool, default=True, help="Use GPU to train the model"
     )
 
-    parser.add_argument("--epoch", type=int, default=20, help="Epochs of train data")
+    parser.add_argument("--epoch", type=int, default=10, help="Epochs of train data")
 
     parser.add_argument(
         "--sdsname", type=str, default="Ar", help="data base we will use"
@@ -66,7 +66,7 @@ def get_params():
     )
 
     parser.add_argument(
-        "--lr", type=float, default=0.001, help="Gamma for decaying lr."
+        "--lr", type=float, default=0.01, help="Gamma for decaying lr."
     )
 
     parser.add_argument(
