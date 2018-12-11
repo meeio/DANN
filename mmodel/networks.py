@@ -49,9 +49,6 @@ class Classifer(WeightedModule):
         super().__init__()
         self.classifer = nn.Sequential(
             nn.Linear(in_dim, params.bottle_neck),
-            nn.ReLU(True),
-            nn.Dropout(0.5),
-
             nn.Linear(params.bottle_neck, params.class_num)
         )
 
