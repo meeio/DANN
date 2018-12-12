@@ -92,8 +92,7 @@ def load_dataset(
 def load_img_dataset(dataset, subset, batch_size):
 
     trans = [
-        transforms.Resize(256),
-        transforms.RandomSizedCrop(224),
+        transforms.RandomResizedCrop(224),
         transforms.RandomHorizontalFlip(),
         transforms.ToTensor(),
         transforms.Normalize(
