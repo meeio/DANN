@@ -64,8 +64,12 @@ class TrainCapsule(nn.Module):
         # get all parameters in network list
         self.all_params = list()
         for i in networks_list:
-            self.all_params += list(i.parameters())
-
+            self.all_params.append(
+                {
+                'params': list(i.parameters()),
+                'lr_mult': i.lr_mult,
+                }
+            )
         # init optimer base on type and args
         self.optimer = TrainCapsule.__optim_type__(
             self.all_params, **TrainCapsule.__optim_args__
@@ -77,6 +81,7 @@ class TrainCapsule(nn.Module):
                 self.lr_scheduler = TrainCapsule.__decay_op__(
                     self.optimer, **TrainCapsule.__decay_args__
                 )
+        
 
     def __all_networks_call(self, func_name):
         def __one_networkd_call(i):
@@ -110,20 +115,21 @@ class TrainCapsule(nn.Module):
         TrainCapsule.__recal_lr__ = cal
 
     def decary_lr_rate(self):
-        self.epoch += 1
-        
         if self.__recal_lr__ is not None:
             new_lr = self.__recal_lr__(self.epoch)
             for param_group in self.optimer.param_groups:
-                param_group["lr"] = new_lr
-            return
+                try:
+                    scale = param_group["lr_mult"]
+                except:
+                    scale = 1
+                param_group["lr"] = new_lr * scale
         else:
             self.lr_scheduler.step()
 
         for param_group in self.optimer.param_groups:
             logging.info("Current >learning rate< is >%1.9f< ." % param_group["lr"])
-            break
 
+        self.epoch += 1
 
 if __name__ == "__main__":
 

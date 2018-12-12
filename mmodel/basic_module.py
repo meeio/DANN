@@ -47,6 +47,7 @@ class WeightedModule(nn.Module):
     def __init__(self):
         super().__init__()
         self.has_init = False
+        self.lr_mult = 1
 
     def __call__(self, *input, **kwargs):
         if not self.has_init:
@@ -212,6 +213,8 @@ class DAModule(ABC):
         # fix loss key to prenvent missing
         self.losses.fix_loss_keys()
 
+
+
         # calculate record per step
         total_datas = min((len(self.t_s_data_set), len(self.t_t_data_set)))
         record_per_step = total_datas / (
@@ -224,6 +227,10 @@ class DAModule(ABC):
             # set all networks to train mode
             for i in self.networks:
                 i.train()
+
+            if not self.relr_everytime:
+                for c in self.train_caps.values():
+                    c.decary_lr_rate()
 
             # begain a epoch
             for epoch_step, (sorce, target) in enumerate(
@@ -261,9 +268,7 @@ class DAModule(ABC):
 
             # decay lr
             self.current_epoch += 1
-            if not self.relr_everytime:
-                for c in self.train_caps.values():
-                    c.decary_lr_rate()
+
 
     @abstractclassmethod
     def train_step(self, s_img, s_label, t_img):

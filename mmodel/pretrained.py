@@ -5,6 +5,9 @@ import torchvision
 from torchvision import models
 from mmodel.basic_module import WeightedModule, _basic_weights_init_helper
 
+# def tenth_grad(grad):
+#     grad_c = grad.clone()
+#     return 0.1 * grad_c
 
 class ResNetFeatureExtrctor(WeightedModule):
     
@@ -16,13 +19,13 @@ class ResNetFeatureExtrctor(WeightedModule):
         
         self.feature = nn.Sequential(*layers)
         self.has_init = True
+        self.lr_mult = 0.1
 
     def forward(self, inputs):
         return self.feature(inputs)
 
     def output_shape(self):
         return (2048, 7, 7)
-
 
 class AlexNetFeatureExtrctor(WeightedModule):
     
@@ -34,13 +37,12 @@ class AlexNetFeatureExtrctor(WeightedModule):
         
         self.feature = nn.Sequential(*layers)
         self.has_init = True
+        self.lr_mult = 0.001
 
     def forward(self, inputs):
         feature = self.feature(inputs)
-        feature.register_hook(lambda grad: grad * 0.1)
         return feature
-
-
+    
     def output_shape(self):
         return (256, 6, 6)
 
@@ -54,12 +56,13 @@ class AlexBottleNeck(WeightedModule):
         self.extractor = nn.Sequential(*layers)
 
         self.has_init = True
+        self.lr_mult = 0.1
 
     def forward(self, inputs):
         b,_,_,_ = inputs.size()
         feature = self.extractor(inputs.view(b,-1))
-        feature.register_hook(lambda grad: grad * 0.1)
+        feature = feature * 1
         return feature
-    
+       
     def output_shape(self):
         return (4096, 1, 1)

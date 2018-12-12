@@ -56,6 +56,7 @@ class Classifer(WeightedModule):
         predict = self.classifer(inputs)
         return predict
 
+
 class DomainClassifer(WeightedModule):
     def __init__(self, param, in_dim):
         super().__init__()
@@ -78,7 +79,7 @@ class DomainClassifer(WeightedModule):
 
     def forward(self, inputs, coeff=0):
         # x = x * 1.0
-        inputs.register_hook(lambda grad: grad * -1 * coeff)
+        inputs.register_hook(lambda grad: grad.clone()*(-1)*coeff)
         b = inputs.size()[0]
         domain = self.predict(inputs.view(b, -1))
         return domain
@@ -93,7 +94,7 @@ if __name__ == "__main__":
         b, c, w, h = x.size()
         x = x.view(b, c, w*h).permute(0, 2, 1)
         x = pool(x).view(b, 1, w, h)
-        return x
+        return x                         
 
     print(cpool(x))
     print(cpool(x).size())
