@@ -64,6 +64,8 @@ class TrainCapsule(nn.Module):
         # get all parameters in network list
         self.all_params = list()
         for i in networks_list:
+            if(isinstance(i, torch.nn.DataParallel)):
+                i = i.module
             self.all_params.append(
                 {
                 'params': list(i.parameters()),
