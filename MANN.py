@@ -17,8 +17,6 @@ class MANN(DAModule):
         F = AlexNetFeatureExtrctor()
         B = AlexBottleNeck()
         c, h, w = B.output_shape()
-        # sM = MaskingLayer(c, h * w)
-        # tM = MaskingLayer(c, h * w)
         C = Classifer(params, c * h * w)
         D = DomainClassifer(params, c * h * w)
 
@@ -31,6 +29,7 @@ class MANN(DAModule):
         self.TrainCpasule.registe_new_lr_calculator(
             lambda cap, step: params.lr / ( (1 + 10 * step / params.epoch) ** 0.75 )
         )
+        self.relr_everytime = True
 
         # registe loss function
         self.regist_loss("predict", (self.F, self.B, self.C))

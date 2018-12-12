@@ -32,7 +32,7 @@ def _basic_weights_init_helper(modul, params=None):
                 init.constant_(m.bias, 0)
         # init full connect norm
         elif isinstance(m, nn.Linear):
-            init.xavier_normal_(m.weight)
+            init.normal_(m.weight, 0, 0.01)
             init.constant_(m.bias, 0)
         elif isinstance(m, nn.Module):
             _basic_weights_init_helper(m)
