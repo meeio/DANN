@@ -29,7 +29,7 @@ class MANN(DAModule):
         self.TrainCpasule.registe_new_lr_calculator(
             lambda cap, step: params.lr / ( (1 + 10 * step / params.epoch) ** 0.75 )
         )
-        self.relr_everytime = True
+        # self.relr_everytime = True
 
         # registe loss function
         self.regist_loss("predict", (self.F, self.B, self.C))
