@@ -78,7 +78,7 @@ def get_params():
     )
 
     parser.add_argument(
-        "--hidden_size", type=int, default=1024, help="Gamma for decaying lr."
+        "--hidden_size", type=int, default=500, help="Gamma for decaying lr."
     )
 
     return parser.parse_args()
