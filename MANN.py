@@ -33,7 +33,7 @@ class MANN(DAModule):
             torch.optim.SGD, lr=params.lr, weight_decay=0.0005, momentum=0.9, nesterov=True
         )
         self.TrainCpasule.registe_new_lr_calculator(
-            lambda cap, step: np.float(params.lr / ( (1 + 10 * step / self.total_step) ** 0.75 ))
+            lambda cap, step: np.float(params.lr / ( (1 + 10 * (step / self.total_step)) ** 0.75 ))
         )
         self.relr_everytime = True
 
@@ -70,7 +70,7 @@ class MANN(DAModule):
         s_d_loss, s_c_loss = self.through(s_img, s_label)
         t_d_loss, _ = self.through(t_img)
 
-        self.update_loss('domain', (s_d_loss + t_d_loss))
+        self.update_loss('domain', (s_d_loss + t_d_loss)/2)
         self.update_loss('predict', s_c_loss)
 
 

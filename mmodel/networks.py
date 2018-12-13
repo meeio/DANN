@@ -47,12 +47,12 @@ class BottleNeck(WeightedModule):
 
     def __init__(self, params, in_dim):
         super().__init__()
-        self.classifer = nn.Sequential(
+        self.bottlefeature = nn.Sequential(
             nn.Linear(in_dim, params.bottle_neck),
         )
 
     def forward(self, inputs):
-        feature = self.classifer(inputs)
+        feature = self.bottlefeature(inputs)
         return feature
         
     def output_shape(self):

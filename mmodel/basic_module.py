@@ -241,10 +241,6 @@ class DAModule(ABC):
                 s_img, s_label = sorce
                 t_img, _ = target
 
-                # # Make a grid from batch
-                # out = torchvision.utils.make_grid(s_img)
-                # imshow(out)
-
                 if len(s_img) != len(t_img):
                     continue
 
@@ -267,7 +263,6 @@ class DAModule(ABC):
                     for c in self.train_caps.values():
                         c.decary_lr_rate()
 
-
             # after an epoch begain valid
             if ( self.current_epoch % 5 ) == 4:
                 self.valid()
@@ -286,8 +281,8 @@ class DAModule(ABC):
 
     def update_loss(self, loss_name, value):
         self.losses[loss_name].value = value
-        self.loggers[loss_name].record()
         self.train_caps[loss_name].train_step()
+        self.loggers[loss_name].record()
 
     def __batch_domain_label__(self, batch_size):
         # Generate all Source and Domain label.

@@ -12,7 +12,6 @@ def get_params():
         "--batch_size", type=int, default=32, help="Size for Mini-Batch Optimization"
     )
 
-  
     parser.add_argument(
         "--class_num", type=int, default=65, help="Class number of data set"
     )
@@ -38,7 +37,6 @@ def get_params():
     parser.add_argument(
         "--log", type=bool, default=True, help="log record data to file or not."
     )
-
 
     parser.add_argument("--tag", type=str, default="testes", help="tag for this train.")
 

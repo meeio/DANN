@@ -68,7 +68,7 @@ class TrainCapsule(nn.Module):
                 i = i.module
             self.all_params.append(
                 {
-                'params': list(i.parameters()),
+                'params': i.parameters(),
                 'lr_mult': i.lr_mult,
                 }
             )
@@ -84,7 +84,6 @@ class TrainCapsule(nn.Module):
                     self.optimer, **TrainCapsule.__decay_args__
                 )
         
-
     def __all_networks_call(self, func_name):
         def __one_networkd_call(i):
             func = getattr(i, func_name)

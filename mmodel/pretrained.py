@@ -35,8 +35,9 @@ class AlexNetFeatureExtrctor(WeightedModule):
         layers = list(alexnet.children())[0]
         
         self.feature = nn.Sequential(*layers)
-        self.has_init = True
+
         self.lr_mult = 0.1
+        self.has_init = True
 
     def forward(self, inputs):
         feature = self.feature(inputs)
@@ -53,13 +54,12 @@ class AlexBottleNeck(WeightedModule):
         layers = list(alexnet.children())[1][:-1]
         self.extractor = nn.Sequential(*layers)
 
-        self.has_init = True
         self.lr_mult = 0.1
+        self.has_init = True
 
     def forward(self, inputs):
         b,_,_,_ = inputs.size()
         feature = self.extractor(inputs.view(b,-1))
-        feature = feature * 1
         return feature
        
     def output_shape(self):
