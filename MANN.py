@@ -70,10 +70,9 @@ class MANN(DAModule):
         s_d_loss, s_c_loss = self.through(s_img, s_label)
         t_d_loss, _ = self.through(t_img)
 
-        self.update_loss('domain', (s_d_loss + t_d_loss))
+        self.update_loss('domain', (s_d_loss + t_d_loss) / 2)
         self.update_loss('predict', s_c_loss)
 
-        print(s_c_loss)
 
     def valid_step(self, img):
         feature = self.F1(img)
