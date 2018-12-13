@@ -273,11 +273,11 @@ class DAModule(ABC, nn.Module):
 
             logging.info(
                 "Epoch %3d ends. \t Remain %3d epoch to go. "
-                % (self.current_epoch + 1, self.params.epoch - self.current_epoch)
+                % (self.current_epoch + 1, self.params.epoch - self.current_epoch -1)
             )
 
             logging.info(
-                "Current best accurace is %3.2f %." % (self.best_accurace * 100)
+                "Current best accurace is %3.2f \%." % (self.best_accurace * 100)
             )
             self.current_epoch += 1
 
