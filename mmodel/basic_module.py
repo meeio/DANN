@@ -4,7 +4,7 @@ import torch.nn.init as init
 import logging
 import torchvision
 import numpy as np
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 from mground.gpu_utils import anpai
 
@@ -212,17 +212,6 @@ class DAModule(ABC):
         valid_a_set(self.t_t_data_loader)
 
     def train(self):
-
-        def imshow(inp, title=None):
-            """Imshow for Tensor."""
-            inp = inp.numpy().transpose((1, 2, 0))
-            mean = np.array([0.485, 0.456, 0.406])
-            std = np.array([0.229, 0.224, 0.225])
-            inp = std * inp + mean
-            inp = np.clip(inp, 0, 1)
-            plt.imshow(inp)
-            plt.pause(5)
-
 
         # fix loss key to prenvent missing
         self.losses.fix_loss_keys()
