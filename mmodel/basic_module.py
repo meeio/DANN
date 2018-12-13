@@ -4,7 +4,6 @@ import torch.nn.init as init
 import logging
 import torchvision
 import numpy as np
-import matplotlib.pyplot as plt
 
 from mground.gpu_utils import anpai
 
