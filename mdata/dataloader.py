@@ -110,7 +110,7 @@ def load_img_dataset(dataset, subset, batch_size):
     data_loader = torch.utils.data.DataLoader(
         dataset, 
         batch_size=batch_size, 
-        shuffle=True, 
+        # shuffle=True, 
         drop_last=True, 
     )
 

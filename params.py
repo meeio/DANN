@@ -9,14 +9,7 @@ def get_params():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--nf",
-        type=int,
-        default=64,
-        help="Number of filters to use in the generator network",
-    )
-
-    parser.add_argument(
-        "--batch_size", type=int, default=64, help="Size for Mini-Batch Optimization"
+        "--batch_size", type=int, default=32, help="Size for Mini-Batch Optimization"
     )
 
   
@@ -58,10 +51,6 @@ def get_params():
     )
 
     parser.add_argument(
-        "--step_size", type=int, default=5, help="Step size for decaying lr."
-    )
-
-    parser.add_argument(
         "--lr", type=float, default=0.01, help="Gamma for decaying lr."
     )
 
@@ -74,7 +63,7 @@ def get_params():
     )
 
     parser.add_argument(
-        "--hidden_size", type=int, default=500, help="Gamma for decaying lr."
+        "--hidden_size", type=int, default=1024, help="Gamma for decaying lr."
     )
 
     return parser.parse_args()

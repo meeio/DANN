@@ -73,7 +73,6 @@ class MANN(DAModule):
         self.update_loss('domain', (s_d_loss + t_d_loss))
         self.update_loss('predict', s_c_loss)
 
-        print(s_c_loss)
 
     def valid_step(self, img):
         feature = self.F1(img)
