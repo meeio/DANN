@@ -33,7 +33,7 @@ class MANN(DAModule):
             torch.optim.SGD, lr=params.lr, weight_decay=0.0005, momentum=0.9, nesterov=True
         )
         self.TrainCpasule.registe_new_lr_calculator(
-            lambda cap, step: np.float(params.lr / ( (1 + 10 * step / self.total_step) ** 0.75 ))
+            lambda cap, step: params.lr / ( (1.0 + 10.0 * step / self.total_step) ** 0.75 )
         )
         self.relr_everytime = True
 

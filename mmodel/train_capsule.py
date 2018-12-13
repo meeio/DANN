@@ -130,7 +130,6 @@ class TrainCapsule(nn.Module):
 
         # for param_group in self.optimer.param_groups:
         #     logging.info("Current >learning rate< is >%1.9f< ." % param_group["lr"])
-
         self.epoch += 1
 
 if __name__ == "__main__":

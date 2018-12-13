@@ -89,18 +89,28 @@ def load_dataset(
     return data_set, data_loader
 
 
-def load_img_dataset(dataset, subset, batch_size):
+def load_img_dataset(dataset, subset, batch_size, test=False):
 
-    trans = [
-        transforms.RandomResizedCrop(224),
-        transforms.RandomHorizontalFlip(),
+    if test:
+        trans_corp = [
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+        ]
+    else:
+        trans_corp = [
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+        ]
+    
+    trans_tensor = [
         transforms.ToTensor(),
         transforms.Normalize(
             [0.485, 0.456, 0.406], 
             [0.229, 0.224, 0.225]
         ),
     ]
-    transform = transforms.Compose(trans)
+
+    transform = transforms.Compose(trans_corp + trans_tensor)
 
     dataset = ds.ImageFolder(
         root="./_PUBLIC_DATASET_/" + dataset + "/" + subset,

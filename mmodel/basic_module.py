@@ -16,6 +16,7 @@ import mdata.dataloader as mdl
 import mdata.dataloader as mdl
 from abc import ABC, abstractclassmethod
 
+
 def _basic_weights_init_helper(modul, params=None):
     """give a module, init it's weight
     
@@ -43,6 +44,7 @@ def _basic_weights_init_helper(modul, params=None):
         if isinstance(m, WeightedModule):
             m.has_init = True
 
+
 class WeightedModule(nn.Module):
 
     static_weight_handler = None
@@ -66,14 +68,13 @@ class WeightedModule(nn.Module):
 
         """ init weights with torch inner function 
         """
-        
+
         name = self.__class__.__name__
         str = name + "'s weights init from %s."
 
         if self.has_init:
             logging.info(str % "Pretraied Model")
             return
-
 
         if record_path is not None:
             f = torch.load(record_path)
@@ -102,7 +103,7 @@ class WeightedModule(nn.Module):
         return os.path.abspath(f)
 
 
-class DAModule(ABC):
+class DAModule(ABC, nn.Module):
     def __init__(self, params):
         super().__init__()
 
@@ -115,6 +116,7 @@ class DAModule(ABC):
         self.golbal_step = 0
         self.current_epoch = 0
         self.relr_everytime = False
+        self.best_accurace = 0.0
 
         # set usefully loss function
         self.ce = nn.CrossEntropyLoss()
@@ -146,15 +148,15 @@ class DAModule(ABC):
         )
         self.t_t_data_set, self.t_t_data_loader = mdl.load_img_dataset(
             "OfficeHome", "Pr", params.batch_size
-        )        
-        self.v_t_data_set = self.t_t_data_set
-        self.v_t_data_loader = self.t_t_data_loader
+        )
+        self.v_t_data_set, self.v_t_data_loader = mdl.load_img_dataset(
+            "OfficeHome", "Pr", params.batch_size, test=True
+        )
 
         # set total train step
         self.total_step = int(
-            min(len(self.t_s_data_set), len(self.t_t_data_set))
+            int(min(len(self.t_s_data_set), len(self.t_t_data_set)) / params.batch_size)
             * params.epoch
-            / params.batch_size
         )
 
         # init global label
@@ -206,16 +208,18 @@ class DAModule(ABC):
                 self.log_valid_acrr.record()
 
             self.log_valid_loss.log_current_avg_loss(self.golbal_step)
-            self.log_valid_acrr.log_current_avg_loss(self.golbal_step)
+            accu = self.log_valid_acrr.log_current_avg_loss(self.golbal_step)
+
+            return accu
 
         # valid on target data
-        valid_a_set(self.t_t_data_loader)
+        accu = valid_a_set(self.t_t_data_loader)
+        return accu
 
     def train(self):
 
         # fix loss key to prenvent missing
         self.losses.fix_loss_keys()
-
 
         # calculate record per step
         total_datas = min((len(self.t_s_data_set), len(self.t_t_data_set)))
@@ -241,10 +245,6 @@ class DAModule(ABC):
                 s_img, s_label = sorce
                 t_img, _ = target
 
-                # # Make a grid from batch
-                # out = torchvision.utils.make_grid(s_img)
-                # imshow(out)
-
                 if len(s_img) != len(t_img):
                     continue
 
@@ -253,6 +253,10 @@ class DAModule(ABC):
                     self.params.use_gpu,
                     need_logging=False,
                 )
+
+                if self.relr_everytime:
+                    for c in self.train_caps.values():
+                        c.decary_lr_rate()
 
                 # begain a train step
                 self.train_step(s_img, s_label, t_img)
@@ -263,18 +267,20 @@ class DAModule(ABC):
                     for v in self.loggers.values():
                         v.log_current_avg_loss(self.golbal_step)
 
-                if self.relr_everytime:
-                    for c in self.train_caps.values():
-                        c.decary_lr_rate()
-
-
             # after an epoch begain valid
-            if ( self.current_epoch % 5 ) == 4:
-                self.valid()
+            if (self.current_epoch % 5) == 4:
+                accu = self.valid()
+                self.best_accurace = max((self.best_accurace, accu))
 
-            # decay lr
+            logging.info(
+                "Epoch %3d ends. \t Remain %3d epoch to go. "
+                % (self.current_epoch + 1, self.params.epoch - self.current_epoch)
+            )
+
+            logging.info(
+                "Current best accurace is %3.2f %." % (self.best_accurace * 100)
+            )
             self.current_epoch += 1
-
 
     @abstractclassmethod
     def train_step(self, s_img, s_label, t_img):

@@ -70,7 +70,6 @@ class Classifer(WeightedModule):
         predict = self.classifer(inputs)
         return predict
 
-
 class DomainClassifer(WeightedModule):
     def __init__(self, param, in_dim):
         super().__init__()

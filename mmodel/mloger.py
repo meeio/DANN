@@ -110,7 +110,9 @@ class LogCapsule(object):
         self.range_step += 1
     
     def log_current_avg_loss(self, step=None):
-        self.__loss__(step, self.avg_record())
+        loss = self.avg_record()
+        self.__loss__(step, loss)
+        return loss
 
     def avg_record(self):
         result = self.range_loss / self.range_step
