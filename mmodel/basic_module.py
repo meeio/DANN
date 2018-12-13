@@ -277,7 +277,7 @@ class DAModule(ABC, nn.Module):
             )
 
             logging.info(
-                "Current best accurace is %3.2f \%." % (self.best_accurace * 100)
+                "Current best accurace is %3.2f ." % (self.best_accurace * 100)
             )
             self.current_epoch += 1
 

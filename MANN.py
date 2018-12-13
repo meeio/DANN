@@ -30,10 +30,15 @@ class MANN(DAModule):
 
         # set default optim function
         self.TrainCpasule.registe_default_optimer(
-            torch.optim.SGD, lr=params.lr, weight_decay=0.0005, momentum=0.9, nesterov=True
+            torch.optim.SGD,
+            lr=params.lr,
+            weight_decay=0.0005,
+            momentum=0.9,
+            nesterov=True,
         )
         self.TrainCpasule.registe_new_lr_calculator(
-            lambda cap, step: params.lr / ( (1.0 + 10.0 * step / self.total_step) ** 0.75 )
+            lambda cap, step: params.lr
+            / ((1.0 + 10.0 * step / self.total_step) ** 0.75)
         )
         self.relr_everytime = True
 
@@ -42,8 +47,8 @@ class MANN(DAModule):
         self.regist_loss("domain", (self.F1, self.F2, self.B, self.D))
 
     def get_coeff(self, high=1):
-        sigma=10
-        p = self.golbal_step / (self.total_step )
+        sigma = 10
+        p = self.golbal_step / (self.total_step)
         llambd = np.float((2.0 * high / (1.0 + np.exp(-sigma * p))) - high)
         return llambd
 
@@ -64,15 +69,13 @@ class MANN(DAModule):
 
         return d_loss, predict_loss
 
-
     def train_step(self, s_img, s_label, t_img):
 
         s_d_loss, s_c_loss = self.through(s_img, s_label)
         t_d_loss, _ = self.through(t_img)
 
-        self.update_loss('domain', (s_d_loss + t_d_loss) / 2)
-        self.update_loss('predict', s_c_loss)
-
+        self.update_loss("domain", (s_d_loss + t_d_loss) / 2)
+        self.update_loss("predict", s_c_loss)
 
     def valid_step(self, img):
         feature = self.F1(img)
