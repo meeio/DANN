@@ -43,13 +43,27 @@ class MaskingLayer(WeightedModule):
         s_mask = self.spatial_mask(inputs)
         return c_mask, s_mask
 
-class Classifer(WeightedModule):
+class BottleNeck(WeightedModule):
 
     def __init__(self, params, in_dim):
         super().__init__()
         self.classifer = nn.Sequential(
             nn.Linear(in_dim, params.bottle_neck),
-            nn.Linear(params.bottle_neck, params.class_num)
+        )
+
+    def forward(self, inputs):
+        feature = self.classifer(inputs)
+        return feature
+        
+    def output_shape(self):
+        return (256, 1, 1)
+
+class Classifer(WeightedModule):
+
+    def __init__(self, params, in_dim):
+        super().__init__()
+        self.classifer = nn.Sequential(
+            nn.Linear(in_dim, params.class_num)
         )
 
     def forward(self, inputs):

@@ -2,6 +2,9 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 import logging
+import torchvision
+import numpy as np
+import matplotlib.pyplot as plt
 
 from mground.gpu_utils import anpai
 
@@ -210,9 +213,19 @@ class DAModule(ABC):
 
     def train(self):
 
+        def imshow(inp, title=None):
+            """Imshow for Tensor."""
+            inp = inp.numpy().transpose((1, 2, 0))
+            mean = np.array([0.485, 0.456, 0.406])
+            std = np.array([0.229, 0.224, 0.225])
+            inp = std * inp + mean
+            inp = np.clip(inp, 0, 1)
+            plt.imshow(inp)
+            plt.pause(5)
+
+
         # fix loss key to prenvent missing
         self.losses.fix_loss_keys()
-
 
 
         # calculate record per step
@@ -223,10 +236,9 @@ class DAModule(ABC):
         record_per_step = int(record_per_step)
 
         for epoch in range(self.params.epoch):
-
             # set all networks to train mode
             for i in self.networks:
-                i.train()
+                i.train(True)
 
             if not self.relr_everytime:
                 for c in self.train_caps.values():
@@ -239,6 +251,10 @@ class DAModule(ABC):
                 # send train data to wantted device
                 s_img, s_label = sorce
                 t_img, _ = target
+
+                # # Make a grid from batch
+                # out = torchvision.utils.make_grid(s_img)
+                # imshow(out)
 
                 if len(s_img) != len(t_img):
                     continue
@@ -264,7 +280,8 @@ class DAModule(ABC):
 
 
             # after an epoch begain valid
-            self.valid()
+            if ( self.current_epoch % 5 ) == 4:
+                self.valid()
 
             # decay lr
             self.current_epoch += 1

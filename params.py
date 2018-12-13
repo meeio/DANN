@@ -16,7 +16,7 @@ def get_params():
     )
 
     parser.add_argument(
-        "--batch_size", type=int, default=32, help="Size for Mini-Batch Optimization"
+        "--batch_size", type=int, default=64, help="Size for Mini-Batch Optimization"
     )
 
   
@@ -29,14 +29,10 @@ def get_params():
     )
 
     parser.add_argument(
-        "--img_size", type=int, default=32, help="Class number of data set"
-    )
-
-    parser.add_argument(
         "--use_gpu", type=bool, default=True, help="Use GPU to train the model"
     )
 
-    parser.add_argument("--epoch", type=int, default=10, help="Epochs of train data")
+    parser.add_argument("--epoch", type=int, default=50, help="Epochs of train data")
 
     parser.add_argument(
         "--sdsname", type=str, default="Ar", help="data base we will use"
@@ -58,7 +54,7 @@ def get_params():
     )
 
     parser.add_argument(
-        "--log_per_epoch", type=int, default=25, help="Log per step at a epoch."
+        "--log_per_epoch", type=int, default=5, help="Log per step at a epoch."
     )
 
     parser.add_argument(

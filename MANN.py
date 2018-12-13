@@ -7,6 +7,8 @@ from params import get_params
 from mmodel.mloger import GLOBAL
 import logging
 
+import numpy as np
+
 
 class MANN(DAModule):
     def __init__(self, params):
@@ -14,35 +16,40 @@ class MANN(DAModule):
 
         self.params = params
 
-        F = AlexNetFeatureExtrctor()
-        B = AlexBottleNeck()
-        c, h, w = B.output_shape()
-        C = Classifer(params, c * h * w)
-        D = DomainClassifer(params, c * h * w)
+        F1 = AlexNetFeatureExtrctor()
+        F2 = AlexBottleNeck()
+        c, h, w = F2.output_shape()
 
-        self.F, self.B, self.C, self.D = self.regist_networds(F, B, C, D)
+        B = BottleNeck(params, c * h * w)
+        c1, h1, w1 = B.output_shape()
+
+        C = Classifer(params, c1 * h1 * w1)
+        D = DomainClassifer(params, c1 * h1 * w1)
+
+        self.F1, self.F2, self.B, self.C, self.D = self.regist_networds(F1, F2, B, C, D)
 
         # set default optim function
         self.TrainCpasule.registe_default_optimer(
             torch.optim.SGD, lr=params.lr, weight_decay=0.0005, momentum=0.9, nesterov=True
         )
         self.TrainCpasule.registe_new_lr_calculator(
-            lambda cap, step: params.lr / ( (1 + 10 * step / params.epoch) ** 0.75 )
+            lambda cap, step: np.float(params.lr / ( (1 + 10 * step / self.total_step) ** 0.75 ))
         )
-        # self.relr_everytime = True
+        self.relr_everytime = True
 
         # registe loss function
-        self.regist_loss("predict", (self.F, self.B, self.C))
-        self.regist_loss("domain", (self.F, self.B, self.D))
+        self.regist_loss("predict", (self.F1, self.F2, self.B, self.C))
+        self.regist_loss("domain", (self.F1, self.F2, self.B, self.D))
 
-    def get_coeff(self):
+    def get_coeff(self, high=1):
         sigma=10
         p = self.golbal_step / (self.total_step )
-        llambd = (2.0 / (1.0 + np.exp(-sigma * p))) - 1
+        llambd = np.float((2.0 * high / (1.0 + np.exp(-sigma * p))) - high)
         return llambd
 
     def through(self, img, lable=None):
-        feature = self.F(img)
+        feature = self.F1(img)
+        feature = self.F2(feature)
         feature = self.B(feature)
 
         domain_label = self.TARGET
@@ -50,10 +57,10 @@ class MANN(DAModule):
         if lable is not None:
             domain_label = self.SOURCE
             predict = self.C(feature)
-            predict_loss = self.ce(predict, lable)
+            predict_loss = nn.CrossEntropyLoss()(predict, lable)
 
         domain = self.D(feature, self.get_coeff())
-        d_loss = self.bce(domain, domain_label)
+        d_loss = nn.BCELoss()(domain, domain_label)
 
         return d_loss, predict_loss
 
@@ -63,11 +70,14 @@ class MANN(DAModule):
         s_d_loss, s_c_loss = self.through(s_img, s_label)
         t_d_loss, _ = self.through(t_img)
 
-        self.update_loss('domain', (s_d_loss + t_d_loss)/2)
+        self.update_loss('domain', (s_d_loss + t_d_loss))
         self.update_loss('predict', s_c_loss)
 
+        print(s_c_loss)
+
     def valid_step(self, img):
-        feature = self.F(img)
+        feature = self.F1(img)
+        feature = self.F2(feature)
         feature = self.B(feature)
         predict = self.C(feature)
 
