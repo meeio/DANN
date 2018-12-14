@@ -34,9 +34,9 @@ def get_params():
 
     parser.add_argument("--steps", type=int, default=100004, help="Epochs of train data")
 
-    parser.add_argument("--log_per_step", type=int, default=200, help="Epochs of train data")
+    parser.add_argument("--log_per_step", type=int, default=20, help="Epochs of train data")
 
-    parser.add_argument("--eval_per_step", type=int, default=3000, help="Epochs of train data")
+    parser.add_argument("--eval_per_step", type=int, default=500, help="Epochs of train data")
 
     parser.add_argument(
         "--sdsname", type=str, default="Ar", help="data base we will use"
@@ -57,9 +57,6 @@ def get_params():
         "--ckt_path", type=str, default=None, help="Check point save path."
     )
 
-    parser.add_argument(
-        "--log_per_epoch", type=int, default=5, help="Log per step at a epoch."
-    )
 
     parser.add_argument(
         "--step_size", type=int, default=5, help="Step size for decaying lr."

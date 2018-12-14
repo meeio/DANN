@@ -227,11 +227,10 @@ class DAModule(ABC, nn.Module):
         def cycle(iterator):
             while True:
                 for i in iterator:
-                    yield i   
+                    yield i
 
         s_it = iter(cycle(self.t_s_data_loader))
         t_it = iter(cycle(self.t_t_data_loader))
-
 
         for _ in range(self.params.steps):
 
@@ -242,9 +241,7 @@ class DAModule(ABC, nn.Module):
             if len(s_img) != len(t_img):
                 continue
             s_img, s_label, t_img = anpai(
-                (s_img, s_label.long(), t_img),
-                self.params.use_gpu,
-                need_logging=False,
+                (s_img, s_label.long(), t_img), self.params.use_gpu, need_logging=False
             )
 
             # re calculate learning rates
@@ -255,35 +252,34 @@ class DAModule(ABC, nn.Module):
             # begain a train step
             self.train_step(s_img, s_label, t_img)
 
-            
             # making log
             if self.golbal_step % log_step == (log_step - 1):
+
+                logging.info(
+                    "Steps %3d ends. Remain %3d steps to go. Fished %.3f%%"
+                    % (
+                        self.golbal_step + 1,
+                        self.params.steps - self.golbal_step - 1,
+                        self.golbal_step / self.params.steps,
+                    )
+                )
+                
+                logging.info(
+                    "Current best accurace is %3.3f%%." % (self.best_accurace * 100)
+                )
+
                 for v in self.loggers.values():
                     v.log_current_avg_loss(self.golbal_step)
 
-                logging.info(
-                    "Current best accurace is %3.2f ." % (self.best_accurace * 100)
-                )
-
-                logging.info(
-                    "Steps %3d ends. \t Remain %3d steps to go. "
-                    % (self.golbal_step + 1, self.params.epoch - self.current_epoch -1)
-                )
-
-            # begain eval 
+            # begain eval
             if self.golbal_step % eval_step == (eval_step - 1):
                 accu = self.valid()
                 self.best_accurace = max((self.best_accurace, accu))
                 # set all networks to train mode
                 for i in self.networks:
                     i.train(True)
-            
+
             self.golbal_step += 1
-
-
-
-
-
 
     @abstractclassmethod
     def train_step(self, s_img, s_label, t_img):
