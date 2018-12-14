@@ -224,20 +224,20 @@ class DAModule(ABC, nn.Module):
         log_step = self.params.log_per_step
         eval_step = self.params.eval_per_step
 
-        def cycle(iterable):
-                while True:
-                    for x in iterable:
-                        yield x
+        def cycle(iterator):
+            while True:
+                for i in iterator:
+                    yield i   
 
         s_it = iter(cycle(self.t_s_data_loader))
         t_it = iter(cycle(self.t_t_data_loader))
-        
+
+
         for _ in range(self.params.steps):
 
             # send train data to wantted device
-            s_img, s_label = s_it.next()
-            t_img, _ = t_it.next()
-
+            s_img, s_label = next(s_it)
+            t_img, _ = next(t_it)
 
             print(self.golbal_step)
             if len(s_img) != len(t_img):
