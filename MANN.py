@@ -38,9 +38,9 @@ class MANN(DAModule):
         )
         self.TrainCpasule.registe_new_lr_calculator(
             lambda cap, step: 
-            params.lr * (1.0 + 0.001 * step) ** (-0.75)
+            # params.lr * (1.0 + 0.001 * step) ** (-0.75)
+            params.lr / ((1.0 + 10.0 * step / self.total_step) ** 0.75)
         )
-        # / ((1.0 + 10.0 * step / self.total_step) ** 0.75)
         self.relr_everytime = True
 
         # registe loss function
@@ -49,7 +49,7 @@ class MANN(DAModule):
 
     def get_coeff(self, high=1):
         sigma = 10
-        p = self.golbal_step / (self.total_step)
+        p = self.golbal_step / self.total_step
         llambd = np.float((2.0 * high / (1.0 + np.exp(-sigma * p))) - high)
         return llambd
 
@@ -75,7 +75,7 @@ class MANN(DAModule):
         s_d_loss, s_c_loss = self.through(s_img, s_label)
         t_d_loss, _ = self.through(t_img)
 
-        self.update_loss("domain", (s_d_loss + t_d_loss) / 2)
+        self.update_loss("domain", (s_d_loss + t_d_loss))
         self.update_loss("predict", s_c_loss)
 
     def valid_step(self, img):
