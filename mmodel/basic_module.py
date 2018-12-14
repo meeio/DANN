@@ -224,8 +224,13 @@ class DAModule(ABC, nn.Module):
         log_step = self.params.log_per_step
         eval_step = self.params.eval_per_step
 
-        s_it = iter(self.t_s_data_loader)
-        t_it = iter(self.t_t_data_loader)
+        def cycle(iterable):
+                while True:
+                    for x in iterable:
+                        yield x
+
+        s_it = iter(cycle(self.t_s_data_loader))
+        t_it = iter(cycle(self.t_t_data_loader))
         
         for _ in range(self.params.steps):
 
@@ -233,9 +238,11 @@ class DAModule(ABC, nn.Module):
             s_img, s_label = s_it.next()
             t_img, _ = t_it.next()
 
+
+            print(self.golbal_step)
             if len(s_img) != len(t_img):
                 continue
-
+            print(self.golbal_step)
             s_img, s_label, t_img = anpai(
                 (s_img, s_label.long(), t_img),
                 self.params.use_gpu,
@@ -274,6 +281,7 @@ class DAModule(ABC, nn.Module):
                     i.train(True)
             
             self.golbal_step += 1
+
 
 
 
