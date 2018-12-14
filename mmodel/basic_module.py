@@ -153,10 +153,7 @@ class DAModule(ABC, nn.Module):
         )
 
         # set total train step
-        self.total_step = int(
-            int(min(len(self.t_s_data_set), len(self.t_t_data_set)) / params.batch_size)
-            * params.epoch
-        )
+        self.total_step = self.params.steps
 
         # init global label
         self.TARGET, self.SOURCE = self.__batch_domain_label__(params.batch_size)
@@ -220,66 +217,67 @@ class DAModule(ABC, nn.Module):
         # fix loss key to prenvent missing
         self.losses.fix_loss_keys()
 
-        # calculate record per step
-        total_datas = min((len(self.t_s_data_set), len(self.t_t_data_set)))
-        record_per_step = total_datas / (
-            self.params.batch_size * self.params.log_per_epoch
-        )
-        record_per_step = int(record_per_step)
+        # set all networks to train mode
+        for i in self.networks:
+            i.train(True)
 
-        for epoch in range(self.params.epoch):
-            # set all networks to train mode
-            for i in self.networks:
-                i.train(True)
+        log_step = self.params.log_per_step
+        eval_step = self.params.eval_per_step
 
+        s_it = iter(self.t_s_data_loader)
+        t_it = iter(self.t_t_data_loader)
+        
+        for _ in range(self.params.steps):
+
+            # send train data to wantted device
+            s_img, s_label = s_it.next()
+            t_img, _ = t_it.next()
+
+            if len(s_img) != len(t_img):
+                continue
+
+            s_img, s_label, t_img = anpai(
+                (s_img, s_label.long(), t_img),
+                self.params.use_gpu,
+                need_logging=False,
+            )
+
+            # re calculate learning rates
             if not self.relr_everytime:
                 for c in self.train_caps.values():
                     c.decary_lr_rate()
 
-            # begain a epoch
-            for epoch_step, (sorce, target) in enumerate(
-                zip(self.t_s_data_loader, self.t_t_data_loader)
-            ):
-                # send train data to wantted device
-                s_img, s_label = sorce
-                t_img, _ = target
+            # begain a train step
+            self.train_step(s_img, s_label, t_img)
 
-                if len(s_img) != len(t_img):
-                    continue
+            
+            # making log
+            if self.golbal_step % log_step == (log_step - 1):
+                for v in self.loggers.values():
+                    v.log_current_avg_loss(self.golbal_step)
 
-                s_img, s_label, t_img = anpai(
-                    (s_img, s_label.long(), t_img),
-                    self.params.use_gpu,
-                    need_logging=False,
+                logging.info(
+                    "Current best accurace is %3.2f ." % (self.best_accurace * 100)
                 )
 
-                if self.relr_everytime:
-                    for c in self.train_caps.values():
-                        c.decary_lr_rate()
+                logging.info(
+                    "Steps %3d ends. \t Remain %3d steps to go. "
+                    % (self.golbal_step + 1, self.params.epoch - self.current_epoch -1)
+                )
 
-                # begain a train step
-                self.train_step(s_img, s_label, t_img)
-
-                # make record if need
-                self.golbal_step += 1
-                if self.golbal_step % record_per_step == (record_per_step - 1):
-                    for v in self.loggers.values():
-                        v.log_current_avg_loss(self.golbal_step)
-
-            # after an epoch begain valid
-            if (self.current_epoch % 5) == 4:
+            # begain eval 
+            if self.golbal_step % eval_step == (eval_step - 1):
                 accu = self.valid()
                 self.best_accurace = max((self.best_accurace, accu))
+                # set all networks to train mode
+                for i in self.networks:
+                    i.train(True)
+            
+            self.golbal_step += 1
 
-            logging.info(
-                "Epoch %3d ends. \t Remain %3d epoch to go. "
-                % (self.current_epoch + 1, self.params.epoch - self.current_epoch -1)
-            )
 
-            logging.info(
-                "Current best accurace is %3.2f ." % (self.best_accurace * 100)
-            )
-            self.current_epoch += 1
+
+
 
     @abstractclassmethod
     def train_step(self, s_img, s_label, t_img):

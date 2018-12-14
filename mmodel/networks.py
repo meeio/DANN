@@ -76,8 +76,7 @@ class DomainClassifer(WeightedModule):
 
         hidden_size = param.hidden_size
         self.predict = nn.Sequential(
-
-            # temp bottleneck
+            
             nn.Linear(in_dim, hidden_size),
             nn.ReLU(True),
             nn.Dropout(0.5),
