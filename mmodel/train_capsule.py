@@ -125,6 +125,8 @@ class TrainCapsule(nn.Module):
                 except:
                     scale = 1
                 param_group["lr"] = new_lr * scale
+                # param_group['weight_decay'] = weight_decay * param_group['decay_mult']
+
         else:
             self.lr_scheduler.step()
 

@@ -32,14 +32,15 @@ class MANN(DAModule):
         self.TrainCpasule.registe_default_optimer(
             torch.optim.SGD,
             lr=params.lr,
-            weight_decay=0.0005,
+            weight_decay=0.001,
             momentum=0.9,
             nesterov=True,
         )
         self.TrainCpasule.registe_new_lr_calculator(
-            lambda cap, step: params.lr
-            / ((1.0 + 10.0 * step / self.total_step) ** 0.75)
+            lambda cap, step: 
+            params.lr * (1.0 + 0.001 * step) ** (-0.75)
         )
+        # / ((1.0 + 10.0 * step / self.total_step) ** 0.75)
         self.relr_everytime = True
 
         # registe loss function
