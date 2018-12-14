@@ -239,10 +239,8 @@ class DAModule(ABC, nn.Module):
             s_img, s_label = next(s_it)
             t_img, _ = next(t_it)
 
-            print(self.golbal_step)
             if len(s_img) != len(t_img):
                 continue
-            print(self.golbal_step)
             s_img, s_label, t_img = anpai(
                 (s_img, s_label.long(), t_img),
                 self.params.use_gpu,
