@@ -45,12 +45,12 @@ class MANN(DAModule):
         self.relr_everytime = True
 
         # registe loss function
-        self.regist_loss("predict", (self.F1, self.F2, self.B, self.C))
+        self.regist_loss("predict", (self.B, self.C))
         self.regist_loss("domain", (self.F1, self.F2, self.B, self.D))
 
     def get_coeff(self, high=1):
         sigma = 10
-        p = self.golbal_step / (self.total_step / 10)
+        p = self.golbal_step / (self.total_step)
         llambd = np.float((2.0 * high / (1.0 + np.exp(-sigma * p))) - high)
         return llambd
 
