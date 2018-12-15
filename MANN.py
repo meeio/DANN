@@ -77,7 +77,6 @@ class MANN(DAModule):
         t_d_loss, _ = self.through(t_img)
 
         self.update_loss("domain", s_d_loss/2 + t_d_loss/2)
-        print(hah)
         self.update_loss("predict", s_c_loss)
 
 
