@@ -182,6 +182,8 @@ class DAModule(ABC, nn.Module):
         # def a helpler fucntion
         def valid_a_set(data_loader):
 
+            total = 0
+            right = 0
             for _, (img, label) in enumerate(data_loader):
 
                 if len(img) != self.params.batch_size:
@@ -200,13 +202,17 @@ class DAModule(ABC, nn.Module):
                 current_size = label.size()[0]
                 _, predic_class = torch.max(predict, 1)
                 corrent_count = (predic_class == label).sum().float()
+
+                total += self.params.batch_size
+                right += corrent_count
+
                 self.losses["valid_acuu"].value = corrent_count / current_size
                 self.log_valid_acrr.record()
 
             self.log_valid_loss.log_current_avg_loss(self.golbal_step)
             accu = self.log_valid_acrr.log_current_avg_loss(self.golbal_step)
 
-            return accu
+            return right * 1.0 / total 
 
         # valid on target data
         accu = valid_a_set(self.t_t_data_loader)
@@ -224,19 +230,28 @@ class DAModule(ABC, nn.Module):
         log_step = self.params.log_per_step
         eval_step = self.params.eval_per_step
 
-        def cycle(iterator):
-            while True:
-                for i in iterator:
-                    yield i
+        # def cycle(iterator):
+        #     while True:
+        #         for i in iterator:
+        #             yield i
 
-        s_it = iter(cycle(self.t_s_data_loader))
-        t_it = iter(cycle(self.t_t_data_loader))
+        s_it = iter(self.t_s_data_loader)
+        t_it = iter(self.t_t_data_loader)
 
         for _ in range(self.params.steps):
 
             # send train data to wantted device
-            s_img, s_label = next(s_it)
-            t_img, _ = next(t_it)
+            try:
+                s_img, s_label = next(s_it)
+            except:
+                s_it = iter(self.t_s_data_loader)
+                s_img, s_label = next(s_it)
+
+            try:
+                t_img, _ = next(t_it)
+            except:
+                t_it = iter(self.t_t_data_loader)
+                t_img, _ = next(t_it)
 
             if len(s_img) != len(t_img):
                 continue
@@ -260,7 +275,7 @@ class DAModule(ABC, nn.Module):
                     % (
                         self.golbal_step + 1,
                         self.params.steps - self.golbal_step - 1,
-                        self.golbal_step / self.params.steps,
+                        self.golbal_step / self.params.steps * 100,
                     )
                 )
                 

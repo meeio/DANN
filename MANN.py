@@ -32,7 +32,7 @@ class MANN(DAModule):
         self.TrainCpasule.registe_default_optimer(
             torch.optim.SGD,
             lr=params.lr,
-            weight_decay=0.001,
+            weight_decay=0.0005,
             momentum=0.9,
             nesterov=True,
         )
