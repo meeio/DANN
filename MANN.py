@@ -50,7 +50,7 @@ class MANN(DAModule):
 
     def get_coeff(self, high=1):
         sigma = 10
-        p = self.golbal_step / self.total_step
+        p = self.golbal_step / (self.total_step / 8)
         llambd = np.float((2.0 * high / (1.0 + np.exp(-sigma * p))) - high)
         return llambd
 

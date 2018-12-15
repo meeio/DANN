@@ -32,11 +32,11 @@ def get_params():
         "--use_gpu", type=bool, default=True, help="Use GPU to train the model"
     )
 
-    parser.add_argument("--steps", type=int, default=100004, help="Epochs of train data")
+    parser.add_argument("--steps", type=int, default=2000, help="Epochs of train data")
 
-    parser.add_argument("--log_per_step", type=int, default=20, help="Epochs of train data")
+    parser.add_argument("--log_per_step", type=int, default=50, help="Epochs of train data")
 
-    parser.add_argument("--eval_per_step", type=int, default=500, help="Epochs of train data")
+    parser.add_argument("--eval_per_step", type=int, default=150, help="Epochs of train data")
 
     parser.add_argument(
         "--sdsname", type=str, default="Ar", help="data base we will use"
