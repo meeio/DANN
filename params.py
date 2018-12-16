@@ -16,7 +16,7 @@ def get_params():
     )
 
     parser.add_argument(
-        "--batch_size", type=int, default=64, help="Size for Mini-Batch Optimization"
+        "--batch_size", type=int, default=32, help="Size for Mini-Batch Optimization"
     )
 
   
@@ -34,7 +34,7 @@ def get_params():
 
     parser.add_argument("--steps", type=int, default=2000, help="Epochs of train data")
 
-    parser.add_argument("--log_per_step", type=int, default=50, help="Epochs of train data")
+    parser.add_argument("--log_per_step", type=int, default=40, help="Epochs of train data")
 
     parser.add_argument("--eval_per_step", type=int, default=150, help="Epochs of train data")
 

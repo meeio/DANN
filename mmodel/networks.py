@@ -52,7 +52,8 @@ class BottleNeck(WeightedModule):
         )
 
     def forward(self, inputs):
-        feature = self.classifer(inputs)
+        b = inputs.size()[0]
+        feature = self.classifer(inputs.view(b,-1))
         return feature
         
     def output_shape(self):

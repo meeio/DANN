@@ -27,6 +27,24 @@ class ResNetFeatureExtrctor(WeightedModule):
     def output_shape(self):
         return (2048, 7, 7)
 
+class ResNetBottleNeck(WeightedModule):
+
+    def __init__(self):
+        super().__init__()
+        resnet = models.resnet50(pretrained=True)
+        # return with feature shape [7,7,2048]
+        layers = list(resnet.children())[-2]
+        
+        self.feature = nn.Sequential(layers)
+        self.has_init = True
+        self.lr_mult = 0.1
+
+    def forward(self, inputs):
+        return self.feature(inputs)
+
+    def output_shape(self):
+        return (2048, 1, 1)
+
 class AlexNetFeatureExtrctor(WeightedModule):
     
     def __init__(self):
@@ -64,3 +82,7 @@ class AlexBottleNeck(WeightedModule):
        
     def output_shape(self):
         return (4096, 1, 1)
+
+
+if __name__ == "__main__":
+    pass

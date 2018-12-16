@@ -16,8 +16,8 @@ class MANN(DAModule):
 
         self.params = params
 
-        F1 = AlexNetFeatureExtrctor()
-        F2 = AlexBottleNeck()
+        F1 = ResNetFeatureExtrctor()
+        F2 = ResNetBottleNeck()
         c, h, w = F2.output_shape()
 
         B = BottleNeck(params, c * h * w)
@@ -76,8 +76,8 @@ class MANN(DAModule):
         s_d_loss, s_c_loss = self.through(s_img, s_label)
         t_d_loss, _ = self.through(t_img)
 
-        self.update_loss("domain", s_d_loss/2 + t_d_loss/2)
         self.update_loss("predict", s_c_loss)
+        self.update_loss("domain", s_d_loss/2 + t_d_loss/2)
 
 
     def valid_step(self, img):
@@ -108,6 +108,9 @@ if __name__ == "__main__":
     # alex = models.alexnet(pretrained=True)
     # alex = AlexNetFeatureExtrctor()
     # alex = AlexNetClassifier(params)
-    # summary(alex, (256, 6, 6), 64)
+    # resnet = models.resnet50(True)
+    # resnet = ResNetFeatureExtrctor()
+    # resnet = ResNetBottleNeck()
+    # summary(resnet, (2048, 7, 7), 32)
     # print(alex)
 
