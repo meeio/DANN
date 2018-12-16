@@ -76,10 +76,7 @@ class MANN(DAModule):
         s_d_loss, s_c_loss = self.through(s_img, s_label)
         t_d_loss, _ = self.through(t_img)
 
-<<<<<<< HEAD
         self.update_loss("predict", s_c_loss)
-=======
->>>>>>> 3c9bec1a4236cbd688c345390d5705da1e083255
         self.update_loss("domain", s_d_loss/2 + t_d_loss/2)
 
         if self.golbal_step < 2000:
