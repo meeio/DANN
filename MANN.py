@@ -45,13 +45,13 @@ class MANN(DAModule):
         self.relr_everytime = True
 
         # registe loss function
-        self.regist_loss("predict", (self.B, self.C))
+        self.regist_loss("predict", (self.F1, self.F2,self.B, self.C))
         self.regist_loss("domain", (self.F1, self.F2, self.B, self.D))
 
-    def get_coeff(self, high=1):
+    def get_coeff(self):
         sigma = 10
-        p = self.golbal_step / (self.total_step)
-        llambd = np.float((2.0 * high / (1.0 + np.exp(-sigma * p))) - high)
+        p = self.golbal_step / self.total_step
+        llambd = np.float((2.0  / (1.0 + np.exp(-sigma * p))) - 1)
         return llambd
 
     def through(self, img, lable=None):
@@ -76,9 +76,14 @@ class MANN(DAModule):
         s_d_loss, s_c_loss = self.through(s_img, s_label)
         t_d_loss, _ = self.through(t_img)
 
+<<<<<<< HEAD
         self.update_loss("predict", s_c_loss)
+=======
+>>>>>>> 3c9bec1a4236cbd688c345390d5705da1e083255
         self.update_loss("domain", s_d_loss/2 + t_d_loss/2)
 
+        if self.golbal_step < 2000:
+            self.update_loss("predict", s_c_loss)
 
     def valid_step(self, img):
         feature = self.F1(img)

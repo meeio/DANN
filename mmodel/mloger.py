@@ -115,7 +115,10 @@ class LogCapsule(object):
         return loss
 
     def avg_record(self):
-        result = self.range_loss / self.range_step
+        try:
+            result = self.range_loss / self.range_step
+        except:
+            result = 0
         self.range_loss = None
         self.range_step = 0
         return result
