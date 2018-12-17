@@ -83,6 +83,5 @@ class AlexBottleNeck(WeightedModule):
     def output_shape(self):
         return (4096, 1, 1)
 
-
 if __name__ == "__main__":
     pass

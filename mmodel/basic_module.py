@@ -138,18 +138,37 @@ class DAModule(ABC, nn.Module):
             self.losses["valid_acuu"], "valid_acuu", to_file=params.log
         )
 
-        # generate source and target data set for trian and test
-        # s_set_name = getattr(mdl.DSNames, params.sdsname)
-        # t_set_name = getattr(mdl.DSNames, params.tdsname)
 
-        self.t_s_data_set, self.t_s_data_loader = mdl.load_img_dataset(
-            "OfficeHome", "Ar", params.batch_size
+        # self.t_s_data_set, self.t_s_data_loader = mdl.load_img_dataset(
+        #     "OfficeHome", "Ar", params.batch_size
+        # )
+        # self.t_t_data_set, self.t_t_data_loader = mdl.load_img_dataset(
+        #     "OfficeHome", "Pr", params.batch_size
+        # )
+        # self.v_t_data_set, self.v_t_data_loader = mdl.load_img_dataset(
+        #     "OfficeHome", "Pr", params.batch_size, test=True
+        # )
+
+        # generate source and target data set for trian and test
+        s_set_name = getattr(mdl.DSNames, params.sdsname)
+        t_set_name = getattr(mdl.DSNames, params.tdsname)
+
+        self.t_s_data_set, self.t_s_data_loader = mdl.load_dataset(
+            s_set_name, 
+            params.batch_size, 
+            size=32
         )
-        self.t_t_data_set, self.t_t_data_loader = mdl.load_img_dataset(
-            "OfficeHome", "Pr", params.batch_size
+
+        self.t_t_data_set, self.t_t_data_loader = mdl.load_dataset(
+            t_set_name, 
+            params.batch_size, 
+            size=32
         )
-        self.v_t_data_set, self.v_t_data_loader = mdl.load_img_dataset(
-            "OfficeHome", "Pr", params.batch_size, test=True
+
+        self.v_t_data_set, self.v_t_data_loader = mdl.load_dataset(
+            t_set_name, 
+            params.batch_size, 
+            size=32
         )
 
         # set total train step
@@ -275,7 +294,7 @@ class DAModule(ABC, nn.Module):
                     % (
                         self.golbal_step + 1,
                         self.params.steps - self.golbal_step - 1,
-                        self.golbal_step / self.params.steps * 100,
+                        (self.golbal_step + 1) / (self.params.steps +1) * 100,
                     )
                 )
                 
@@ -284,10 +303,11 @@ class DAModule(ABC, nn.Module):
                 )
 
                 for v in self.loggers.values():
-                    v.log_current_avg_loss(self.golbal_step)
+                    v.log_current_avg_loss(self.golbal_step + 1)
 
             # begain eval
             if self.golbal_step % eval_step == (eval_step - 1):
+                logging.info('Begain a evaling step.')
                 accu = self.valid()
                 self.best_accurace = max((self.best_accurace, accu))
                 # set all networks to train mode

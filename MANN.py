@@ -1,5 +1,5 @@
 from mmodel.basic_module import DAModule
-from mmodel.networks import *
+from mmodel.digit_networks import *
 from mmodel.pretrained import *
 
 import torch
@@ -17,17 +17,13 @@ class MANN(DAModule):
         super(MANN, self).__init__(params)
         self.params = params
 
-        F1 = ResNetFeatureExtrctor()
-        F2 = ResNetBottleNeck()
-        c, h, w = F2.output_shape()
+        F = FeatureExtractor()
+        c, h, w = F.output_shape()
 
-        B = BottleNeck(params, c * h * w)
-        c1, h1, w1 = B.output_shape()
+        C = Classifer(params, c * h * w)
+        D = DomainClassifer(params, c * h * w)
 
-        C = Classifer(params, c1 * h1 * w1)
-        D = DomainClassifer(params, c1 * h1 * w1)
-
-        self.F1, self.F2, self.B, self.C, self.D = self.regist_networds(F1, F2, B, C, D)
+        self.F, self.C, self.D = self.regist_networds(F, C, D)
 
         # set default optim function
         self.TrainCpasule.registe_default_optimer(
@@ -46,8 +42,8 @@ class MANN(DAModule):
         self.relr_everytime = True
 
         # registe loss function
-        self.regist_loss("predict", (self.F1, self.F2,self.B, self.C))
-        self.regist_loss("domain", (self.F1, self.F2, self.B, self.D))
+        self.regist_loss("predict", (self.F, self.C))
+        self.regist_loss("domain", (self.F, self.D))
 
     def get_coeff(self):
         sigma = 10
@@ -55,25 +51,19 @@ class MANN(DAModule):
         llambd = np.float((2.0  / (1.0 + np.exp(-sigma * p))) - 1)
         return llambd
     
-    def get_c_coeff(self):
-        sigma = 3
-        p = self.golbal_step / self.total_step
-        llambd = np.float((2.0  / (1.0 + np.exp(sigma * p))))
-        return llambd
 
     def through(self, img, lable=None):
-        feature = self.F1(img)
-        feature = self.F2(feature)
-        feature = self.B(feature)
+        feature = self.F(img)
+        cm, sm, domain = self.D(feature, self.get_coeff())
 
         domain_label = self.TARGET
         predict_loss = None
         if lable is not None:
             domain_label = self.SOURCE
-            predict = self.C(feature, self.get_c_coeff())
+            feature = feature * (2-cm-sm)
+            predict = self.C(feature)
             predict_loss = nn.CrossEntropyLoss()(predict, lable)
 
-        domain = self.D(feature, self.get_coeff())
         d_loss = nn.BCELoss()(domain, domain_label)
 
         return d_loss, predict_loss
@@ -87,9 +77,9 @@ class MANN(DAModule):
         self.update_loss("domain", (s_d_loss + t_d_loss) / 2)
 
     def valid_step(self, img):
-        feature = self.F1(img)
-        feature = self.F2(feature)
-        feature = self.B(feature)
+        feature = self.F(img)
+        cm, sm, _ = self.D(feature)
+        feature = feature * (2-cm-sm)
         predict = self.C(feature)
 
         return predict
@@ -111,12 +101,8 @@ if __name__ == "__main__":
     # from torchvision import models
     # from torchsummary import summary
 
-    # alex = models.alexnet(pretrained=True)
-    # alex = AlexNetFeatureExtrctor()
-    # alex = AlexNetClassifier(params)
-    # resnet = models.resnet50(True)
-    # resnet = ResNetFeatureExtrctor()
-    # resnet = ResNetBottleNeck()
-    # summary(resnet, (2048, 7, 7), 32)
-    # print(alex)
+    # feature = FeatureExtractor()
+    # feature.weight_init()
+    # feature.cuda()
+    # summary(feature, (3, 32, 32))
 

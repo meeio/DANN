@@ -16,12 +16,12 @@ def get_params():
     )
 
     parser.add_argument(
-        "--batch_size", type=int, default=64, help="Size for Mini-Batch Optimization"
+        "--batch_size", type=int, default=128, help="Size for Mini-Batch Optimization"
     )
 
   
     parser.add_argument(
-        "--class_num", type=int, default=65, help="Class number of data set"
+        "--class_num", type=int, default=10, help="Class number of data set"
     )
 
     parser.add_argument(
@@ -32,18 +32,18 @@ def get_params():
         "--use_gpu", type=bool, default=True, help="Use GPU to train the model"
     )
 
-    parser.add_argument("--steps", type=int, default=2600, help="Epochs of train data")
+    parser.add_argument("--steps", type=int, default=10000, help="Epochs of train data")
 
-    parser.add_argument("--log_per_step", type=int, default=50, help="Epochs of train data")
+    parser.add_argument("--log_per_step", type=int, default=100, help="Epochs of train data")
 
-    parser.add_argument("--eval_per_step", type=int, default=200, help="Epochs of train data")
+    parser.add_argument("--eval_per_step", type=int, default=500, help="Epochs of train data")
 
     parser.add_argument(
-        "--sdsname", type=str, default="Ar", help="data base we will use"
+        "--sdsname", type=str, default="SVHN", help="data base we will use"
     )
 
     parser.add_argument(
-        "--tdsname", type=str, default="Pr", help="data base we will use"
+        "--tdsname", type=str, default="MNIST", help="data base we will use"
     )
 
     parser.add_argument(

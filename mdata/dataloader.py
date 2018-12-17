@@ -30,7 +30,7 @@ class DSStastic:
 
 
 def load_dataset(
-    name: DSNames,
+    name,
     batch_size,
     root="./data",
     split="train",
