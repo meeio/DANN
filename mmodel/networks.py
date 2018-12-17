@@ -67,7 +67,9 @@ class Classifer(WeightedModule):
             nn.Linear(in_dim, params.class_num)
         )
 
-    def forward(self, inputs):
+    def forward(self, inputs, coeff=1):
+        inputs = inputs * 1
+        inputs.register_hook(lambda grad: grad.clone() * coeff)
         predict = self.classifer(inputs)
         return predict
 

@@ -33,7 +33,7 @@ class MANN(DAModule):
         self.TrainCpasule.registe_default_optimer(
             torch.optim.SGD,
             lr=params.lr,
-            weight_decay=0.001,
+            weight_decay=0.0005,
             momentum=0.9,
             nesterov=True,
         )
@@ -52,7 +52,13 @@ class MANN(DAModule):
     def get_coeff(self):
         sigma = 10
         p = self.golbal_step / self.total_step
-        llambd = np.float((2.0  / (1.0 + np.exp(-sigma * p))) - 0.5)
+        llambd = np.float((2.0  / (1.0 + np.exp(-sigma * p))) - 1)
+        return llambd
+    
+    def get_c_coeff(self):
+        sigma = 3
+        p = self.golbal_step / self.total_step
+        llambd = np.float((2.0  / (1.0 + np.exp(sigma * p))))
         return llambd
 
     def through(self, img, lable=None):
@@ -64,7 +70,7 @@ class MANN(DAModule):
         predict_loss = None
         if lable is not None:
             domain_label = self.SOURCE
-            predict = self.C(feature)
+            predict = self.C(feature, self.get_c_coeff())
             predict_loss = nn.CrossEntropyLoss()(predict, lable)
 
         domain = self.D(feature, self.get_coeff())
