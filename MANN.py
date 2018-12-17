@@ -77,10 +77,7 @@ class MANN(DAModule):
         t_d_loss, _ = self.through(t_img)
 
         self.update_loss("predict", s_c_loss)
-        self.update_loss("domain", s_d_loss/2 + t_d_loss/2)
-
-        if self.golbal_step < 2000:
-            self.update_loss("predict", s_c_loss)
+        self.update_loss("domain", (s_d_loss + t_d_loss) / 2)
 
     def valid_step(self, img):
         feature = self.F1(img)
