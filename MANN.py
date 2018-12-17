@@ -53,6 +53,7 @@ class MANN(DAModule):
         sigma = 10
         p = self.golbal_step / self.total_step
         llambd = np.float((2.0  / (1.0 + np.exp(-sigma * p))) - 1)
+        print(llambd)
         return llambd
 
     def through(self, img, lable=None):
