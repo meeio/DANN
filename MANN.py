@@ -11,9 +11,10 @@ import numpy as np
 
 
 class MANN(DAModule):
-    def __init__(self, params):
-        super(MANN, self).__init__(params)
 
+    def __init__(self, params):
+
+        super(MANN, self).__init__(params)
         self.params = params
 
         F1 = ResNetFeatureExtrctor()
@@ -32,7 +33,7 @@ class MANN(DAModule):
         self.TrainCpasule.registe_default_optimer(
             torch.optim.SGD,
             lr=params.lr,
-            weight_decay=0.0005,
+            weight_decay=0.001,
             momentum=0.9,
             nesterov=True,
         )
@@ -76,7 +77,8 @@ class MANN(DAModule):
         s_d_loss, s_c_loss = self.through(s_img, s_label)
         t_d_loss, _ = self.through(t_img)
 
-        self.update_loss("predict", s_c_loss)
+        if self.golbal_step < 1800:
+            self.update_loss("predict", s_c_loss)
         self.update_loss("domain", (s_d_loss + t_d_loss) / 2)
 
     def valid_step(self, img):
