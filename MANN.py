@@ -52,7 +52,7 @@ class MANN(DAModule):
     def get_coeff(self):
         sigma = 10
         p = self.golbal_step / self.total_step
-        llambd = np.float((2.0  / (1.0 + np.exp(-sigma * p))) - 1)
+        llambd = np.float((2.0  / (1.0 + np.exp(-sigma * p))) - 0.5)
         return llambd
 
     def through(self, img, lable=None):
@@ -77,8 +77,7 @@ class MANN(DAModule):
         s_d_loss, s_c_loss = self.through(s_img, s_label)
         t_d_loss, _ = self.through(t_img)
 
-        if self.golbal_step < 1800:
-            self.update_loss("predict", s_c_loss)
+        self.update_loss("predict", s_c_loss)
         self.update_loss("domain", (s_d_loss + t_d_loss) / 2)
 
     def valid_step(self, img):
