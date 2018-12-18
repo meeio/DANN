@@ -3,10 +3,15 @@ from mmodel.networks import *
 from mmodel.pretrained import *
 from mmodel.coral import loss_CORAL
 
+
 import torch
 from params import get_params
 from mmodel.mloger import GLOBAL
 import logging
+
+from mground.plot_utils import plot_all
+from mmodel.mloger import read_step_and_loss
+
 
 import numpy as np
 
@@ -58,8 +63,16 @@ if __name__ == "__main__":
         level=logging.INFO, format=" \t | %(levelname)s |==> %(message)s"
     )
 
-    coral = DeepCORAL(params)
-    coral.train()
+    # coral = DeepCORAL(params)
+    # coral.train()
+
+    record_dat = read_step_and_loss(
+        train_loss = r'G:\VS Code\DANN\_MLOGS\CORAL1\predict.log',
+        valid_loss = r'G:\VS Code\DANN\_MLOGS\CORAL1\valid_loss.log',
+        valid_accur = r'G:\VS Code\DANN\_MLOGS\CORAL1\valid_acuu.log',
+    )
+
+    plot_all(record_dat, tagname='with CORAL')
 
     # from torchvision import models
     # from torchsummary import summary

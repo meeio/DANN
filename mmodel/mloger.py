@@ -27,8 +27,6 @@ def summary_log():
         pass
     
 
-
-
 def path_helper(base_folder_name, tag_name, create=True):
     '''get a path acordding `base_folder_name` and `tat_name`
     '''

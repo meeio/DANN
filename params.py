@@ -20,10 +20,9 @@ def get_params():
     )
 
     parser.add_argument(
-        "--gray", type=bool, default=True, help="Size for Mini-Batch Optimization"
+        "--gray", type=bool, default=False, help="Size for Mini-Batch Optimization"
     )
 
-  
     parser.add_argument(
         "--class_num", type=int, default=10, help="Class number of data set"
     )
@@ -40,7 +39,7 @@ def get_params():
         "--coral_param", type=int, default=8, help="Use GPU to train the model"
     )
 
-    parser.add_argument("--steps", type=int, default=100000, help="Epochs of train data")
+    parser.add_argument("--steps", type=int, default=130000, help="Epochs of train data")
 
     parser.add_argument("--log_per_step", type=int, default=100, help="Epochs of train data")
 
@@ -58,13 +57,11 @@ def get_params():
         "--log", type=bool, default=True, help="log record data to file or not."
     )
 
-
     parser.add_argument("--tag", type=str, default="testes", help="tag for this train.")
 
     parser.add_argument(
         "--ckt_path", type=str, default=None, help="Check point save path."
     )
-
 
     parser.add_argument(
         "--step_size", type=int, default=5, help="Step size for decaying lr."
