@@ -53,10 +53,8 @@ class TrainCapsule(nn.Module):
         self.tag = tagname
         self.epoch = 0
 
-        print(type(optim_networks))
-
         # get all networks, and store them as list
-        if not isinstance(optim_networks, list):
+        if not isinstance(optim_networks, tuple):
             networks_list = list()
             networks_list.append(optim_networks)
         else:
@@ -74,12 +72,14 @@ class TrainCapsule(nn.Module):
                 'lr_mult': i.lr_mult,
                 }
             )
+
         # init optimer base on type and args
         self.optimer = TrainCapsule.__optim_type__(
             self.all_params, **TrainCapsule.__optim_args__
         )
 
         # init lr_schder for optimer
+        self.lr_scheduler = None
         if TrainCapsule.__recal_lr__ is None:
             if TrainCapsule.__decay_op__ is not None:
                 self.lr_scheduler = TrainCapsule.__decay_op__(
@@ -133,7 +133,7 @@ class TrainCapsule(nn.Module):
             self.lr_scheduler.step()
         
         else:
-            print('hhhhh')
+            pass
         # for param_group in self.optimer.param_groups:
         #     logging.info("Current >learning rate< is >%1.9f< ." % param_group["lr"])
         self.epoch += 1

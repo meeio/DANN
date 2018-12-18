@@ -285,7 +285,7 @@ class DAModule(ABC, nn.Module):
             )
 
             # re calculate learning rates
-            if not self.relr_everytime:
+            if self.relr_everytime:
                 for c in self.train_caps.values():
                     c.decary_lr_rate()
 

@@ -65,7 +65,7 @@ def load_dataset(
     trans = [
         transforms.Resize(size),
         transforms.ToTensor(),
-        transforms.Normalize(mean, std),
+        # transforms.Normalize(mean, std),
     ]
 
     if gray:
