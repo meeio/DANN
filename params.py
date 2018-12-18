@@ -20,7 +20,7 @@ def get_params():
     )
 
     parser.add_argument(
-        "--gray", type=bool, default=True, help="Size for Mini-Batch Optimization
+        "--gray", type=bool, default=True, help="Size for Mini-Batch Optimization"
     )
 
   
