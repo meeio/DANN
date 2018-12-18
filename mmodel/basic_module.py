@@ -172,6 +172,7 @@ class DAModule(ABC, nn.Module):
             params.batch_size, 
             size=32,
             gray=params.gray,
+            split='test'
         )
 
         # set total train step
@@ -240,7 +241,7 @@ class DAModule(ABC, nn.Module):
             return right * 1.0 / total 
 
         # valid on target data
-        accu = valid_a_set(self.t_t_data_loader)
+        accu = valid_a_set(self.v_t_data_loader)
         return accu
 
     def train(self):
