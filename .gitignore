@@ -3,7 +3,8 @@
 /CDAN-18
 /_PUBLIC_DATASET_
 /.vscode
-*/__pycache__
+**/__pycache__
+
 /PADA
 /CDAN
 /DeepCORAL

@@ -37,6 +37,7 @@ def load_dataset(
     download=False,
     mode="norm",
     size=224,
+    gray=True
 ):
     """Helpper function to get `DataLoader` of specific datasets 
     
@@ -67,8 +68,11 @@ def load_dataset(
         transforms.Normalize(mean, std),
     ]
 
-    if dsname == "MNIST":
+    if gray:
+        trans.insert(0, transforms.Grayscale(1))
+    else:
         trans.insert(0, transforms.Grayscale(3))
+
 
     transform = transforms.Compose(trans)
 

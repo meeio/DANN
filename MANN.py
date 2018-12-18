@@ -1,5 +1,5 @@
 from mmodel.basic_module import DAModule
-from mmodel.digit_networks import *
+from mmodel.DANN.digit_networks import *
 from mmodel.pretrained import *
 
 import torch
@@ -17,7 +17,7 @@ class MANN(DAModule):
         super(MANN, self).__init__(params)
         self.params = params
 
-        F = FeatureExtractor()
+        F = FeatureExtractor(params)
         c, h, w = F.output_shape()
 
         C = Classifer(params, c * h * w)
@@ -35,7 +35,6 @@ class MANN(DAModule):
         )
         self.TrainCpasule.registe_new_lr_calculator(
             lambda cap, step:
-            # params.lr * (1.0 + 0.001 * step) ** (-0.75)
             params.lr
             / ((1.0 + 10.0 * step / self.total_step) ** 0.75)
         )
@@ -54,16 +53,15 @@ class MANN(DAModule):
 
     def through(self, img, lable=None):
         feature = self.F(img)
-        cm, sm, domain = self.D(feature, self.get_coeff())
 
         domain_label = self.TARGET
         predict_loss = None
         if lable is not None:
             domain_label = self.SOURCE
-            feature = feature * (2-cm-sm)
             predict = self.C(feature)
             predict_loss = nn.CrossEntropyLoss()(predict, lable)
 
+        domain = self.D(feature, self.get_coeff())
         d_loss = nn.BCELoss()(domain, domain_label)
 
         return d_loss, predict_loss
@@ -78,8 +76,6 @@ class MANN(DAModule):
 
     def valid_step(self, img):
         feature = self.F(img)
-        cm, sm, _ = self.D(feature)
-        feature = feature * (2-cm-sm)
         predict = self.C(feature)
 
         return predict

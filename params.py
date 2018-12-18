@@ -19,6 +19,10 @@ def get_params():
         "--batch_size", type=int, default=128, help="Size for Mini-Batch Optimization"
     )
 
+    parser.add_argument(
+        "--gray", type=bool, default=True, help="Size for Mini-Batch Optimization
+    )
+
   
     parser.add_argument(
         "--class_num", type=int, default=10, help="Class number of data set"
@@ -63,7 +67,7 @@ def get_params():
     )
 
     parser.add_argument(
-        "--lr", type=float, default=0.01, help="Gamma for decaying lr."
+        "--lr", type=float, default=0.0001, help="Gamma for decaying lr."
     )
 
     parser.add_argument(

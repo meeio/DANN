@@ -156,19 +156,22 @@ class DAModule(ABC, nn.Module):
         self.t_s_data_set, self.t_s_data_loader = mdl.load_dataset(
             s_set_name, 
             params.batch_size, 
-            size=32
+            size=32,
+            gray=params.gray,
         )
 
         self.t_t_data_set, self.t_t_data_loader = mdl.load_dataset(
             t_set_name, 
             params.batch_size, 
-            size=32
+            size=32,
+            gray=params.gray,
         )
 
         self.v_t_data_set, self.v_t_data_loader = mdl.load_dataset(
             t_set_name, 
             params.batch_size, 
-            size=32
+            size=32,
+            gray=params.gray,
         )
 
         # set total train step
@@ -188,6 +191,9 @@ class DAModule(ABC, nn.Module):
             i.weight_init()
         networks = anpai(networks, self.params.use_gpu)
         self.networks = networks
+
+        if len(networks) == 1:
+            return networks[0]
         return networks
 
     def valid(self, step=None):
@@ -290,7 +296,7 @@ class DAModule(ABC, nn.Module):
             if self.golbal_step % log_step == (log_step - 1):
 
                 logging.info(
-                    "Steps %3d ends. Remain %3d steps to go. Fished %.3f%%"
+                    "Steps %3d ends. Remain %3d steps to go. Fished %.2f%%"
                     % (
                         self.golbal_step + 1,
                         self.params.steps - self.golbal_step - 1,

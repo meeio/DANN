@@ -20,7 +20,7 @@ def anpai(tom, use_gpu, need_logging=True):
     # return tom
     # init a list to store result
     handle = list()
-
+    
     def __handle_module(module):
         # use data parallel
         dpm =  nn.DataParallel(module)

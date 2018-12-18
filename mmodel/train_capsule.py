@@ -53,8 +53,10 @@ class TrainCapsule(nn.Module):
         self.tag = tagname
         self.epoch = 0
 
+        print(type(optim_networks))
+
         # get all networks, and store them as list
-        if not isinstance(optim_networks, tuple):
+        if not isinstance(optim_networks, list):
             networks_list = list()
             networks_list.append(optim_networks)
         else:
@@ -127,9 +129,11 @@ class TrainCapsule(nn.Module):
                 param_group["lr"] = new_lr * scale
                 # param_group['weight_decay'] = weight_decay * param_group['decay_mult']
 
-        else:
+        elif self.lr_scheduler is not None:
             self.lr_scheduler.step()
-
+        
+        else:
+            print('hhhhh')
         # for param_group in self.optimer.param_groups:
         #     logging.info("Current >learning rate< is >%1.9f< ." % param_group["lr"])
         self.epoch += 1

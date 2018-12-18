@@ -18,44 +18,34 @@ class DeepCORAL(DAModule):
         super(DeepCORAL, self).__init__(params)
         self.params = params
 
-        C = Classifer()
-
+        C = Classifier(params)
         self.C = self.regist_networds(C)
 
         # set default optim function
         self.TrainCpasule.registe_default_optimer(
-            torch.optim.SGD,
+            torch.optim.Adam,
             lr=params.lr,
-            weight_decay=0.0005,
-            momentum=0.9,
-            nesterov=True,
-        )
-        self.TrainCpasule.registe_new_lr_calculator(
-            lambda cap, step:
-            # params.lr * (1.0 + 0.001 * step) ** (-0.75)
-            params.lr
-            / ((1.0 + 10.0 * step / self.total_step) ** 0.75)
         )
         self.relr_everytime = True
 
         # registe loss function
-        self.regist_loss("predict", (self.C))
+        self.regist_loss("predict", self.C)
 
 
     def train_step(self, s_img, s_label, t_img):
 
-        s_predict = self.C(s_sim)
-        t_predict = self.C(t_img)
+        s_feature, s_predict = self.C(s_img)
+        t_feature, t_predict = self.C(t_img)
 
         l_classifer = self.ce(s_predict, s_label)
-        l_coral = loss_CORAL(s_predict, t_predict)
+        l_coral = loss_CORAL(s_feature, t_feature)
 
-        self.update_loss('predict', l_classifer + l_coral)
+        self.update_loss('predict', l_classifer + 8*l_coral)
 
 
     def valid_step(self, img):
-        predict = self.C(img)
-        return img
+        _, predict = self.C(img)
+        return predict
 
 
 if __name__ == "__main__":
@@ -68,8 +58,8 @@ if __name__ == "__main__":
         level=logging.INFO, format=" \t | %(levelname)s |==> %(message)s"
     )
 
-    # nadd = MANN(params)
-    # nadd.train()
+    coral = DeepCORAL(params)
+    coral.train()
 
     # from torchvision import models
     # from torchsummary import summary
