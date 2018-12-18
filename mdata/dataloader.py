@@ -87,7 +87,7 @@ def load_dataset(
         )
 
     data_loader = torch.utils.data.DataLoader(
-        data_set, batch_size=batch_size, shuffle=True
+        data_set, batch_size=batch_size
     )
 
     return data_set, data_loader

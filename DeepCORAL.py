@@ -31,7 +31,6 @@ class DeepCORAL(DAModule):
             torch.optim.Adam,
             lr=params.lr,
         )
-        self.relr_everytime = True
 
         # registe loss function
         self.regist_loss("predict", self.C)
@@ -63,16 +62,16 @@ if __name__ == "__main__":
         level=logging.INFO, format=" \t | %(levelname)s |==> %(message)s"
     )
 
-    # coral = DeepCORAL(params)
-    # coral.train()
+    coral = DeepCORAL(params)
+    coral.train()
 
-    record_dat = read_step_and_loss(
-        train_loss = r'G:\VS Code\DANN\_MLOGS\CORAL1\predict.log',
-        valid_loss = r'G:\VS Code\DANN\_MLOGS\CORAL1\valid_loss.log',
-        valid_accur = r'G:\VS Code\DANN\_MLOGS\CORAL1\valid_acuu.log',
-    )
+    # record_dat = read_step_and_loss(
+    #     train_loss = r'G:\VS Code\DANN\_MLOGS\CORAL1\predict.log',
+    #     valid_loss = r'G:\VS Code\DANN\_MLOGS\CORAL1\valid_loss.log',
+    #     valid_accur = r'G:\VS Code\DANN\_MLOGS\CORAL1\valid_acuu.log',
+    # )
 
-    plot_all(record_dat, tagname='with CORAL')
+    # plot_all(record_dat, tagname='with CORAL')
 
     # from torchvision import models
     # from torchsummary import summary

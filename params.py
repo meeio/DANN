@@ -20,7 +20,7 @@ def get_params():
     )
 
     parser.add_argument(
-        "--gray", type=bool, default=False, help="Size for Mini-Batch Optimization"
+        "--gray", type=bool, default=True, help="Size for Mini-Batch Optimization"
     )
 
     parser.add_argument(
@@ -39,7 +39,7 @@ def get_params():
         "--coral_param", type=int, default=8, help="Use GPU to train the model"
     )
 
-    parser.add_argument("--steps", type=int, default=130000, help="Epochs of train data")
+    parser.add_argument("--steps", type=int, default=150000, help="Epochs of train data")
 
     parser.add_argument("--log_per_step", type=int, default=100, help="Epochs of train data")
 
