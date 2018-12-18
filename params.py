@@ -36,7 +36,11 @@ def get_params():
         "--use_gpu", type=bool, default=True, help="Use GPU to train the model"
     )
 
-    parser.add_argument("--steps", type=int, default=200000, help="Epochs of train data")
+    parser.add_argument(
+        "--coral_param", type=int, default=8, help="Use GPU to train the model"
+    )
+
+    parser.add_argument("--steps", type=int, default=100000, help="Epochs of train data")
 
     parser.add_argument("--log_per_step", type=int, default=100, help="Epochs of train data")
 

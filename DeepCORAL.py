@@ -40,7 +40,7 @@ class DeepCORAL(DAModule):
         l_classifer = self.ce(s_predict, s_label)
         l_coral = loss_CORAL(s_feature, t_feature)
 
-        self.update_loss('predict', l_classifer + 8 * l_coral)
+        self.update_loss('predict', l_classifer + self.params.coral_param * l_coral)
 
 
     def valid_step(self, img):
