@@ -1,5 +1,5 @@
 import argparse
-def get_params():
+def get_param_parser():
     """get all parameters about network
     
     Returns:
@@ -28,16 +28,9 @@ def get_params():
     )
 
     parser.add_argument(
-        "--bottle_neck", type=int, default=256, help="Class number of data set"
-    )
-
-    parser.add_argument(
         "--use_gpu", type=bool, default=True, help="Use GPU to train the model"
     )
 
-    parser.add_argument(
-        "--coral_param", type=int, default=8, help="Use GPU to train the model"
-    )
 
     parser.add_argument("--steps", type=int, default=150000, help="Epochs of train data")
 
@@ -71,16 +64,4 @@ def get_params():
         "--lr", type=float, default=0.0001, help="Gamma for decaying lr."
     )
 
-    parser.add_argument(
-        "--gamma", type=float, default=0.6, help="Gamma for decaying lr."
-    )
-
-    parser.add_argument(
-        "--sigma", type=float, default=10, help="Gamma for decaying lr."
-    )
-
-    parser.add_argument(
-        "--hidden_size", type=int, default=1024, help="Gamma for decaying lr."
-    )
-
-    return parser.parse_args()
+    return parser

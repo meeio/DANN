@@ -1,20 +1,21 @@
 from mmodel.basic_module import DAModule
-from mmodel.networks import *
-from mmodel.pretrained import *
-from mmodel.coral import loss_CORAL
+from mmodel.CORAL.deepCORAL import *
+from mmodel.CORAL.coral import loss_CORAL
 
 
 import torch
-from params import get_params
+from params import get_param_parser
 from mmodel.mloger import GLOBAL
 import logging
 
-from mground.plot_utils import plot_all
-from mmodel.mloger import read_step_and_loss
+def get_coral_param():
+    parser = get_param_parser()
 
+    parser.add_argument(
+        "--coral_param", type=int, default=8, help="Use GPU to train the model"
+    )
 
-import numpy as np
-
+    return parser.parse_args()
 
 class DeepCORAL(DAModule):
 
@@ -35,7 +36,6 @@ class DeepCORAL(DAModule):
         # registe loss function
         self.regist_loss("predict", self.C)
 
-
     def train_step(self, s_img, s_label, t_img):
 
         s_feature, s_predict = self.C(s_img)
@@ -54,7 +54,7 @@ class DeepCORAL(DAModule):
 
 if __name__ == "__main__":
 
-    params = get_params()
+    params = get_coral_param()
 
     GLOBAL._TAG_ = params.tag
 
@@ -65,13 +65,7 @@ if __name__ == "__main__":
     coral = DeepCORAL(params)
     coral.train()
 
-    # record_dat = read_step_and_loss(
-    #     train_loss = r'G:\VS Code\DANN\_MLOGS\CORAL1\predict.log',
-    #     valid_loss = r'G:\VS Code\DANN\_MLOGS\CORAL1\valid_loss.log',
-    #     valid_accur = r'G:\VS Code\DANN\_MLOGS\CORAL1\valid_acuu.log',
-    # )
 
-    # plot_all(record_dat, tagname='with CORAL')
 
     # from torchvision import models
     # from torchsummary import summary
