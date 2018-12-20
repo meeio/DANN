@@ -1,5 +1,5 @@
 from mmodel.basic_module import DAModule
-from mmodel.CORAL.deepCORAL import *
+from mmodel.CORAL.deepCORAL.networks import *
 from mmodel.CORAL.coral import loss_CORAL
 
 
