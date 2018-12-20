@@ -37,7 +37,8 @@ def load_dataset(
     download=False,
     mode="norm",
     size=224,
-    gray=True
+    gray=True,
+    shuffle=True
 ):
     """Helpper function to get `DataLoader` of specific datasets 
     
@@ -87,7 +88,7 @@ def load_dataset(
         )
 
     data_loader = torch.utils.data.DataLoader(
-        data_set, batch_size=batch_size
+        data_set, batch_size=batch_size, shuffle=shuffle
     )
 
     return data_set, data_loader
