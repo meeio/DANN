@@ -3,7 +3,7 @@ import torch
 from mmodel.basic_module import WeightedModule
 
 
-class FeatureExtractor(WeightedModule):
+class FeatureExtroctor(WeightedModule):
     def __init__(self, params):
         super().__init__()
 
@@ -13,77 +13,88 @@ class FeatureExtractor(WeightedModule):
             nn.Conv2d(img_c, 64, kernel_size=5),
             nn.ReLU(True),
             nn.MaxPool2d(kernel_size=2, stride=2),
+
             nn.Conv2d(64, 128, kernel_size=5),
             nn.ReLU(True),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
-
+        
+        self.feature_fc = nn.Sequential(
+            nn.Linear(5*5*128, 1024),
+            nn.ReLU(True),
+            nn.Dropout2d(0.5),
+        )
 
     def forward(self, inputs):
         feature = self.feature_conv(inputs)
+        b = feature.size()[0]
+        feature = self.feature_fc(feature.view(b, -1))
         return feature
-
-    def get_output_shape(self):
-        return (128, 5, 5)
 
 class Classifier(WeightedModule):
     def __init__(self):
         super().__init__()
 
-        self.feature_fc = nn.Sequential(
-            nn.Linear(5 * 5 * 128, 1024),
-            nn.ReLU(True),
-            nn.Dropout2d(0.5),
-        )
-
-        self.predict = nn.Sequential(
+        self.feature = nn.Sequential(
             nn.Linear(1024, 64),
             nn.ReLU(True),
-            nn.Linear(64, 10),
-            nn.Sigmoid(),
         )
 
+        self.classify = nn.Sequential(
+            nn.Linear(64, 10)
+        )
+    
     def forward(self, inputs):
         b = inputs.size()[0]
-        feature_fc = self.feature_fc(inputs.view(b, -1))
-        predict = self.predict(feature_fc)
-        return feature_fc, predict
-        
-    def get_output_shape(self):
-        return (1024,1,1)
-
+        feature = self.feature(feature.view(b, -1))
+        predict = self.feature_classif(feature)
+        return feature, predict
 
 class DomainClassifier(WeightedModule):
     def __init__(self):
         super().__init__()
 
-        self.feature_fc = nn.Sequential(
-            nn.Linear(5 * 5 * 128, 1024),
-            nn.ReLU(True),
-            nn.Dropout2d(0.5),
-        )
-
-        self.feature_fcc = nn.Sequential(
+        self.classify = nn.Sequential(
             nn.Linear(1024, 64),
             nn.ReLU(True),
+            nn.Dropout2d(0.5),
+
+            nn.Linear(64, 1)
         )
 
-        self.predict = nn.Sequential(
-            nn.Linear(64, 1),
-            nn.Sigmoid(),
-        )
 
     def forward(self, inputs):
         b = inputs.size()[0]
-        feature_fc = self.feature_fc(inputs.view(b, -1))
-        feature_fcc = self.feature_fcc(feature_fc)
-        predict = self.predict(feature_fcc)
-        return feature_fc, feature_fcc, predict
+        predict = self.classify(inputs.view(b, -1))
+        return predict
 
 
     def get_output_shape(self):
         return (1024,1,1)
 
+class Mask(WeightedModule):
+    def __init__(self):
+        super().__init__()
+
+        self.mask = nn.Sequential(
+            nn.Linear(1024, 512),
+            nn.ReLU(True),
+
+            nn.Linear(512, 512),
+            nn.ReLU(True),
+
+            nn.Linear(512, 1024),
+            nn.ReLU(True),
+        )
+   
+    def forward(self, inputs):
+        b = inputs.size()[0]
+        mask = self.mask(feature.view(b, -1))
+        mask = self.cut(mask)
+        return mask
+
+    def cut(inputs):
+        result = 1 / (1+50**(-100*inputs))
 
 if __name__ == "__main__":
 
