@@ -8,6 +8,7 @@ from params import get_param_parser
 from mmodel.mloger import GLOBAL
 import logging
 
+
 def get_coral_param():
     parser = get_param_parser()
 
@@ -17,37 +18,33 @@ def get_coral_param():
 
     return parser.parse_args()
 
+
 class DeepCORAL(DAModule):
-
     def __init__(self, params):
-
         super(DeepCORAL, self).__init__(params)
-        self.params = params
 
-        C = Classifier(params)
-        self.C = self.regist_networds(C)
+    def _regist_networks(self):
+        C = Classifier(self.params)
+        return {"C": C}
 
+    def _regist_losses(self):
         # set default optim function
         self.TrainCpasule.registe_default_optimer(
-            torch.optim.Adam,
-            lr=params.lr,
+            torch.optim.Adam, lr=params.lr
         )
+        self.regist_loss("predict", "C")
 
-        # registe loss function
-        self.regist_loss("predict", self.C)
+    def _train_step(self, s_img, s_label, t_img):
 
-    def train_step(self, s_img, s_label, t_img):
-
-        s_feature, s_predict = self.C(s_img)
-        t_feature, t_predict = self.C(t_img)
+        s_feature, s_predict = self.networks['C'](s_img)
+        t_feature, t_predict = self.networks['C'](t_img)
 
         l_classifer = self.ce(s_predict, s_label)
         l_coral = loss_CORAL(s_feature, t_feature)
 
-        self.update_loss('predict', l_classifer + self.params.coral_param * l_coral)
+        self._update_loss("predict", l_classifer + self.params.coral_param * l_coral)
 
-
-    def valid_step(self, img):
+    def _valid_step(self, img):
         _, predict = self.C(img)
         return predict
 
@@ -63,9 +60,7 @@ if __name__ == "__main__":
     )
 
     coral = DeepCORAL(params)
-    coral.train()
-
-
+    coral.train_module()
 
     # from torchvision import models
     # from torchsummary import summary

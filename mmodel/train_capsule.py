@@ -54,7 +54,7 @@ class TrainCapsule(nn.Module):
         self.epoch = 0
 
         # get all networks, and store them as list
-        if not isinstance(optim_networks, tuple):
+        if not isinstance(optim_networks, (tuple, list)):
             networks_list = list()
             networks_list.append(optim_networks)
         else:
@@ -63,6 +63,7 @@ class TrainCapsule(nn.Module):
 
         # get all parameters in network list
         self.all_params = list()
+
         for i in networks_list:
             if(isinstance(i, torch.nn.DataParallel)):
                 i = i.module

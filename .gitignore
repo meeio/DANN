@@ -5,7 +5,7 @@
 /_PUBLIC_DATASET_
 /.vscode
 **/__pycache__
-
+*.test.py
 /PADA
 /CDAN
 /DeepCORAL

@@ -102,27 +102,257 @@ class WeightedModule(nn.Module):
         return os.path.abspath(f)
 
 
-class DAModule(ABC, nn.Module):
-    def __init__(self, params):
-        super().__init__()
+class ELoaderIter():
 
-        # set global dict
+    """ A helper class which iter a dataloader endnessly
+    
+    Arguments:
+        dataloader {DataLoader} -- Dataloader want to iter
+    
+    """
+
+    def __init__(self, dataloader):
+        self.l = dataloader
+        self.it = None
+    
+    def next(self, need_end=False):
+        """ return next item of dataloader, if use 'endness' mode, 
+        the iteration will not stop after one epoch
+        
+        Keyword Arguments:
+            need_end {bool} -- weather need to stop after one epoch
+             (default: {False})
+        
+        Returns:
+            list -- data
+        """
+
+        if self.it == None:
+            self.it = iter(self.l)
+        
+        try:
+            i = next(self.it)
+        except Exception:
+            self.it = iter(self.l)
+            i = next(self.it) if not need_end else None
+        
+        return i
+
+
+class TrainableModule(ABC, nn.Module):
+
+    """ An ABC, a Tranable Module is a teample class need to define
+    data process, train step and eval_step
+
+    """
+
+    def __init__(self, params):
+
+        super(TrainableModule,self).__init__()
+
+        self.params = params
+        self.log_step = self.params.log_per_step
+        self.eval_step = self.params.eval_per_step
+        self.TrainCpasule = TrainCapsule
+
+        self.relr_everytime = False
+
+        self.steps = self.params.steps
+        self.golbal_step = 0.0
+        self.current_epoch = 0.0
+
+    def _all_ready(self):
+
+        # Registe all needed work
+        # registe weights initial funcion
+        WeightedModule.register_weight_handler(_basic_weights_init_helper)
+        # get all networks and init weights
+        networks = self._regist_networks()
+        for _,i in networks.items():
+            try:
+                i.weight_init()
+            except Exception:
+                pass
+        # send networks to gup
+        networks = {
+            i :anpai(j, use_gpu=True) for i,j in networks.items()
+        }
+        # make network be class attrs
+        for i, j in networks.items():
+            self.__setattr__(i, j)
+        self.networks = networks
+
+        # regist losses
+        # train_caps used to update networks
+        # loggers used to make logs
         self.losses = LossHolder()
         self.train_caps = dict()
         self.loggers = dict()
-        self.params = params
-        self.networks = None
-        self.golbal_step = 0
-        self.current_epoch = 0
+        self._regist_losses()
+
+        # generate train dataloaders and valid dataloaders
+        # data_info is a dict contains basic data infomations
+        d_info, iters = self._prepare_data()
+        self.iters = iters
+
+    @abstractclassmethod
+    def _prepare_data(self):
+        """ handle dataset to produce dataloader
+        
+        Returns:
+            list -- a dict of datainfo, a list of train dataloader
+            and a list of valid dataloader.
+        """
+
+        data_info = dict()
+        train_loaders = list()
+        valid_loaders = list()
+        return data_info, train_loaders, valid_loaders
+    
+    @abstractclassmethod
+    def _feed_data(self, mode):
+        """ feed example based on dataloaders
+
+        Returns:
+            list -- all datas needed.
+        """
+        datas = list()
+        return datas
+    
+    @abstractclassmethod
+    def _regist_losses(self):
+        """ regist lossed with the help of regist loss
+
+        Returns:
+            list -- all datas needed.
+        """
+        return 
+
+    @abstractclassmethod
+    def _regist_networks(self):
+        """ feed example based on dataloaders
+
+        Returns:
+            list -- all datas needed.
+        """
+        networks = dict()
+        return networks
+
+    @abstractclassmethod
+    def _train_process(self, datas, **kwargs):
+        """process to train 
+        """
+        pass
+    
+    @abstractclassmethod
+    def _eval_process(self, datas, **kwargs):
+        """process to eval 
+        """
+        pass
+    
+    @abstractclassmethod
+    def _log_process(self):
+        """ make logs
+        """
+        return
+    
+    def regist_loss(self, loss_name, *networks_key):
+        """registe loss according loss_name and relative networks.
+        after this process the loss will bind to the weight of networks, which means this loss will used to update weights of provied networks.
+        
+        Arguments:
+            loss_name {str} -- loss name
+            networks_key {list} -- relative network names
+        """
+
+        if type(networks_key[0]) is str:
+            networks = [ self.networks[i] for i in networks_key ]
+        else:
+            networks = networks_key
+
+        self.losses[loss_name]
+        t = TrainCapsule(self.losses[loss_name], networks)
+        l = LogCapsule(
+            self.losses[loss_name], loss_name, to_file=self.params.log
+        )
+        self.train_caps[loss_name] = t
+        self.loggers[loss_name] = l
+
+    def train_module(self, **kwargs):
+
+        # fix loss key to prenvent missing
+        self.losses.fix_loss_keys()
+
+        # set all networks to train mode
+        for _,i in self.networks.items():
+            i.train(True)
+
+        for _ in range(self.steps):
+
+            datas = self._feed_data(mode='train')
+            datas = anpai(
+                datas, self.params.use_gpu, need_logging=False
+            )
+            self._train_process(datas, **kwargs)
+
+            # re calculate learning rates
+            if self.relr_everytime:
+                for c in self.train_caps.values():
+                    c.decary_lr_rate()
+
+            # making log
+            if self.golbal_step % self.log_step == (self.log_step - 1):
+                self._log_process()
+
+            # begain eval
+            if self.golbal_step % self.eval_step == (self.eval_step - 1):
+                                
+                self.eval_module(**kwargs)
+                # set all networks to train mode
+                for _,i in self.networks.items():
+                    i.train(True)
+
+            self._finish_a_train_process()
+
+    def _finish_a_train_process(self):
+        self.golbal_step +=1
+
+    def eval_module(self, **kwargs):
+        # set all networks to eval mode
+        for _,i in self.networks.items():
+            i.eval()
+        
+        while True:
+            datas = self._feed_data(mode='valid')
+            
+            if datas is not None:
+                datas = anpai(
+                    datas, self.params.use_gpu, need_logging=False
+                )
+            
+            self._eval_process(datas, **kwargs)
+
+            if datas is  None:
+                break
+
+
+    def _update_loss(self, loss_name, value):
+        self.losses[loss_name].value = value
+        self.loggers[loss_name].record()
+        self.train_caps[loss_name].train_step()
+
+class DAModule(TrainableModule):
+
+    def __init__(self, params):
+        super(DAModule, self).__init__(params)
+
         self.relr_everytime = False
         self.best_accurace = 0.0
+        self.total = self.corret = 0
 
         # set usefully loss function
         self.ce = nn.CrossEntropyLoss()
         self.bce = nn.BCELoss()
-
-        # set default weight initer
-        WeightedModule.register_weight_handler(_basic_weights_init_helper)
 
         self.TrainCpasule = TrainCapsule
         # set default optim function
@@ -138,203 +368,132 @@ class DAModule(ABC, nn.Module):
             self.losses["valid_acuu"], "valid_acuu", to_file=params.log
         )
 
-
-        # self.t_s_data_set, self.t_s_data_loader = mdl.load_img_dataset(
-        #     "OfficeHome", "Ar", params.batch_size
-        # )
-        # self.t_t_data_set, self.t_t_data_loader = mdl.load_img_dataset(
-        #     "OfficeHome", "Pr", params.batch_size
-        # )
-        # self.v_t_data_set, self.v_t_data_loader = mdl.load_img_dataset(
-        #     "OfficeHome", "Pr", params.batch_size, test=True
-        # )
-
-        # generate source and target data set for trian and test
-        s_set_name = getattr(mdl.DSNames, params.sdsname)
-        t_set_name = getattr(mdl.DSNames, params.tdsname)
-
-        self.t_s_data_set, self.t_s_data_loader = mdl.load_dataset(
-            s_set_name, 
-            params.batch_size, 
-            size=32,
-            gray=params.gray,
-        )
-
-        self.t_t_data_set, self.t_t_data_loader = mdl.load_dataset(
-            t_set_name, 
-            params.batch_size, 
-            size=32,
-            gray=params.gray,
-        )
-
-        self.v_t_data_set, self.v_t_data_loader = mdl.load_dataset(
-            t_set_name, 
-            params.batch_size, 
-            size=32,
-            gray=params.gray,
-            split='test'
-        )
-
         # set total train step
         self.total_step = self.params.steps
 
         # init global label
         self.TARGET, self.SOURCE = self.__batch_domain_label__(params.batch_size)
 
-    def regist_loss(self, loss_name, networks):
-        t = TrainCapsule(self.losses[loss_name], networks)
-        l = LogCapsule(self.losses[loss_name], loss_name, to_file=self.params.log)
-        self.train_caps[loss_name] = t
-        self.loggers[loss_name] = l
+    @abstractclassmethod
+    def _train_step(self, s_img, s_label, t_img):
+        pass
 
-    def regist_networds(self, *networks):
-        for i in networks:
-            i.weight_init()
-        networks = anpai(networks, self.params.use_gpu)
-        self.networks = networks
+    @abstractclassmethod
+    def _valid_step(self, img):
+        pass
 
-        if len(networks) == 1:
-            return networks[0]
-        return networks
+    def _prepare_data(self):
+        
+        params = self.params
 
-    def valid(self, step=None):
+        s_set_name = getattr(mdl.DSNames, params.sdsname)
+        t_set_name = getattr(mdl.DSNames, params.tdsname)
+
+        t_s_data_set, t_s_dl = mdl.load_dataset(
+            s_set_name, params.batch_size, size=32, gray=params.gray
+        )
+
+        t_t_data_set, t_t_dl = mdl.load_dataset(
+            t_set_name, params.batch_size, size=32, gray=params.gray
+        )
+
+        v_t_data_set, v_t_dl = mdl.load_dataset(
+            t_set_name, params.batch_size, size=32, gray=params.gray, split="test"
+        )
+
+        return None, (t_s_dl, t_t_dl), (v_t_dl,)
+    
+    def _feed_data(self, mode, *args, **kwargs):
+
+        if self.iters[mode] is None:
+            if mode == 'train':
+                sloader, tloader = self.train_loaders
+                eits = ELoaderIter(sloader), ELoaderIter(tloader)
+            else:
+                loader = self.valid_loaders[0]
+                eits = ELoaderIter(loader)
+            self.iters[mode] = eits
+            
+        its = self.iters[mode]
+        if mode == 'train':
+            s_img, s_label = its[0].next()
+            t_img, _ = its[1].next()
+            return s_img, s_label, t_img
+        else:
+            return its.next(need_end=True)
+
+    def _train_process(self, datas):
+
+        s_img, s_label, t_img = datas
+
+        # re calculate learning rates
+        if self.relr_everytime:
+            for c in self.train_caps.values():
+                c.decary_lr_rate()
+
+        # begain a train step
+        self._train_step(s_img, s_label, t_img)
+
+
+    def _log_process(self):
+
+        logging.info(
+            "Steps %3d ends. Remain %3d steps to go. Fished %.2f%%"
+            % (
+                self.golbal_step + 1,
+                self.params.steps - self.golbal_step - 1,
+                (self.golbal_step + 1) / (self.params.steps + 1) * 100,
+            )
+        )
+
+        logging.info(
+            "Current best accurace is %3.3f%%." % (self.best_accurace * 100)
+        )
+
+        for v in self.loggers.values():
+            v.log_current_avg_loss(self.golbal_step + 1)
+
+    def _eval_process(self, datas):
 
         params = self.params
 
-        # set all networks to eval mode
-        for i in self.networks:
-            i.eval()
+        end_epoch = datas is None
 
-        # def a helpler fucntion
-        def valid_a_set(data_loader):
 
-            total = 0
-            right = 0
-            for _, (img, label) in enumerate(data_loader):
+        def handle_datas(datas):
 
-                if len(img) != self.params.batch_size:
-                    continue
+            right = total = 0
+        
+            img, label = datas
+            # get result from a valid_step
+            predict = self._valid_step(img)
 
-                img, label = anpai((img, label), params.use_gpu, need_logging=False)
+            self.losses["valid_loss"].value = self.ce(predict, label)
+            self.log_valid_loss.record()
 
-                # get result from a valid_step
-                predict = self.valid_step(img)
+            # calculate valid accurace and make record
+            current_size = label.size()[0]
+            _, predic_class = torch.max(predict, 1)
+            corrent_count = (predic_class == label).sum().float()
 
-                # calculate valid loss and make record
-                self.losses["valid_loss"].value = self.ce(predict, label)
-                self.log_valid_loss.record()
+            self.losses["valid_acuu"].value = corrent_count / current_size
+            self.log_valid_acrr.record()
 
-                # calculate valid accurace and make record
-                current_size = label.size()[0]
-                _, predic_class = torch.max(predict, 1)
-                corrent_count = (predic_class == label).sum().float()
+            return corrent_count, current_size
 
-                total += self.params.batch_size
-                right += corrent_count
-
-                self.losses["valid_acuu"].value = corrent_count / current_size
-                self.log_valid_acrr.record()
-
+        
+        if not end_epoch:
+            right, size  = handle_datas(datas)
+            self.total += size
+            self.corret += right
+        else:
+            logging.info("End a evaling step.")
             self.log_valid_loss.log_current_avg_loss(self.golbal_step)
-            accu = self.log_valid_acrr.log_current_avg_loss(self.golbal_step)
+            self.log_valid_acrr.log_current_avg_loss(self.golbal_step)
+            accu = self. corret * 1.0 / self.total
+            self.best_accurace = max((self.best_accurace, accu))
+            self.total = self.corret = 0
 
-            return right * 1.0 / total 
-
-        # valid on target data
-        accu = valid_a_set(self.v_t_data_loader)
-        return accu
-
-    def train(self):
-
-        # fix loss key to prenvent missing
-        self.losses.fix_loss_keys()
-
-        # set all networks to train mode
-        for i in self.networks:
-            i.train(True)
-
-        log_step = self.params.log_per_step
-        eval_step = self.params.eval_per_step
-
-        # def cycle(iterator):
-        #     while True:
-        #         for i in iterator:
-        #             yield i
-
-        s_it = iter(self.t_s_data_loader)
-        t_it = iter(self.t_t_data_loader)
-
-        for _ in range(self.params.steps):
-
-            # send train data to wantted device
-            try:
-                s_img, s_label = next(s_it)
-            except:
-                s_it = iter(self.t_s_data_loader)
-                s_img, s_label = next(s_it)
-
-            try:
-                t_img, _ = next(t_it)
-            except:
-                t_it = iter(self.t_t_data_loader)
-                t_img, _ = next(t_it)
-
-            if len(s_img) != len(t_img):
-                continue
-            s_img, s_label, t_img = anpai(
-                (s_img, s_label.long(), t_img), self.params.use_gpu, need_logging=False
-            )
-
-            # re calculate learning rates
-            if self.relr_everytime:
-                for c in self.train_caps.values():
-                    c.decary_lr_rate()
-
-            # begain a train step
-            self.train_step(s_img, s_label, t_img)
-
-            # making log
-            if self.golbal_step % log_step == (log_step - 1):
-
-                logging.info(
-                    "Steps %3d ends. Remain %3d steps to go. Fished %.2f%%"
-                    % (
-                        self.golbal_step + 1,
-                        self.params.steps - self.golbal_step - 1,
-                        (self.golbal_step + 1) / (self.params.steps +1) * 100,
-                    )
-                )
-                
-                logging.info(
-                    "Current best accurace is %3.3f%%." % (self.best_accurace * 100)
-                )
-
-                for v in self.loggers.values():
-                    v.log_current_avg_loss(self.golbal_step + 1)
-
-            # begain eval
-            if self.golbal_step % eval_step == (eval_step - 1):
-                logging.info('Begain a evaling step.')
-                accu = self.valid()
-                self.best_accurace = max((self.best_accurace, accu))
-                # set all networks to train mode
-                for i in self.networks:
-                    i.train(True)
-
-            self.golbal_step += 1
-
-    @abstractclassmethod
-    def train_step(self, s_img, s_label, t_img):
-        pass
-
-    @abstractclassmethod
-    def valid_step(self, img):
-        pass
-
-    def update_loss(self, loss_name, value):
-        self.losses[loss_name].value = value
-        self.loggers[loss_name].record()
-        self.train_caps[loss_name].train_step()
 
     def __batch_domain_label__(self, batch_size):
         # Generate all Source and Domain label.

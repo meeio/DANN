@@ -17,9 +17,13 @@ def anpai(tom, use_gpu, need_logging=True):
     Returns:
         list -- some as `tom` but in different divece.
     """
-    # return tom
     # init a list to store result
     handle = list()
+    
+    if not isinstance(tom, (list, tuple)):
+        l = list()
+        l.append(tom)
+        tom = l
     
     def __handle_module(module):
         # use data parallel
@@ -43,7 +47,6 @@ def anpai(tom, use_gpu, need_logging=True):
                 logging.info("Has no gpu or not use, %s will sent to CPU." % name)
             else:
                 logging.info("A >%s< object sent to GPU." % name)
-
 
     device = torch.device("cpu")
     # When use_gpu and has gpu to use
@@ -80,4 +83,5 @@ def anpai(tom, use_gpu, need_logging=True):
             else:
                 __handle_tensor(target, device)
     
-    return handle
+
+    return handle[0] if len(handle) == 1 else handle
