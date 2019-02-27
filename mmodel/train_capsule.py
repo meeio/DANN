@@ -87,12 +87,10 @@ class TrainCapsule(nn.Module):
                     self.optimer, **TrainCapsule.__decay_args__
                 )
         
-
     def __all_networks_call(self, func_name):
         def __one_networkd_call(i):
             func = getattr(i, func_name)
             return func()
-
         map(__one_networkd_call, self.optim_network)
 
     def train_step(self):
