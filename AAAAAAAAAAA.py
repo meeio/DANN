@@ -10,6 +10,7 @@ from mmodel.mloger import GLOBAL
 import logging
 
 import numpy as np
+import itertools
 
 
 def get_c_param():
@@ -20,23 +21,7 @@ def get_c_param():
     return parser.parse_args()
 
 
-def domain_confusion_loss(predicted_domain):
-    """ calculate domain confusion loss
-    
-    Arguments:
-        predicted_domain {tensor} -- predicted domain
-    
-    Returns:
-        tensor -- tensor of size[[]] 
-    """
-
-    loss = torch.log(predicted_domain) + torch.log(1 - predicted_domain)
-
-    loss = torch.mean(loss)
-    return loss
-
-
-def entropy(inputs, reduce_mean=True, make_binary=False):
+def entropy(inputs):
     """given a propobility inputs in range [0-1], calculate entroy
     
     Arguments:
@@ -49,37 +34,34 @@ def entropy(inputs, reduce_mean=True, make_binary=False):
     def entropy(p):
         return -1 * p * torch.log(p)
 
-    if make_binary:
-        e = entropy(inputs) + entropy(1 - inputs)
-    else:
-        e = entropy(inputs)
+    e = entropy(inputs) + entropy(1 - inputs)
 
-    return torch.mean(e) if reduce_mean else e
+    return e
 
 
-STAGE = {"adaptation": 0, "prediction": 1}
+STAGE = {"adaptation": 0, "prediction": 1, 'training' : 3}
 
 
 class PredictUnit(TrainableModule):
     def __init__(
         self,
-        feature_extractor,
-        predict_classes_idx,
-        domain,
+        turn_key,
+        hold_key,
         classes_map,
         params,
     ):
-        # TODO two stage commit
+
         super(PredictUnit, self).__init__(params)
 
+        self._turn_key = turn_key
+        self.hold_key = hold_key
+
         # resnet50 and it's avepool
-        self.F = feature_extractor
         self.params = params
 
-        self.domain = domain
-        self.idx = predict_classes_idx
+        # self.domain = domain
+        # self.idx = predict_classes_idx
         self.classes_to_idx = classes_map
-        self.need_trainning = False
 
         self.output_shape = None
         self.datas = None
@@ -93,18 +75,36 @@ class PredictUnit(TrainableModule):
 
         self._all_ready()
 
-    def set_data(self, datas):
-        self.datas = datas[0:1]
+    @property
+    def turn_key(self):
+        return self._turn_key[0]
 
-        current_idx, current_domain = datas[1]
-        self.need_trainning = (current_idx == self.idx) and (
-            current_domain == self.domain
-        )
+    def set_data(self, inputs):
+        stage, datas = inputs
+        self.current_stage = stage
+        self.current_data = datas
 
     def _prepare_data(self):
         return None, None
 
     def _feed_data(self, mode):
+
+        stage = self.current_stage
+        
+        if stage == STAGE['adaptation']:
+            if mode == 'train':
+                feature, domain = self.current_data
+                return feature, domain
+
+        elif stage == STAGE['prediction']:
+            pass
+        
+        elif stage == STAGE['training']:
+            pass
+        
+        else:
+            raise Exception('Stage Error')
+
         batch_size = self.datas[0].size()[0]
         domain = 1 if self.datas[1] is "S" else 0
         label = torch.Tensor(batch_size, 1).fill_(domain)
@@ -113,14 +113,11 @@ class PredictUnit(TrainableModule):
 
     def _regist_networks(self):
 
-        output_size = self.F.output_size()
-
         regist_dict = {
             "l_D_" + str(i): SmallDomainClassifer() for i in range(49)
         }
         regist_dict["C"] = Classifier(len(self.classes_to_idx))
         regist_dict["g_D"] = DomainClassifier()
-        regist_dict["F"] = self.F
 
         regist_dict["avgpool"] = nn.AvgPool2d(7, stride=1)
 
@@ -128,22 +125,14 @@ class PredictUnit(TrainableModule):
 
     def _regist_losses(self):
 
-        self.regist_loss("domain_confuse", self.F)
+        local_dis_nets = ["l_D_" + str(i) for i in range(49)]
+        self.regist_loss("local_dis", *local_dis_nets)
 
-        for network_name, network in self.networks.items():
-            if network_name.startswith("l_D"):
-                i = network_name.split("_")[-1]
-                # self.regist_loss("local_dis_" + i, name)
-                self.regist_loss("local_dis" + i, network_name)
+        self.regist_loss("global_dis", "g_D")
 
-            elif network_name == "g_D":
-                # self.regist_loss("global_dis", name)
-                self.regist_loss("global_dis", network_name)
+        self.regist_loss("classifer", "C")
 
-            elif network_name == "C":
-                self.regist_loss("classifer", network_name)
-
-    def _local_attention_mask(self, features):
+    def _local_dis(self, features):
         """ given a feature mask, producing it's local attention        mask.
         
         Arguments:
@@ -169,96 +158,111 @@ class PredictUnit(TrainableModule):
 
         return result
 
-    def _train_process(self, datas, **kwargs):
+    def _stage(self, stage, datas, is_training):
 
-        is_stage_one = kwargs["stage"] == STAGE["adaptation"]
+        assert stage in STAGE
 
-        img, domain_label = datas
+        #########################################
+        ## begain stage one
+        ## in the stage one local_atten and global atten are calculated
+        #########################################
+        if stage == STAGE["adaptation"]:
 
-        # begain stage one
-        # in the stage one local_atten and global atten are calculated
-        if is_stage_one:
+            features, domain_label = datas
 
-            def _perform_stage_one(img, domain_label):
+            # calculate local and glboal attention
+            # save as class propertiy
 
-                # extract features
-                features = self.F(img)
+            # calculate local attention based on l_atten = 2 - H(D(f))
+            l_domain_predict = self._local_dis(features)
+            l_atten = entropy(l_domain_predict)
+            l_atten = 2 - l_atten  # 1 + (1 - l_atten)
 
-                # calculate local attention based on l_atten = 2 - H(D(f))
-                l_domain_predict = self._local_attention_mask(features)
-                l_atten = entropy(l_domain_predict, reduce_mean=False)
-                l_atten = 2 - l_atten  # 1 + (1 - l_atten)
+            # resize to size of feature
+            size = features.size()
+            l_atten = l_atten.view(size[0], size[2], size[3])
+            l_atten = l_atten.unsqueeze(1)
+            l_atten = l_atten.expand(size)
 
-                # resize to size of feature
-                size = features.size()
-                l_atten = l_atten.view(size[0], size[2], size[3])
-                l_atten = l_atten.unsqueeze(1)
-                l_atten = l_atten.expand(size)
+            # reweight feature based on local attention
+            features = features * l_atten
 
-                # save features before reweight
-                saved_features = features
-                # reweight feature attention
-                features = features * l_atten
+            # go throught bottleneck layers
+            g_features = self.avgpool(features)
 
-                # go throught bottleneck layers
-                g_features = self.avgpool(features)
+            # cal global attention and make prediction
+            g_domain_predict = self.g_D(g_features)
+            g_atten = entropy(g_domain_predict)
+            g_atten = 1 + g_atten
 
-                # cal global attention and make prediction
-                g_domain_predict = self.g_D(g_features)
-                g_atten = entropy(g_domain_predict, reduce_mean=False)
-                g_atten = 1 + g_atten
+            self.attentions = (l_atten, g_atten)
 
-                losses = dict()
-                if self.need_trainning:
-                    # update local domain discriminator
-                    lenth = l_domain_predict.size()[-1]
-                    list_loss_D = list()
-                    list_loss_G = list()
-                    for i in range(lenth):
-                        predict = l_domain_predict[:, -1]
-                        l_D, l_G = self._adversiral_loss(predict, domain_label)
-                        list_loss_D.append(l_D)
-                        list_loss_G.append(l_D)
-                        # self._update_loss("local_dis_" + str(i), l_D)
-                        # self._update_loss("domain_confuse", l_G)
+            # if need trainning
+            # update local domain discriminator
+            # and global domain discriminator
+            if self.turn_key == self.hold_key and is_training:
 
-                    # update global domain discriminator
-                    l_D, l_G = self._adversiral_loss(
-                        g_domain_predict, domain_label
-                    )
-                    # self._update_loss("global_dis" + str(i), l_D)
-                    # self._update_loss("domain_confuse", l_G)
+                # resize local predict result to [b*49, 1]
+                l_domain_predict = l_domain_predict.view(-1, 1)
 
-                return (
-                    saved_features,
-                    l_atten,
-                    g_atten,
+                # domain label is tensor of size [1,1]
+                # repeat it to size of [b*49, 1]
+                l_domain_label = domain_label.repeat(
+                    l_domain_predict.size()
                 )
 
-            if self.need_trainning:
-                # update local domain discriminator
-                lenth = l_domain_predict.size()[-1]
-                for i in range(lenth):
-                    predict = l_domain_predict[:, -1]
-                    l_D, l_G = self._adversiral_loss(predict, domain_label)
-                    self._update_loss("local_dis_" + str(i), l_D)
-                    self._update_loss("domain_confuse", l_G)
-
-                # update global domain discriminator
                 l_D, l_G = self._adversiral_loss(
-                    g_domain_predict, domain_label
+                    l_domain_predict, domain_label
                 )
-                self._update_loss("global_dis" + str(i), l_D)
-                self._update_loss("domain_confuse", l_G)
 
-        # begain stage two
-        # in the stage tow, classes prediction are made
-        else:
+                # perform the same process for global dis as local dis
+                g_domain_label = domain_label.repeat(
+                    g_domain_predict.size()
+                )
+
+                g_D, g_G = self._adversiral_loss(
+                    g_domain_predict, g_domain_label
+                )
+
+                return l_D, g_D, l_G, g_G
+            return None
+
+        #########################################
+        ## begain stage two
+        ## in the stage tow, classes prediction are made
+        #########################################
+        elif stage == STAGE['prediction']:
+            features, local_atten = datas
             # retrieval previous features
-            features = self.features
+            features = features * local_atten
             g_features = self.avgpool(features)
             predict_result = self.C(g_features)
             self.predict = predict_result
+
+        #########################################
+        ## begain stage two
+        ## in the stage tow, classes prediction are made
+        #########################################
+        elif stage == STAGE['updating']:
+            assert is_training
+            l_D, g_D = self.dis_loss
+            self._update_loss("local_dis", l_D)
+            self._update_loss("global_dis", g_D)
+
+    def _train_process(self, datas, **kwargs):
+        stage = self.current_stage
+
+        if stage == STAGE["adaptation"]:
+            if self.turn_key == self.hold_key:
+                l = self._stage(stage, datas, is_training=True)
+                self.losses = l
+            else:
+                self._stage(stage, source_data, is_training=True)
+
+        elif stage == STAGE['prediction']:
+            pass
+        elif stage == STAGE['updating']:
+            pass
 
     def _finish_a_train_process(self):
         self.golbal_step += 0.5
@@ -267,7 +271,8 @@ class PredictUnit(TrainableModule):
         return
 
     def _eval_process(self, datas, **kwargs):
-        return
+        stage = kwargs["stage"]
+        self._stage(stage, datas, is_training=False)
 
     def _adversiral_loss(self, prediton, original_domain):
         creterion = self.creterion
@@ -304,23 +309,26 @@ class Network(TrainableModule):
             params=params,
         )
 
-        ics = mhandler.independ_class_seperation
         # get all class separations
-        self.mhandler = mhandler
         # ics is a list of ClassSeperation
         # every ClassSeperation is consist of (classes) and (domains)
+        ics = mhandler.independ_class_seperation
+
+        unit_order = [
+            (idx, domain)
+            for idx, sep in enumerate(ics)
+            for domain in sep.domains
+        ]
+
+        self.mhandler = mhandler
         self.independ_class_seperation = ics
+        self.unit_order = unit_order
 
         # set group iterator
         class_group_idx = [i for i in range(len(ics))]
         self.group_idx_iter = itertools.cycle(iter(class_group_idx))
         self.class_group_idxs = class_group_idx
-        self.current_group_idx = 0
-        self.current_domain = None
-        self.current_domain_iter = None
 
-        self.unions = list()
-        self.all_classifers = list()
 
         self.CE = nn.CrossEntropyLoss()
 
@@ -328,46 +336,42 @@ class Network(TrainableModule):
             torch.optim.SGD, lr=params.lr
         )
 
+        self._turn_key = [None]
         self._all_ready()
+
+    @property
+    def turn_key(self):
+        return self._turn_key[0]
+
+    @turn_key.setter
+    def turn_key(self, turn_key):
+        assert len(turn_key) == 2
+        self._turn_key[0] = turn_key
+
+    def _iter_all_unit(self, func, **kwargs):
+        for idx, domain in self.unit_order:
+            func(idx, domain, **kwargs)
 
     def _regist_networks(self):
 
         F = FeatureExtroctor(self.params)
 
-        ics = self.independ_class_seperation
-        params = self.params
-        unions = list()
-        # for an union
-        for i, seperation in enumerate(ics):
-            cti = ics[i].classes_to_idx
-            union = dict()
-            # for an unit
-            for domain in seperation.domains:
-                unit = PredictUnit(F, i, domain, cti, params)
-                union[domain] = unit
-                self.all_classifers.append(unit.C)
-            unions.append(union)
+        classes_sep = [i.classes_to_idx for i in self.independ_class_seperation]        
+        unions = [{} for i in range(len(self.independ_class_seperation))]
+        def create_predict_unit(idx, domain):
+            hold_key = (idx, domain)
+            unions[idx][domain] = PredictUnit(
+                self._turn_key, hold_key, classes_sep[idx], self.params            
+            )
+        self._iter_all_unit(create_predict_unit)
         self.unions = unions
 
         return {"F": F}
 
     def _regist_losses(self):
 
-        n = [self.networks["F"]] + self.all_classifers
+        n = [self.networks["F"]]
         self.regist_loss("prediction", *n)
-
-    def _make_unit():
-        output_shape = None
-        C = Classifer(params, c * h * w)
-
-        local_Ds = list()
-        for i in range(output_shape):
-            D = SmallDomainClassifer()
-            local_Ds.append(D)
-
-        global_D = DomainClassifier()
-
-        return global_D, local_Ds, C
 
     def _prepare_data(self):
         """ return dataloader.
@@ -392,27 +396,26 @@ class Network(TrainableModule):
             self.mhandler.seperation_with_loader()
         )
 
-        # get dataloader inorders
-        partial_loaders = list()
-        for seperation in icgs:
-            domain_iter = dict()
-            for domain in seperation.domains:
-                domain_iter[domain] = seperation.get_domain_loader(domain)
-            partial_loaders.append(domain_iter)
-
         # return all iters
         iters = dict()
 
+        # get dataloader in orders
+        partial_source_loaders = [
+            {} for i in range(len(self.independ_class_seperation))
+        ]
+        def unit_loader(idx, domain):
+            l = icgs[idx].get_domain_loader(domain)
+            it = ELoaderIter(l)
+            partial_source_loaders[idx][domain] = it
+        self._iter_all_unit(unit_loader)
+
+        # set trainging iters
         mode = "train"
         iters[mode] = dict()
         iters[mode]["target"] = ELoaderIter(target_loader)
-        iters[mode]["source"] = list()
-        for idx, domain_loaders in enumerate(partial_loaders):
-            domain_iters = {
-                d: ELoaderIter(l) for d, l in domain_loaders.items()
-            }
-            iters[mode]["source"].append(domain_iters)
+        iters[mode]["source"] = partial_source_loaders
 
+        # set validing iters
         mode = "valid"
         loader = valid_loader
         iters[mode] = ELoaderIter(loader)
@@ -422,53 +425,120 @@ class Network(TrainableModule):
     def _feed_data(self, mode):
 
         if mode == "train":
-            # end_group = self.current_domain_group[-1] == self.current_domain
-            try:
-                self.current_domain = next(self.current_domain_iter)
-            except Exception:
-                idx = next(self.group_idx_iter)
-                self.current_group_idx = idx
-                domain_group = list(self.iters[mode]["source"][idx].keys())
-                self.current_domain_iter = iter(domain_group)
-                self.current_domain = next(self.current_domain_iter)
+            iters = self.iters[mode]["source"]
+            target_iters = self.iters[mode]["target"]
+                        
+            feed_datas = list()
+            def feeded_datas(idx, domain):
+                img, label = iters[idx][domain].next()
+                feed_datas.append(img)
+                feed_datas.append(label)
+            self._iter_all_unit(feeded_datas)
 
-            s_iters = self.iters[mode]["source"]
-            cs_iters = s_iters[self.current_group_idx][self.current_domain]
-
-            s_img, s_label = cs_iters.next()
-            t_img, _ = self.iters[mode]["target"].next()
-
-            return s_img, s_label, t_img
-
+            feed_datas.append(target_iters.next()[0])
+            return feed_datas
         else:
             return self.iters[mode].next(need_end=True)
 
     def _train_process(self, datas, **kwargs):
 
-        s_img, s_label, t_img = datas
+        orders = self.unit_order
+        union_range = range(len(self.independ_class_seperation))
 
-        group_idx = self.current_group_idx
-        domain = self.current_domain
+        source_domain_num = len(orders)
+        source_datas = [
+            (datas[i], datas[i + 1])
+            for i in range(0, source_domain_num * 2, 2)
+        ]
 
-        def predict_and_train(img, domain, label=None):
-            # handle data
-            datas = (img, domain, (group_idx, domain))
-            prediction = self._make_prediction(datas, train=True)
-            preidction_loss = self.params.gamma * entropy(
-                prediction, make_binary=False
-            )
+        t_img = datas[-1]
+        target_data = ((t_img, None),)
 
-            # low entropy loss on target data
-            if label is not None:
-                preidction_loss += self.CE(prediction, s_label)
+        def get_losses_from(datas, domain):
+            
+            confuse_loss = list()
+            predict_loss = list()
 
-            # update all classifers
-            self._update_loss("prediction", preidction_loss)
+            domain_label = torch.Tensor(1,1).fill_(domain)
 
-        prediction = predict_and_train(s_img, "S", s_label)
-        prediction = predict_and_train(t_img, "T", None)
+            for idx, (s_img, s_label) in enumerate(datas):
+                
+                # get source features
+                feature = self.F(s_img)
 
-    def _make_prediction(self, datas, train=True):
+                #########################################
+                ## Update turn_key, if len of unions is 3
+                ## then trun_key will change from 0-2
+                ## 
+                ## Notice that all unit will get the key only ONCE
+                ## in this batch of data
+                #########################################
+                sep_id, domain = orders[idx]
+                self.turn_key = (sep_id, domain)
+
+                #########################################
+                ## perfoorming adaptation stage
+                ##
+                ## In this stage, all attention will be calculated.
+                ##
+                ## Loss function will be saved in unit when the key is 
+                ## right.
+                #########################################
+                inputs = (STAGE["adaptation"], (feature, domain_label))
+                l_attens = [{} for i in union_range]     
+                g_attens = [{} for i in union_range]
+
+                def stage_adaptation(idx, domain):
+                    unit = self.unions[idx][domain]
+                    if s_label is None:
+                        self.turn_key = unit.hold_key
+                    unit.set_data(inputs)
+                    unit.train_module()
+                    l, g = unit.attentions
+                    l_attens[idx][domain] = l
+                    g_attens[idx][domain] = g
+
+                self._iter_all_unit(stage_adaptation)
+
+                #########################################
+                ## perfoorming classify stage
+                ##
+                ## In this stage, new local attention and original feature
+                ## map are feeded into unit
+                ##
+                ## the classify result will be calculated
+                #########################################
+
+                predict = [{} for i in union_range]
+
+                
+                def stage_classify(idx, domain):
+                    unit = self.unions[idx][domain]
+                    unit.set_data(inputs)
+                    unit.train()
+                    predict[idx][domain] = unit.result()
+
+            return confuse_loss, predict_loss  
+
+        s_confuse, s_predict = get_losses_from(source_datas, domain=1)
+        t_confuse, t_predict = get_losses_from(target_data, domain=0)
+
+    def _perform_stage_one(self, datas, train=False):
+
+        func_name = "train_module" if train else "eval_module"
+
+        def run_sub_module(e, **kargs):
+            getattr(e, func_name)(**kargs)
+
+        # stage one
+
+        for union in self.unions:
+            for domain in union:
+                unit = union[domain]
+                unit.set_data(features)
+                run_sub_module(unit, stage="one")
+
+    def _make_prediction(self, features, train=True):
         """ After a process, make predition from all union
         
         Arguments:
@@ -483,7 +553,7 @@ class Network(TrainableModule):
 
         func_name = "train_module" if train else "eval_module"
 
-        def make_procedure(e, **kargs):
+        def run_sub_module(e, **kargs):
             getattr(e, func_name)(**kargs)
 
         # stage one
@@ -491,8 +561,8 @@ class Network(TrainableModule):
             local_attens = list()
             for domain in union:
                 unit = union[domain]
-                unit.set_data(datas)
-                make_procedure(unit, stage="one")
+                unit.set_data(features)
+                run_sub_module(unit, stage="one")
 
         # stage two
         union_result = list()
@@ -502,9 +572,8 @@ class Network(TrainableModule):
             for domain in union:
                 unit = union[domain]
                 # unit.set_data(datas)
-                make_procedure(unit, stage="two")
+                run_sub_module(unit, stage="two")
                 g_domain_dis, prediction = unit.result()
-                attens.append(entropy(g_domain_dis, make_binary=True))
                 predictions.append(prediction)
 
             weighted_predict = sum(

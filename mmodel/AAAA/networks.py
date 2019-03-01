@@ -25,8 +25,6 @@ class FeatureExtroctor(WeightedModule):
         return [2048, 7, 7]
 
 
-
-
 class Classifier(WeightedModule):
     def __init__(self, class_number):
         super().__init__()

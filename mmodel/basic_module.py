@@ -290,6 +290,7 @@ class TrainableModule(ABC, nn.Module):
         for _ in range(self.steps):
 
             datas = self._feed_data(mode='train')
+            
             datas = anpai(
                 datas, self.params.use_gpu, need_logging=False
             )
