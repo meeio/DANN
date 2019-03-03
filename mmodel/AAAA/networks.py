@@ -72,7 +72,6 @@ class SmallDomainClassifer(WeightedModule):
 
     def __init__(self):
         super().__init__()
-
         self.classify = nn.Sequential(
             nn.Linear(2048, 1),
             nn.Sigmoid(),
@@ -88,7 +87,6 @@ if __name__ == "__main__":
 
     x = torch.Tensor(3, 10, 5, 5).random_(0, 10)
     # spool = nn.AdaptiveAvgPool2d(1)
-
     # def cpool():
     #     pool = nn.AdaptiveAvgPool1d(1)
     #     b, c, w, h = x.size()
@@ -96,5 +94,5 @@ if __name__ == "__main__":
     #     x = pool(x).view(b, 1, w, h)
     #     return x
 
-    # print(cpool(x))
+
     # print(cpool(x).size())

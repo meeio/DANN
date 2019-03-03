@@ -99,6 +99,10 @@ class LogCapsule(object):
         self.range_step = 0
         self.loss_bucket = loss_bucker
 
+    def update_record(self, v):
+        self.loss_bucket.value = v
+        self.record()
+
     def record(self):
         closs = self.loss_bucket.value.item()
         if self.range_loss is None:

@@ -27,7 +27,6 @@ Then contains in `Entropy_Loss.log`
 ```
 2018-11-27 09:52:21,707 INFO [ADAM at step 5 is 5.0]
 ```
-## Todo
 
 - add read log function
 - function with `Visdom`

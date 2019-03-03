@@ -138,7 +138,6 @@ class ELoaderIter():
         
         return i
 
-
 class TrainableModule(ABC, nn.Module):
 
     """ An ABC, a Tranable Module is a teample class need to define
@@ -156,10 +155,15 @@ class TrainableModule(ABC, nn.Module):
         self.TrainCpasule = TrainCapsule
 
         self.relr_everytime = False
+        self.eval_once = False
 
         self.steps = self.params.steps
         self.golbal_step = 0.0
         self.current_epoch = 0.0
+
+        self.losses = LossHolder()
+        self.train_caps = dict()
+        self.loggers = dict()
 
     def _all_ready(self):
 
@@ -185,9 +189,6 @@ class TrainableModule(ABC, nn.Module):
         # regist losses
         # train_caps used to update networks
         # loggers used to make logs
-        self.losses = LossHolder()
-        self.train_caps = dict()
-        self.loggers = dict()
         self._regist_losses()
 
         # generate train dataloaders and valid dataloaders
@@ -280,7 +281,7 @@ class TrainableModule(ABC, nn.Module):
 
     def train_module(self, **kwargs):
 
-        # fix loss key to prenvent missing
+        # fixed loss key to prenvent missing
         self.losses.fix_loss_keys()
 
         # set all networks to train mode
@@ -322,7 +323,7 @@ class TrainableModule(ABC, nn.Module):
         # set all networks to eval mode
         for _,i in self.networks.items():
             i.eval()
-        
+
         while True:
             datas = self._feed_data(mode='valid')
             
@@ -333,9 +334,8 @@ class TrainableModule(ABC, nn.Module):
             
             self._eval_process(datas, **kwargs)
 
-            if datas is  None:
+            if datas is None or self.eval_once:
                 break
-
 
     def _update_loss(self, loss_name, value):
         self.losses[loss_name].value = value
@@ -459,7 +459,6 @@ class DAModule(TrainableModule):
         params = self.params
 
         end_epoch = datas is None
-
 
         def handle_datas(datas):
 

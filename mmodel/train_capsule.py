@@ -21,7 +21,7 @@ class LossHolder(object):
     def __getitem__(self, index):
         if self.fixed is True:
             return self.loss_dic[index]
-
+            
         if not index in self.loss_dic:
             self.loss_dic[index] = LossBuket()
         return self.loss_dic[index]
@@ -43,7 +43,8 @@ class TrainCapsule(nn.Module):
     __decay_args__ = None
 
     # global decay op function
-    # note this function will override decay op
+    ## NOTE this function will override decay op
+
     __recal_lr__ = None
 
     def __init__(self, optim_loss: LossBuket, optim_networks, tagname=None):
