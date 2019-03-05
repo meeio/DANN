@@ -101,7 +101,6 @@ class WeightedModule(nn.Module):
         torch.save(self.cpu().state_dict(), f)
         return os.path.abspath(f)
 
-
 class ELoaderIter():
 
     """ A helper class which iter a dataloader endnessly
@@ -435,7 +434,6 @@ class DAModule(TrainableModule):
         # begain a train step
         self._train_step(s_img, s_label, t_img)
 
-
     def _log_process(self):
 
         logging.info(
@@ -493,7 +491,6 @@ class DAModule(TrainableModule):
             accu = self. corret * 1.0 / self.total
             self.best_accurace = max((self.best_accurace, accu))
             self.total = self.corret = 0
-
 
     def __batch_domain_label__(self, batch_size):
         # Generate all Source and Domain label.

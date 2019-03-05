@@ -15,7 +15,13 @@ Todoss:
     lr set in function @_regist_losses 
     F's lr is 10 times smaller than D and C
 
-Optimi:
+Explore:
+
+  The variarance of `Bottleneck`:
+    ☐ equip a bottleneck layer for a union
+    ☐ variarance of bottleneck
+
+Code Optim:
  
   ☐ @low The count of local discriminator should not be constant
 
