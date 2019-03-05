@@ -9,13 +9,6 @@ def get_param_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--nf",
-        type=int,
-        default=64,
-        help="Number of filters to use in the generator network",
-    )
-
-    parser.add_argument(
         "--batch_size", type=int, default=2, help="Size for Mini-Batch Optimization"
     )
 
@@ -30,7 +23,6 @@ def get_param_parser():
     parser.add_argument(
         "--use_gpu", type=bool, default=True, help="Use GPU to train the model"
     )
-
 
     parser.add_argument("--steps", type=int, default=150000, help="Epochs of train data")
 

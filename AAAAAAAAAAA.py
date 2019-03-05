@@ -1,21 +1,20 @@
-import itertools
-from mmodel.basic_module import DAModule, TrainableModule, ELoaderIter
-from mmodel.AAAA.networks import *
-
-from mdata.partial_folder import MultiFolderDataHandler
-
 import torch
-from params import get_param_parser
-from mmodel.mloger import GLOBAL
+
 import logging
-
-import numpy as np
 import itertools
-
-from mmodel.mloger import LogCapsule
 
 from statistics import mean
+
+from mmodel.basic_module import *
+
+from mmodel.mloger import GLOBAL,LogCapsule
+
 from mground.func_utils import make_weighted_sum
+
+from mdata.partial_folder import MultiFolderDataHandler
+from mmodel.AAAA.networks import *
+
+from params import get_param_parser
 
 def get_c_param():
     parser = get_param_parser()
@@ -46,11 +45,12 @@ def entropy(inputs, reduction = 'none'):
     else:
         raise Exception('Not have such reduction mode.')
 
+
 STAGE = {"adaptation": 0, "prediction": 1, "training": 3}
+
 class Domain(object):
     T = 0
     S = 1
-    V = 3
 
 class PredictUnit(TrainableModule):
     def __init__(self, turn_key, hold_key, classes_map, params):
@@ -116,11 +116,16 @@ class PredictUnit(TrainableModule):
 
     def _regist_networks(self):
 
-        ## UGLY range should not be a constant
+        ## REVIEW confirm the architecture of local domain classifer
         regist_dict = {
-            "l_D_" + str(i): SmallDomainClassifer() for i in range(49)
+            ## UGLY range should not be a constant
+            "l_D_" + str(i): DomainClassifier() for i in range(49)
         }
+
+        ## REVIEW confirm the architecture of classifer
         regist_dict["C"] = Classifier(len(self.classes_to_idx))
+
+        ## REVIEW confirm the architecture of global domain classifer
         regist_dict["g_D"] = DomainClassifier()
 
         regist_dict["avgpool"] = nn.AvgPool2d(7, stride=1)
@@ -130,12 +135,18 @@ class PredictUnit(TrainableModule):
     def _regist_losses(self):
         ## UGLY range should not be a constant
 
+        self.TrainCpasule.registe_default_optimer(
+            torch.optim.SGD, lr=params.lr, momentum=0.95
+        )
+
         local_dis_nets = ["l_D_" + str(i) for i in range(49)]
         self.regist_loss("local_dis", *local_dis_nets)
 
         self.regist_loss("global_dis", "g_D")
 
         self.regist_loss("classifer", "C")
+
+        # print(self.train_caps['classifer'].optimer.param_groups)
 
     def _local_dis(self, features):
         """ given a feature mask, producing it's local attention        mask.
@@ -198,7 +209,7 @@ class PredictUnit(TrainableModule):
             # go throught bottleneck layers
             g_features = self.avgpool(features)
 
-            # cal global attention and make prediction
+            # cal global attention and make predictionp
             g_domain_predict = self.g_D(g_features)
             g_atten = entropy(g_domain_predict)
             g_atten = 1 + g_atten
@@ -350,12 +361,7 @@ class Network(TrainableModule):
 
         self.CE = nn.CrossEntropyLoss()
 
-        self.TrainCpasule.registe_default_optimer(
-            torch.optim.SGD, lr=params.lr
-        )
-
         self._turn_key = [None]
-
 
         # self.valid_loss_logger = LogCapsule(
         #     self.losses['valid_loss'], 'valid_loss', to_file= False
@@ -369,8 +375,6 @@ class Network(TrainableModule):
 
         self.eval_right = list()
         self.eval_count = list()
-
-        
 
     @property
     def turn_key(self):
@@ -387,8 +391,6 @@ class Network(TrainableModule):
 
     def _regist_networks(self):
 
-        F = FeatureExtroctor(self.params)
-
         classes_sep = [
             i.classes_to_idx for i in self.independ_class_seperation
         ]
@@ -403,9 +405,16 @@ class Network(TrainableModule):
         self._iter_all_unit(create_predict_unit)
         self.unions = unions
 
+        F = FeatureExtroctor(self.params)
+
         return {"F": F, "softmax": nn.Softmax(dim=0)}
 
     def _regist_losses(self):
+
+        self.TrainCpasule.registe_default_optimer(
+            torch.optim.SGD, lr=params.lr * 0.1, momentum=0.95
+        )
+
         n = self.networks["F"]
         self.regist_loss("loss_F", n)
 
@@ -628,8 +637,6 @@ class Network(TrainableModule):
 
         self._iter_all_unit(stage_adaptation)
 
-
-
         #########################################
         ## perfoorming classify stage
         ##
@@ -738,7 +745,6 @@ if __name__ == "__main__":
     )
 
     n = Network(params)
-    n.eval_step = 1
     n.train_module()
 
 

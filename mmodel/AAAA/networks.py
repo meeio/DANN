@@ -24,63 +24,107 @@ class FeatureExtroctor(WeightedModule):
     def output_size(self):
         return [2048, 7, 7]
 
-
-class Classifier(WeightedModule):
-    def __init__(self, class_number):
+class Bottleneck(WeightedModule):
+    def __init__(self, params):
         super().__init__()
 
-        self.classifer = nn.Sequential(
-            nn.Linear(2048, class_number),
-            nn.Softmax(dim=1),
+        bottleneck_dim = 256
+        bottleneck_linear = nn.Linear(2048*49, bottleneck_dim)
+        bottleneck_linear.weight.data.normal_(0, 0.005)
+        bottleneck_linear.bias.data.fill_(0.0)
+
+        self.bottleneck = nn.Sequential(
+            bottleneck_linear,
+            nn.BatchNorm1d(bottleneck_dim),
+            nn.ReLU(True),
         )
- 
+    
+    def forward(self, inputs):
+        features = self.bottleneck(inputs)
+        return features
+
+    def output_size(self):
+        return [2048, 7, 7]
+
+class Classifier(WeightedModule):
+    def __init__(self, class_num):
+        super().__init__()
+        self.layer1 = nn.Linear(2048,1024)
+        self.layer2 = nn.Linear(1024,1024)
+        self.layer3 = nn.Linear(1024,class_num)
+
+        self.layer1.weight.data.normal_(0, 0.01)
+        self.layer2.weight.data.normal_(0, 0.01)
+        self.layer3.weight.data.normal_(0, 0.3)
+
+        self.layer1.bias.data.fill_(0.0)
+        self.layer2.bias.data.fill_(0.0)
+        self.layer3.bias.data.fill_(0.0)      
+
+        self.droupout1 = nn.Dropout(0.5)
+        self.droupout2 = nn.Dropout(0.5)
+        
+        self.relu1 = nn.LeakyReLU()  
+        self.relu2 = nn.LeakyReLU()
+        self.sigmoid = nn.Sigmoid()
+
+        self.has_init = True
+
     def forward(self, inputs):
         b = inputs.size()[0]
-        feature = inputs.view(b, -1)
-        predict = self.classifer(feature)
-        return predict 
+        x = inputs.view(b,-1)
+
+        x = self.layer1(x)
+        x = self.relu1(x)
+        x = self.droupout1(x)
+        x = self.layer2(x)
+        x = self.relu2(x)
+        x = self.droupout2(x)
+        x = self.layer3(x)
+        x = self.sigmoid(x)
+        return x
 
 class DomainClassifier(WeightedModule):
     def __init__(self):
         super().__init__()
+        self.layer1 = nn.Linear(2048,1024)
+        self.layer2 = nn.Linear(1024,1024)
+        self.layer3 = nn.Linear(1024,1)
 
-        self.classify = nn.Sequential(
-            nn.Linear(2048, 512),
-            nn.ReLU(True),
-            nn.Dropout2d(0.5),
+        self.layer1.weight.data.normal_(0, 0.01)
+        self.layer2.weight.data.normal_(0, 0.01)
+        self.layer3.weight.data.normal_(0, 0.3)
 
-            nn.Linear(512, 64),
-            nn.ReLU(True),
-            nn.Dropout2d(0.5),
+        self.layer1.bias.data.fill_(0.0)
+        self.layer2.bias.data.fill_(0.0)
+        self.layer3.bias.data.fill_(0.0)      
 
-            nn.Linear(64, 1),
-            nn.Sigmoid(),
-        )
+        self.droupout1 = nn.Dropout(0.5)
+        self.droupout2 = nn.Dropout(0.5)
+        
+        self.relu1 = nn.LeakyReLU()  
+        self.relu2 = nn.LeakyReLU()
+        self.sigmoid = nn.Sigmoid()
 
+        self.has_init = True
 
     def forward(self, inputs):
         b = inputs.size()[0]
-        predict = self.classify(inputs.view(b, -1))
-        return predict
+        x = inputs.view(b,-1)
+
+        x = self.layer1(x)
+        x = self.relu1(x)
+        x = self.droupout1(x)
+        x = self.layer2(x)
+        x = self.relu2(x)
+        x = self.droupout2(x)
+        x = self.layer3(x)
+        x = self.sigmoid(x)
+        return x
 
 
     def get_output_shape(self):
         return (1024,1,1)
-
-
-class SmallDomainClassifer(WeightedModule):
-
-    def __init__(self):
-        super().__init__()
-        self.classify = nn.Sequential(
-            nn.Linear(2048, 1),
-            nn.Sigmoid(),
-        )
-
-    def forward(self, inputs):
-        b = inputs.size()[0]
-        predict = self.classify(inputs.view(b, -1))
-        return predict
 
 
 if __name__ == "__main__":

@@ -1,8 +1,22 @@
 
 Todoss:
-  ☐ @critical Finish eval process 
+  
+  ✔ @critical Finish eval process @done(19-03-03 18:55)
+ 
+  ✔ @critical choose optimizer. @done(19-03-03 19:51) 
+    chose SGD as default optimezer, same as TADA
+ 
+   @critical Confirm netword strctual:
+      ☐  the architecture of l_D, g_D
+      ☐  the architecture of C
+      ☐  the architecture of bottleneck
+
+  ✔ @high cheack lr in F and D, C @done(19-03-03 19:51)
+    lr set in function @_regist_losses 
+    F's lr is 10 times smaller than D and C
 
 Optimi:
+ 
   ☐ @low The count of local discriminator should not be constant
 
 

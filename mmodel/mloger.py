@@ -13,20 +13,6 @@ class GLOBAL(object):
     _LOGER_FLODER_ = './_MLOGS/'
     _SUMMARY_LOG_DIR = './SUMMARY.log'
 
-def summary_log():
-    
-    def __init__():
-        logger = logging.getLogger('summary')
-        handler = logging.FileHandler(GLOBAL._SUMMARY_LOG_DIR)
-        handler = logging.FileHandler(log_file)
-        self.record_dic = dict()
-        self.record_dic['train'] = list()
-        self.record_dic['file'] = list()
-
-    def train(key, value, **kwargs):
-        pass
-    
-
 def path_helper(base_folder_name, tag_name, create=True):
     '''get a path acordding `base_folder_name` and `tat_name`
     '''
@@ -63,8 +49,21 @@ def setup_log_folder_name(
 
     global LOG_DIR
     LOG_DIR = path_helper(base_folder_name=base_folder_name, tag_name=tag_name)
-    
 
+def read_step_and_loss(**kwargs):
+    result = dict()
+    pattern = re.compile(r'\[(.*?)\]')
+    for _, name in enumerate(kwargs):
+        with open(kwargs[name], mode='r') as f:
+            xs = list()
+            ys = list()
+            for line in f.readlines():
+                (x, y) = pattern.findall(line)
+                xs.append(float(x))
+                ys.append(float(y))
+            result[name] = (xs, ys)
+    return result
+    
 class LogCapsule(object):
     
     def __init__(
@@ -142,22 +141,7 @@ class LogCapsule(object):
 
     def _log_to_same_loger(self, s):
         self.logger.info(s)
-
-def read_step_and_loss(**kwargs):
-    result = dict()
-    pattern = re.compile(r'\[(.*?)\]')
-    for _, name in enumerate(kwargs):
-        with open(kwargs[name], mode='r') as f:
-            xs = list()
-            ys = list()
-            for line in f.readlines():
-                (x, y) = pattern.findall(line)
-                xs.append(float(x))
-                ys.append(float(y))
-            result[name] = (xs, ys)
-    return result
-
-                
+              
 
 
 if __name__ == "__main__":

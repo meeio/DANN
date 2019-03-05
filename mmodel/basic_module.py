@@ -72,7 +72,7 @@ class WeightedModule(nn.Module):
         str = name + "'s weights init from %s."
 
         if self.has_init:
-            logging.info(str % "Pretraied Model")
+            # logging.info(str % "Pretraied Model")
             return
 
         if record_path is not None:
