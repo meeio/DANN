@@ -521,8 +521,6 @@ class Network(TrainableModule):
             for i in range(0, len(self.unit_order) * 2, 2)
         ]
 
-        print('this is one')
-        current_gpu_usage()
 
         def get_losses_from(datas, domain):
             """ based on feeded 'datas' and correspond 'domain' calculating 
@@ -616,12 +614,18 @@ class Network(TrainableModule):
             u.train_module()
 
         self._update_loss(
-            "loss_F", loss_l_conf + loss_g_conf + loss_predict
+            "loss_F", loss_l_conf + loss_g_conf + loss_predict, retain_graph= False
         )
+
+        print('this is one')
+        current_gpu_usage()
 
         ## OPTIMIZE delete varilable
         del loss_l_conf, loss_g_conf, loss_predict
         del datas
+
+        print('this is two')
+        current_gpu_usage()
 
     def _make_prediction(self, feature, from_domain=None):
 

@@ -94,9 +94,9 @@ class TrainCapsule(nn.Module):
             return func()
         map(__one_networkd_call, self.optim_network)
 
-    def train_step(self):
+    def train_step(self, retain_graph=True):
         self.optimer.zero_grad()
-        self.optim_loss.value.backward(retain_graph=True)
+        self.optim_loss.value.backward(retain_graph=retain_graph)
         self.optimer.step()
 
     def registe_default_optimer(optim_type, **kwargs):

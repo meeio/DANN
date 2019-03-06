@@ -345,10 +345,10 @@ class TrainableModule(ABC, nn.Module):
             if datas is None or self.eval_once:
                 break
 
-    def _update_loss(self, loss_name, value):
+    def _update_loss(self, loss_name, value, retain_graph=True):
         self.losses[loss_name].value = value
         self.loggers[loss_name].record()
-        self.train_caps[loss_name].train_step()
+        self.train_caps[loss_name].train_step(retain_graph)
 
 
 class DAModule(TrainableModule):
