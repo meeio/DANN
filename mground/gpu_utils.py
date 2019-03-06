@@ -8,16 +8,31 @@ import torch.utils as utils
 
 
 def anpai(tom, use_gpu, need_logging=True):
-    """decide Cpu Or Gpu (cog) for list of tensor and module
+    ''' Send tensor or module(tom) to correspond devices(cpu or gpu) based on 'use_gpu'.
     
     Arguments:
-        tom {list} -- list of tensor and module
-        params {bool} -- indicate use gpu or not.
-
+        tom {list} -- A list or single target tensor or module.
+        use_gpu {bool} -- wheather to use gpu
+    
+    Keyword Arguments:
+        need_logging {bool} -- wheather to make logging (default: {True})
+    
     Returns:
-        list -- some as `tom` but in different divece.
-    """
-    # init a list to store result
+        [list] -- handled module or tensor
+    
+
+    Example
+    '
+        a = nn.res50()
+        b = input_tensor
+
+        use_gpu = param.use_gpu
+
+        a, b = anpai((a,b), use_gpu)
+    '
+    '''
+
+    ## init a list to store result
     handle = list()
     
     if not isinstance(tom, (list, tuple)):
@@ -85,3 +100,26 @@ def anpai(tom, use_gpu, need_logging=True):
     
 
     return handle[0] if len(handle) == 1 else handle
+
+import gc
+def memReport():
+    for obj in gc.get_objects():
+        if torch.is_tensor(obj):
+            print(type(obj), obj.size())
+
+import sys, os   
+import psutil
+def cpuStats():
+        print(sys.version)
+        print(psutil.cpu_percent())
+        print(psutil.virtual_memory())  # physical memory usage
+        pid = os.getpid()
+        py = psutil.Process(pid)
+        memoryUse = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
+        print('memory GB:', memoryUse)
+
+def current_gpu_usage():
+    print(torch.cuda.memory_allocated() / (1024**3))
+    print(torch.cuda.max_memory_allocated() / (1024**3))
+    print(torch.cuda.max_memory_cached() / (1024**3))
+    print('===================================')

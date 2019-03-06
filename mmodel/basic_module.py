@@ -54,8 +54,8 @@ class WeightedModule(nn.Module):
         self.lr_mult = 1
 
     def __call__(self, *input, **kwargs):
-        if not self.has_init:
-            raise Exception("Init weight before you use it")
+        # if not self.has_init:
+        #     raise Exception("Init weight before you use it")
         return super().__call__(*input, **kwargs)
 
     def weight_init(self, handler=None, record_path=None):
@@ -101,7 +101,8 @@ class WeightedModule(nn.Module):
         torch.save(self.cpu().state_dict(), f)
         return os.path.abspath(f)
 
-class ELoaderIter():
+
+class ELoaderIter:
 
     """ A helper class which iter a dataloader endnessly
     
@@ -113,7 +114,7 @@ class ELoaderIter():
     def __init__(self, dataloader):
         self.l = dataloader
         self.it = None
-    
+
     def next(self, need_end=False):
         """ return next item of dataloader, if use 'endness' mode, 
         the iteration will not stop after one epoch
@@ -128,14 +129,15 @@ class ELoaderIter():
 
         if self.it == None:
             self.it = iter(self.l)
-        
+
         try:
             i = next(self.it)
         except Exception:
             self.it = iter(self.l)
             i = next(self.it) if not need_end else None
-        
+
         return i
+
 
 class TrainableModule(ABC, nn.Module):
 
@@ -146,7 +148,7 @@ class TrainableModule(ABC, nn.Module):
 
     def __init__(self, params):
 
-        super(TrainableModule,self).__init__()
+        super(TrainableModule, self).__init__()
 
         self.params = params
         self.log_step = self.params.log_per_step
@@ -164,6 +166,12 @@ class TrainableModule(ABC, nn.Module):
         self.train_caps = dict()
         self.loggers = dict()
 
+        T = torch.zeros(1)
+        S = torch.ones(1)
+        self.T, self.S = anpai(
+            (T, S), use_gpu=params.use_gpu, need_logging=False
+        )
+
     def _all_ready(self):
 
         # Registe all needed work
@@ -171,14 +179,17 @@ class TrainableModule(ABC, nn.Module):
         WeightedModule.register_weight_handler(_basic_weights_init_helper)
         # get all networks and init weights
         networks = self._regist_networks()
-        for _,i in networks.items():
+        assert type(networks) is dict
+
+        for _, i in networks.items():
             try:
                 i.weight_init()
             except Exception:
                 pass
         # send networks to gup
         networks = {
-            i :anpai(j, use_gpu=True) for i,j in networks.items()
+            i: anpai(j, use_gpu=self.params.use_gpu)
+            for i, j in networks.items()
         }
         # make network be class attrs
         for i, j in networks.items():
@@ -208,7 +219,7 @@ class TrainableModule(ABC, nn.Module):
         train_loaders = list()
         valid_loaders = list()
         return data_info, train_loaders, valid_loaders
-    
+
     @abstractclassmethod
     def _feed_data(self, mode):
         """ feed example based on dataloaders
@@ -218,7 +229,7 @@ class TrainableModule(ABC, nn.Module):
         """
         datas = list()
         return datas
-    
+
     @abstractclassmethod
     def _regist_losses(self):
         """ regist lossed with the help of regist loss
@@ -226,7 +237,7 @@ class TrainableModule(ABC, nn.Module):
         Returns:
             list -- all datas needed.
         """
-        return 
+        return
 
     @abstractclassmethod
     def _regist_networks(self):
@@ -243,19 +254,19 @@ class TrainableModule(ABC, nn.Module):
         """process to train 
         """
         pass
-    
+
     @abstractclassmethod
     def _eval_process(self, datas, **kwargs):
         """process to eval 
         """
         pass
-    
+
     @abstractclassmethod
     def _log_process(self):
         """ make logs
         """
         return
-    
+
     def regist_loss(self, loss_name, *networks_key):
         """registe loss according loss_name and relative networks.
         after this process the loss will bind to the weight of networks, which means this loss will used to update weights of provied networks.
@@ -266,7 +277,7 @@ class TrainableModule(ABC, nn.Module):
         """
 
         if type(networks_key[0]) is str:
-            networks = [ self.networks[i] for i in networks_key ]
+            networks = [self.networks[i] for i in networks_key]
         else:
             networks = networks_key
 
@@ -284,16 +295,14 @@ class TrainableModule(ABC, nn.Module):
         self.losses.fix_loss_keys()
 
         # set all networks to train mode
-        for _,i in self.networks.items():
+        for _, i in self.networks.items():
             i.train(True)
 
         for _ in range(self.steps):
 
-            datas = self._feed_data(mode='train')
-            
-            datas = anpai(
-                datas, self.params.use_gpu, need_logging=False
-            )
+            datas = self._feed_data(mode="train")
+
+            datas = anpai(datas, self.params.use_gpu, need_logging=False)
             self._train_process(datas, **kwargs)
 
             # re calculate learning rates
@@ -307,30 +316,30 @@ class TrainableModule(ABC, nn.Module):
 
             # begain eval
             if self.golbal_step % self.eval_step == (self.eval_step - 1):
-                                
+
                 self.eval_module(**kwargs)
                 # set all networks to train mode
-                for _,i in self.networks.items():
+                for _, i in self.networks.items():
                     i.train(True)
 
             self._finish_a_train_process()
 
     def _finish_a_train_process(self):
-        self.golbal_step +=1
+        self.golbal_step += 1
 
     def eval_module(self, **kwargs):
         # set all networks to eval mode
-        for _,i in self.networks.items():
+        for _, i in self.networks.items():
             i.eval()
 
         while True:
-            datas = self._feed_data(mode='valid')
-            
+            datas = self._feed_data(mode="valid")
+
             if datas is not None:
                 datas = anpai(
                     datas, self.params.use_gpu, need_logging=False
                 )
-            
+
             self._eval_process(datas, **kwargs)
 
             if datas is None or self.eval_once:
@@ -341,8 +350,8 @@ class TrainableModule(ABC, nn.Module):
         self.loggers[loss_name].record()
         self.train_caps[loss_name].train_step()
 
-class DAModule(TrainableModule):
 
+class DAModule(TrainableModule):
     def __init__(self, params):
         super(DAModule, self).__init__(params)
 
@@ -357,7 +366,10 @@ class DAModule(TrainableModule):
         self.TrainCpasule = TrainCapsule
         # set default optim function
         TrainCapsule.registe_default_optimer(
-            torch.optim.SGD, lr=params.lr, weight_decay=0.0005, momentum=0.9
+            torch.optim.SGD,
+            lr=params.lr,
+            weight_decay=0.0005,
+            momentum=0.9,
         )
 
         # define valid losses
@@ -372,7 +384,9 @@ class DAModule(TrainableModule):
         self.total_step = self.params.steps
 
         # init global label
-        self.TARGET, self.SOURCE = self.__batch_domain_label__(params.batch_size)
+        self.TARGET, self.SOURCE = self.__batch_domain_label__(
+            params.batch_size
+        )
 
     @abstractclassmethod
     def _train_step(self, s_img, s_label, t_img):
@@ -383,39 +397,56 @@ class DAModule(TrainableModule):
         pass
 
     def _prepare_data(self):
-        
+
         params = self.params
 
-        s_set_name = getattr(mdl.DSNames, params.sdsname)
-        t_set_name = getattr(mdl.DSNames, params.tdsname)
+        dataset = params.dataset
+        source = params.sdsname
+        target = params.tdsname
 
-        t_s_data_set, t_s_dl = mdl.load_dataset(
-            s_set_name, params.batch_size, size=32, gray=params.gray
-        )
+        def get_set(dataset, domain, split):
+            if dataset is None:
+                dataset = mdl.get_dataset(
+                    dataset=domain, domain=None, split=split
+                )
+            else:
+                dataset = mdl.get_dataset(
+                    dataset=dataset, domain=domain, split=split
+                )
+            return dataset
 
-        t_t_data_set, t_t_dl = mdl.load_dataset(
-            t_set_name, params.batch_size, size=32, gray=params.gray
-        )
+        train_S_set = mdl.get_dataset(dataset, source, split="train")
+        train_T_set = mdl.get_dataset(dataset, target, split="train")
+        valid_set = mdl.get_dataset(dataset, target, split="test")
 
-        v_t_data_set, v_t_dl = mdl.load_dataset(
-            t_set_name, params.batch_size, size=32, gray=params.gray, split="test"
-        )
+        def get_loader(dataset, shuffle):
+            DataLoader = torch.utils.data.DataLoader
+            train_S_loader = DataLoader(
+                train_S_set,
+                batch_size=params.batch_size,
+                drop_last=False,
+                shuffle=shuffle,
+            )
 
-        return None, (t_s_dl, t_t_dl), (v_t_dl,)
-    
+        train_S_l = get_loader(train_S_set, shuffle=False)
+        train_T_l = get_loader(train_T_set, shuffle=True)
+        valid_l = get_loader(valid_set, shuffle=False)
+
+        return None, (train_S_l, train_T_l), (valid_l,)
+
     def _feed_data(self, mode, *args, **kwargs):
 
         if self.iters[mode] is None:
-            if mode == 'train':
+            if mode == "train":
                 sloader, tloader = self.train_loaders
                 eits = ELoaderIter(sloader), ELoaderIter(tloader)
             else:
                 loader = self.valid_loaders[0]
                 eits = ELoaderIter(loader)
             self.iters[mode] = eits
-            
+
         its = self.iters[mode]
-        if mode == 'train':
+        if mode == "train":
             s_img, s_label = its[0].next()
             t_img, _ = its[1].next()
             return s_img, s_label, t_img
@@ -446,7 +477,8 @@ class DAModule(TrainableModule):
         )
 
         logging.info(
-            "Current best accurace is %3.3f%%." % (self.best_accurace * 100)
+            "Current best accurace is %3.3f%%."
+            % (self.best_accurace * 100)
         )
 
         for v in self.loggers.values():
@@ -461,7 +493,7 @@ class DAModule(TrainableModule):
         def handle_datas(datas):
 
             right = total = 0
-        
+
             img, label = datas
             # get result from a valid_step
             predict = self._valid_step(img)
@@ -479,16 +511,15 @@ class DAModule(TrainableModule):
 
             return corrent_count, current_size
 
-        
         if not end_epoch:
-            right, size  = handle_datas(datas)
+            right, size = handle_datas(datas)
             self.total += size
             self.corret += right
         else:
             logging.info("End a evaling step.")
             self.log_valid_loss.log_current_avg_loss(self.golbal_step)
             self.log_valid_acrr.log_current_avg_loss(self.golbal_step)
-            accu = self. corret * 1.0 / self.total
+            accu = self.corret * 1.0 / self.total
             self.best_accurace = max((self.best_accurace, accu))
             self.total = self.corret = 0
 

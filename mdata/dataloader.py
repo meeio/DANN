@@ -12,15 +12,11 @@ from enum import Enum
 
 import os
 
-
-class DSNames(Enum):
-    """Names for every Datasets
-
-    """
-
-    SVHN = "SVHN"
-    MNIST = "MNIST"
-
+DS = [
+    "SVHN",
+    "MNIST",
+    "OFFIE",
+]
 
 class DSStastic:
     """Mean and Std for very Datasets
@@ -31,16 +27,12 @@ class DSStastic:
     MNIST = np.array(([0.44, 0.44, 0.44], [0.19, 0.19, 0.191]))
 
 
-def load_dataset(
-    name,
-    batch_size,
-    root="./data",
+def get_dataset(
+    dsname,
+    domain=None,
     split="train",
-    download=False,
-    mode="norm",
     size=224,
-    gray=True,
-    shuffle=True,
+    gray=False,
 ):
     """Helpper function to get `DataLoader` of specific datasets 
     
@@ -59,12 +51,15 @@ def load_dataset(
         [DataLoader] -- [a DataLoader for the dataset]
     """
 
-    dsname = name.value
-    mean_std = getattr(DSStastic, dsname)
+    if split in ["train", "test", "valid"]:
+        raise Exception("Not support " + str(split))
 
-    mean = mean_std[0]
-    std = mean_std[1]
+    #########################################
+    #! Prepare dataset translation
+    #########################################
 
+    ## UGLY need optim 
+    
     trans = [
         transforms.Resize(size),
         transforms.ToTensor(),
@@ -78,24 +73,38 @@ def load_dataset(
 
     transform = transforms.Compose(trans)
 
-    try:
-        data_set = getattr(ds, dsname)(
-            root="./_PUBLIC_DATASET_/"+dsname, split=split, transform=transform, download=True
+    #########################################
+    #! Fetching dataset
+    #########################################
+    root = "./_PUBLIC_DATASET_/"
+
+    ## MNIST dataset
+    if dsname == "MNIST":
+        train = split == "train"
+        data_set = ds.MNIST(
+            root=root, train=train, transform=transform, download=True
         )
-    except:
-        train = split is "train"
-        data_set = getattr(ds, dsname)(
-            root="./_PUBLIC_DATASET_/"+dsname, train=train, transform=transform, download=True
+    ## SVHN dataset
+    elif dsname == "SVHN":
+        data_set = ds.SVHN(
+            root=root, split=split, transform=transform, download=True
         )
+    ## OFFICE dataset
+    elif dsname == "OFFICE":
+        if domain not in ['A', 'D', 'W']:
+            raise Exception(str(domain) + ' not in OFFICE dataset.')
+            data_set = ds.ImageFolder(
+                root = root + 'Office/' + domain,
+                transform=transform
+            )
 
-    data_loader = torch.utils.data.DataLoader(
-        data_set, batch_size=batch_size, shuffle=shuffle
-    )
 
-    return data_set, data_loader
+    return data_set #, data_loader
 
 
-def load_img_dataset(dataset, subset, batch_size, test=False, target_transform=None):
+def load_img_dataset(
+    dataset, subset, batch_size, test=False, target_transform=None
+):
 
     if test:
         trans_corp = [transforms.Resize(256), transforms.CenterCrop(224)]
@@ -172,10 +181,9 @@ def load_img_dataset(dataset, subset, batch_size, test=False, target_transform=N
 #         for i in sources:
 #             s = self.remap_source_target(i)
 #             source_classes[i] = s
-        
+
 #         icg = indepedent_class_group(source_classes)
 #         print(icg)
-        
 
 
 #     def remap_source_target(self, source):
@@ -184,7 +192,7 @@ def load_img_dataset(dataset, subset, batch_size, test=False, target_transform=N
 #         old_class_idx = find_classes(root)
 #         old_class_idx = {y: x for x, y in old_class_idx.items()}
 
-#         new_class_idx = dict() 
+#         new_class_idx = dict()
 #         for _, class_name in old_class_idx.items():
 #             target = self.total_classes[class_name]
 #             new_class_idx[class_name] = target
@@ -211,12 +219,10 @@ if __name__ == "__main__":
     # print(O_D.class_to_idx)
 
     dataset = ds.ImageFolder(
-        root="./_PUBLIC_DATASET_/" + 'Office_Shift' + "/" + 'A',
+        root="./_PUBLIC_DATASET_/" + "Office_Shift" + "/" + "A"
     )
 
-    data_loader = torch.utils.data.DataLoader(
-        dataset, batch_size=1
-    )
+    data_loader = torch.utils.data.DataLoader(dataset, batch_size=1)
 
     import numpy as np
 

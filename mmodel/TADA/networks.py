@@ -1,6 +1,8 @@
-import torch
 from torch import nn
+import torch
 from mmodel.basic_module import WeightedModule
+
+
 from torchvision.models import resnet50
 
 
@@ -100,3 +102,17 @@ class DomainClassifier(WeightedModule):
     def get_output_shape(self):
         return (1024,1,1)
 
+
+if __name__ == "__main__":
+
+    x = torch.Tensor(3, 10, 5, 5).random_(0, 10)
+    # spool = nn.AdaptiveAvgPool2d(1)
+    # def cpool():
+    #     pool = nn.AdaptiveAvgPool1d(1)
+    #     b, c, w, h = x.size()
+    #     x = x.view(b, c, w*h).permute(0, 2, 1)
+    #     x = pool(x).view(b, 1, w, h)
+    #     return x
+
+
+    # print(cpool(x).size())

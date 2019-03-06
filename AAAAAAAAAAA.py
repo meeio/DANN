@@ -16,6 +16,8 @@ from mmodel.AAAA.networks import *
 
 from params import get_param_parser
 
+from mground.gpu_utils import current_gpu_usage
+
 
 def get_c_param():
     parser = get_param_parser()
@@ -87,11 +89,12 @@ class PredictUnit(TrainableModule):
         self.bceloss = torch.nn.BCELoss()
         self.local_bceloss = torch.nn.BCELoss(reduction="none")
 
-        self._all_ready()
+        self.spital_size = 49
 
         ## NOTE checking important attribute.
         assert self.eval_once == True
 
+        self._all_ready()
     @property
     def turn_key(self):
         return self._turn_key[0]
@@ -127,39 +130,33 @@ class PredictUnit(TrainableModule):
 
     def _regist_networks(self):
 
-        ## REVIEW confirm the architecture of local domain classifer
         regist_dict = {
-            ## UGLY range should not be a constant
             "l_D_" + str(i): DomainClassifier(input_dim=2048)
-            for i in range(49)
+            for i in range(self.spital_size)
         }
 
-        ## REVIEW confirm the architecture of classifer
         regist_dict["C"] = Classifier(len(self.classes_to_idx))
 
-        ## REVIEW confirm the architecture of global domain classifer
         regist_dict["g_D"] = DomainClassifier(input_dim=256)
 
         return regist_dict
 
     def _regist_losses(self):
-        ## UGLY range should not be a constant
 
         self.TrainCpasule.registe_default_optimer(
             torch.optim.SGD, lr=params.lr, momentum=0.95
         )
 
-        local_dis_nets = ["l_D_" + str(i) for i in range(49)]
+        local_dis_nets = ["l_D_" + str(i) for i in range(self.spital_size)]
         self.regist_loss("local_dis", *local_dis_nets)
 
         self.regist_loss("global_dis", "g_D")
 
         self.regist_loss("classifer", "C")
 
-        # print(self.train_caps['classifer'].optimer.param_groups)
 
     def _local_dis(self, features):
-        """ given a feature mask, producing it's local attention        mask.
+        """ given a feature mask, producing it's local attention mask.
         
         Arguments:
             features {tensor} -- given feature
@@ -204,7 +201,7 @@ class PredictUnit(TrainableModule):
 
             # calculate local attention based on l_atten = 2 - H(D(f))
             l_domain_predict = self._local_dis(features)
-            l_atten = entropy(l_domain_predict)
+            l_atten = entropy(l_domain_predict.detach())
             l_atten = 2 - l_atten  # 1 + (1 - l_atten)
 
             # resize to size of feature
@@ -221,13 +218,13 @@ class PredictUnit(TrainableModule):
 
             # cal global attention and make predictionp
             g_domain_predict = self.g_D(g_features)
-            g_atten = entropy(g_domain_predict)
+            g_atten = entropy(g_domain_predict.detach())
             g_atten = 1 + g_atten
 
             ## NOTE the attention value will be calculated without grad.
             ## the grad will be compute.
             ## here l_atten and g_atten's requires_grad = True
-            self.attentions = (l_atten.detach(), g_atten.detach())
+            self.attentions = (l_atten, g_atten)
 
             #! If data comes from current unit then need trainning
             # update local domain discriminator
@@ -237,26 +234,26 @@ class PredictUnit(TrainableModule):
                 # resize local predict result to [b*49, 1]
                 l_domain_predict = l_domain_predict.view(-1, 1)
 
-                # domain label is tensor of size [1,1]
-                # repeat it to size of [b*49, 1]
-                l_domain_label = domain_label.repeat(
-                    l_domain_predict.size()
-                )
 
                 l_diss, l_G = self._adversiral_loss(
-                    l_domain_predict, l_domain_label
+                    l_domain_predict, domain_label
                 )
-
                 # perform the same process for global dis as local dis
-                g_domain_label = domain_label.repeat(
-                    g_domain_predict.size()
+                g_diss, g_G = self._adversiral_loss(
+                    g_domain_predict, domain_label
                 )
 
-                g_D, g_G = self._adversiral_loss(
-                    g_domain_predict, g_domain_label
-                )
+                ## REVIEW here constant 49 revers the 'average' op when calculate it.
+                ## WARM here the constance revers opration should be cheacked
+                self._update_loss("local_dis", l_diss * self.spital_size)
 
-                return (l_diss, g_D), (l_G, g_G)
+                # domain label is tensor of size [1,1]
+                # repeat it to size of [b*49, 1]
+                
+                self._update_loss("global_dis", g_diss)
+                del l_diss, g_diss
+               
+                return (None, None), (l_G, g_G)
             return None
 
         #########################################
@@ -279,11 +276,13 @@ class PredictUnit(TrainableModule):
             predict_loss = datas
 
             l_diss, g_diss = self.dis_losses
-            ## UGLY replace constant 49
-            ## REVIEW here constant 49 revers the 'average' op when calculate it.
-            self._update_loss("local_dis", l_diss * 49)
-            self._update_loss("global_dis", g_diss)
+            # ## REVIEW here constant 49 revers the 'average' op when calculate it.
+            # ## WARM here the constance revers opration should be cheacked
+            # self._update_loss("local_dis", l_diss * self.spital_size)
+            # self._update_loss("global_dis", g_diss)
             self._update_loss("predict", predict_loss)
+
+            del self.dis_losses
 
         else:
             raise Exception("stage false." + str(stage))
@@ -293,8 +292,8 @@ class PredictUnit(TrainableModule):
 
         if stage == STAGE["adaptation"]:
             if self.turn_key == self.hold_key:
-                dis, conf = self._stage(stage, datas, is_training=True)
-                self.dis_losses = dis
+                _, conf = self._stage(stage, datas, is_training=True)
+                # self.dis_losses = dis
                 self.confuse_losses = conf
             else:
                 self._stage(stage, datas, is_training=True)
@@ -317,6 +316,10 @@ class PredictUnit(TrainableModule):
 
     def _adversiral_loss(self, prediton, original_domain):
         creterion = self.bceloss
+
+        original_domain = original_domain.repeat(
+            prediton.size()
+        )
 
         loss_D = creterion(prediton, original_domain)
 
@@ -391,7 +394,7 @@ class Network(TrainableModule):
 
     @turn_key.setter
     def turn_key(self, turn_key):
-        assert len(turn_key) == 2
+        # assert len(turn_key) == 2
         self._turn_key[0] = turn_key
 
     def _iter_all_unit(self, func, **kwargs):
@@ -510,16 +513,14 @@ class Network(TrainableModule):
 
     def _train_process(self, datas, **kwargs):
 
-        source_domain_num = len(self.unit_order)
+        ## NOTE in a trainning process, multi batch will be feed
+
+        target_data = ((datas[-1], None),) # t_img = datas[-1]
         source_datas = [
             (datas[i], datas[i + 1])
-            for i in range(0, source_domain_num * 2, 2)
+            for i in range(0, len(self.unit_order) * 2, 2)
         ]
 
-        t_img = datas[-1]
-        target_data = ((t_img, None),)
-
-        # union_range = range(len(self.independ_class_seperation))
 
         def get_losses_from(datas, domain):
             """ based on feeded 'datas' and correspond 'domain' calculating 
@@ -595,6 +596,8 @@ class Network(TrainableModule):
         s_lconf, s_gconf, s_predict = get_losses_from(
             source_datas, Domain.S
         )
+
+
         t_lconf, t_gconf, t_predict = get_losses_from(
             target_data, Domain.T
         )
@@ -613,6 +616,10 @@ class Network(TrainableModule):
         self._update_loss(
             "loss_F", loss_l_conf + loss_g_conf + loss_predict
         )
+
+        ## OPTIMIZE delete varilable
+        del loss_l_conf, loss_g_conf, loss_predict
+        del datas
 
     def _make_prediction(self, feature, from_domain=None):
 
@@ -769,5 +776,9 @@ if __name__ == "__main__":
     )
 
     n = Network(params)
-    n.train_module()
+
+    try:
+        n.train_module()
+    finally:
+        current_gpu_usage()
 

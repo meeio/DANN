@@ -7,14 +7,17 @@ Todoss:
     chose SGD as default optimezer, same as TADA
  
    @critical Confirm netword strctual:
-      ☐  the architecture of l_D, g_D
-      ☐  the architecture of C
-      ☐  the architecture of bottleneck
+      ✔  the architecture of l_D, g_D @done(19-03-06 10:44)
+      ✔  the architecture of C @done(19-03-06 10:44)
+      ✔  the architecture of bottleneck @done(19-03-06 10:44)
 
   ✔ @high cheack lr in F and D, C @done(19-03-03 19:51)
     lr set in function @_regist_losses 
     F's lr is 10 times smaller than D and C
 
+  @critical Module Memory Issue:
+        ☐  run out of memory.
+  
 Explore:
 
   The variarance of `Bottleneck`:
@@ -25,6 +28,5 @@ Code Optim:
  
   ☐ @low The count of local discriminator should not be constant
 
-
-
-  
+Implement TADA:
+  ☐ coding
