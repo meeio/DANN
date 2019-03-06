@@ -101,22 +101,22 @@ def anpai(tom, use_gpu, need_logging=True):
 
     return handle[0] if len(handle) == 1 else handle
 
-import gc
-def memReport():
-    for obj in gc.get_objects():
-        if torch.is_tensor(obj):
-            print(type(obj), obj.size())
+# import gc
+# def memReport():
+#     for obj in gc.get_objects():
+#         if torch.is_tensor(obj):
+#             print(type(obj), obj.size())
 
-import sys, os   
-import psutil
-def cpuStats():
-        print(sys.version)
-        print(psutil.cpu_percent())
-        print(psutil.virtual_memory())  # physical memory usage
-        pid = os.getpid()
-        py = psutil.Process(pid)
-        memoryUse = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
-        print('memory GB:', memoryUse)
+# import sys, os   
+# import psutil
+# def cpuStats():
+#         print(sys.version)
+#         print(psutil.cpu_percent())
+#         print(psutil.virtual_memory())  # physical memory usage
+#         pid = os.getpid()
+#         py = psutil.Process(pid)
+#         memoryUse = py.memory_info()[0] / 2. ** 30  # memory use in GB...I think
+#         print('memory GB:', memoryUse)
 
 def current_gpu_usage():
     print(torch.cuda.memory_allocated() / (1024**3))
