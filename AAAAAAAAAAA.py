@@ -521,6 +521,8 @@ class Network(TrainableModule):
             for i in range(0, len(self.unit_order) * 2, 2)
         ]
 
+        print('this is one')
+        current_gpu_usage()
 
         def get_losses_from(datas, domain):
             """ based on feeded 'datas' and correspond 'domain' calculating 
