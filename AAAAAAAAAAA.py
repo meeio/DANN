@@ -572,6 +572,10 @@ class Network(TrainableModule):
                     predict_loss = entropy(final_predict, reduction="mean")
                 predict_losses.append(predict_loss)
 
+                print('this is ' + str(idx))
+                current_gpu_usage()
+
+            assert False
             assert len(predict_losses) == len(datas)
 
             #########################################
@@ -617,15 +621,11 @@ class Network(TrainableModule):
             "loss_F", loss_l_conf + loss_g_conf + loss_predict, retain_graph= False
         )
 
-        print('this is one')
-        current_gpu_usage()
 
         ## OPTIMIZE delete varilable
         del loss_l_conf, loss_g_conf, loss_predict
         del datas
 
-        print('this is two')
-        current_gpu_usage()
 
     def _make_prediction(self, feature, from_domain=None):
 
