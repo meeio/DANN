@@ -235,11 +235,11 @@ class PredictUnit(TrainableModule):
                 l_domain_predict = l_domain_predict.view(-1, 1)
 
 
-                l_diss, l_G = self._adversiral_loss(
+                l_diss, l_confuse = self._adversiral_loss(
                     l_domain_predict, domain_label
                 )
                 # perform the same process for global dis as local dis
-                g_diss, g_G = self._adversiral_loss(
+                g_diss, g_confuse = self._adversiral_loss(
                     g_domain_predict, domain_label
                 )
 
@@ -253,7 +253,7 @@ class PredictUnit(TrainableModule):
                 self._update_loss("global_dis", g_diss)
                 del l_diss, g_diss
                
-                return (None, None), (l_G, g_G)
+                return (None, None), (l_confuse, g_confuse)
             return None
 
         #########################################
@@ -521,7 +521,6 @@ class Network(TrainableModule):
             for i in range(0, len(self.unit_order) * 2, 2)
         ]
 
-
         def get_losses_from(datas, domain):
             """ based on feeded 'datas' and correspond 'domain' calculating 
             'confusion loss' and 'prediction loss'. When datas from target domain, 
@@ -541,8 +540,15 @@ class Network(TrainableModule):
             ## Iter all feed data, with the help of predict union
             ## make a prediction, and calculate predict_loss
             #########################################
-            # predict_losses = list()
-            predict_losses = None
+            predict_losses = list()
+
+            
+            for idx, (img, label) in enumerate(datas):
+                feature = self.F(img)
+                predict_losses.append(feature)
+                print('this is ' + str(idx))
+                current_gpu_usage()
+            assert False
 
             for idx, (img, label) in enumerate(datas):
 
@@ -571,33 +577,29 @@ class Network(TrainableModule):
                     predict_loss = self.CE(final_predict, label)
                 else:
                     predict_loss = entropy(final_predict, reduction="mean")
-                # predict_losses.append(predict_loss)
-
-                if predict_losses is None:
-                    predict_losses = predict_loss
-                else:
-                    predict_losses += predict_loss
+                predict_losses.append(predict_loss)
 
                 print('this is ' + str(idx))
                 current_gpu_usage()
 
-            assert False
             assert len(predict_losses) == len(datas)
 
             #########################################
             #! Get confusion loss
             #########################################
-            l_confusion_losses = list()
+
+            ## WARM disable local loss here
+            # l_confusion_losses = list()
             g_confusion_losses = list()
 
             def get_confusion_loss(idx, domain):
                 c = self.unions[idx][domain].confuse_losses
-                l_confusion_losses.append(c[0])
+                # l_confusion_losses.append(c[0])
                 g_confusion_losses.append(c[1])
 
             self._iter_all_unit(get_confusion_loss)
 
-            l_confusion_loss = torch.mean(torch.stack(l_confusion_losses))
+            # l_confusion_loss = torch.mean(torch.stack(l_confusion_losses))
             g_confusion_loss = torch.mean(torch.stack(g_confusion_losses))
             predict_loss = torch.mean(torch.stack(predict_losses))
 
