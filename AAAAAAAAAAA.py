@@ -541,7 +541,8 @@ class Network(TrainableModule):
             ## Iter all feed data, with the help of predict union
             ## make a prediction, and calculate predict_loss
             #########################################
-            predict_losses = list()
+            # predict_losses = list()
+            predict_losses = None
 
             for idx, (img, label) in enumerate(datas):
 
@@ -570,7 +571,12 @@ class Network(TrainableModule):
                     predict_loss = self.CE(final_predict, label)
                 else:
                     predict_loss = entropy(final_predict, reduction="mean")
-                predict_losses.append(predict_loss)
+                # predict_losses.append(predict_loss)
+
+                if predict_losses is None:
+                    predict_losses = predict_loss
+                else:
+                    predict_losses += predict_loss
 
                 print('this is ' + str(idx))
                 current_gpu_usage()
