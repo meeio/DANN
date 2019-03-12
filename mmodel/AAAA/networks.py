@@ -2,7 +2,6 @@ import torch
 from torch import nn
 from mmodel.basic_module import WeightedModule
 from torchvision.models import resnet50
-from torch import FunctionSchema
 
 class TenthGrad(torch.autograd.Function):
     @staticmethod
