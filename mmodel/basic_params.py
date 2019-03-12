@@ -5,7 +5,7 @@ def get_param_parser():
     Returns:
         dict -- dict of parameters
     """
-
+    
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
@@ -26,7 +26,7 @@ def get_param_parser():
 
     parser.add_argument("--steps", type=int, default=150000, help="Epochs of train data")
 
-    parser.add_argument("--log_per_step", type=int, default=100, help="Epochs of train data")
+    parser.add_argument("--log_per_step", type=int, default=10, help="Epochs of train data")
 
     parser.add_argument("--eval_per_step", type=int, default=1000, help="Epochs of train data")
 

@@ -2,16 +2,13 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 import logging
-import torchvision
-import numpy as np
 
 from mground.gpu_utils import anpai
 
 import os
-from mmodel.train_capsule import TrainCapsule, LossHolder
-from mmodel.mloger import LogCapsule
+from mtrain.train_capsule import TrainCapsule, LossHolder
+from mtrain.mloger import LogCapsule
 
-import mdata.dataloader as mdl
 import mdata.dataloader as mdl
 from abc import ABC, abstractclassmethod
 
@@ -59,7 +56,8 @@ class WeightedModule(nn.Module):
         return super().__call__(*input, **kwargs)
 
     def weight_init(self, handler=None, record_path=None):
-        """initial weights with help function `handler` or a path of check point `record_path` to restore, if neither of those are provide, leave init jod to torch inner function.
+        """initial weights with help function `handler` or a path of check point `record_path` to restore, if neither of those are provide, leave init 
+        jod to torch inner function.
 
             handler (function, optional): Defaults to None. use to init weights, such function must has sigture of `handler(Module)`.
             record_path (str, optional): Defaults to None. use to locate cheack point file.
@@ -139,7 +137,7 @@ class ELoaderIter:
         return i
 
 
-class TrainableModule(ABC, nn.Module):
+class TrainableModule(ABC):
 
     """ An ABC, a Tranable Module is a teample class need to define
     data process, train step and eval_step
@@ -349,7 +347,7 @@ class TrainableModule(ABC, nn.Module):
     def _update_loss(self, loss_name, value, retain_graph=True):
         self.losses[loss_name].value = value
         self.train_caps[loss_name].train_step(retain_graph)
-    
+
     def _update_log(self, loss_name, value):
         self.losses[loss_name].value = value
         self.loggers[loss_name].record()

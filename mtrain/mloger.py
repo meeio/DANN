@@ -1,7 +1,7 @@
 import logging
 import datetime
 import os
-from mmodel.train_capsule import LossBuket
+from mtrain.train_capsule import LossBuket
 import re
 
 LOG_DIR = ""
@@ -142,7 +142,6 @@ class LogCapsule(object):
     def _log_to_same_loger(self, s):
         self.logger.info(s)
               
-
 
 if __name__ == "__main__":
     

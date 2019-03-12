@@ -5,25 +5,6 @@ from mmodel.basic_module import WeightedModule
 
 from torchvision.models import resnet50
 
-
-class FeatureExtroctor(WeightedModule):
-    
-    def __init__(self, params):
-        super().__init__()
-
-        res = resnet50(pretrained=True)
-        layers = list(res.children())[:-2]
-
-        self.F = torch.nn.Sequential(*layers)
-        self.has_init = True
-    
-    def forward(self, inputs):
-        features = self.F(inputs)
-        return features
-
-    def output_size(self):
-        return [2048, 7, 7]
-
 class Bottleneck(WeightedModule):
 
     def __init__(self, params):

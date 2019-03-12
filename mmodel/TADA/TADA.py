@@ -1,36 +1,19 @@
 import torch
-from params import get_params
-import logging
 
-from mmodel.mloger import GLOBAL
-from mmodel.basic_module import DAModule
+from mtrain import mloger
 
-from mmodel.TADA.networks import *
+from mground.math_utils import entropy
+
+from ..params import get_params
+from ..basic_module import DAModule
+from ..utils.feature_extractor import Res50FeatureExtroctor
 
 
-def entropy(inputs, reduction="none"):
-    """given a propobility inputs in range [0-1], calculate entroy
-    
-    Arguments:
-        inputs {tensor} -- inputs
-    
-    Returns:
-        tensor -- entropy
-    """
+params = get_params()
 
-    def entropy(p):
-        return -1 * p * torch.log(p)
-
-    e = entropy(inputs) + entropy(1 - inputs)
-
-    if reduction == "none":
-        return e
-    elif reduction == "mean":
-        return torch.mean(e)
-    else:
-        raise Exception("Not have such reduction mode.")
 
 def adversarial_losses(prediction, label):
+    
     creterion = nn.BCELoss()
 
     label = label.repeat(prediction.size())
@@ -39,8 +22,8 @@ def adversarial_losses(prediction, label):
 
 
 class TADA(DAModule):
-    def __init__(self, params):
-
+    def __init__(self):
+        
         super(MANN, self).__init__(params)
         params.dataset = 'OFFICE'
         params.source = 'A'
@@ -69,21 +52,12 @@ class TADA(DAModule):
     
     def _regist_losses(self):
         
-        #########################################
-        ## regist loss for feature extractor,
-        ## which lr is tenth of setting
-        #########################################
-        self.TrainCpasule.registe_default_optimer(
-            torch.optim.SGD, lr=params.lr * 0.1, momentum=0.95
-        )
-        self.regist_loss('loss_F', self.F)
 
-        #########################################
-        ## regist loss for B and D
-        #########################################
         self.TrainCpasule.registe_default_optimer(
             torch.optim.SGD, lr=params.lr, momentum=0.95
         )
+        self.regist_loss('loss_F', self.F)
+
         self.regist_loss('loss_B', self.B)
         self.regist_loss('loss_gD', self.gD)
         lDs = [v for k, v in self.networks.items() if 'lD_' in k]
@@ -172,18 +146,4 @@ class TADA(DAModule):
         
         S_loss_dis, _, S_loss_prediction = calculate_losses(s_img, s_label)
         T_loss_dis, l_conf, T_loss_prediction = calculate_losses(s_img, s_label)
-        
-
-
-if __name__ == "__main__":
-
-    params = get_params()
-
-    GLOBAL._TAG_ = params.tag
-
-    logging.basicConfig(
-        level=logging.INFO, format=" \t | %(levelname)s |==> %(message)s"
-    )
-
-    nadd = MANN(params)
-    nadd.train()
+    

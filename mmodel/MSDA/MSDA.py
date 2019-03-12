@@ -1,54 +1,19 @@
+import itertools
+import logging
+
 import torch
 
-import logging
-import itertools
-
-from statistics import mean
-
-from mmodel.basic_module import *
-
-from mmodel.mloger import GLOBAL, LogCapsule
-
-from mground.func_utils import make_weighted_sum
-
 from mdata.partial_folder import MultiFolderDataHandler
-from mmodel.AAAA.networks import *
-
-from params import get_param_parser
-
 from mground.gpu_utils import current_gpu_usage
+from mground.math_utils import entropy, make_weighted_sum
+from mtrain.mloger import GLOBAL, LogCapsule
 
+from ..basic_module import *
+from ..utils.feature_extractor import Res50FeatureExtroctor
+from .networks import *
+from .params import get_params
 
-def get_c_param():
-    parser = get_param_parser()
-    parser.add_argument("--gamma", type=float, default=0.01)
-    parser.add_argument("--local_attention", type=bool, default=False)
-    return parser.parse_args()
-
-
-def entropy(inputs, reduction="none"):
-    """given a propobility inputs in range [0-1], calculate entroy
-    
-    Arguments:
-        inputs {tensor} -- inputs
-    
-    Returns:
-        tensor -- entropy
-    """
-
-    def entropy(p):
-        return -1 * p * torch.log(p)
-
-    e = entropy(inputs) + entropy(1 - inputs)
-
-    if reduction == "none":
-        return e
-    elif reduction == "mean":
-        return torch.mean(e)
-    else:
-        raise Exception("Not have such reduction mode.")
-
-
+params = get_params()
 STAGE = {"adaptation": 0, "prediction": 1, "training": 3}
 
 
@@ -141,7 +106,7 @@ class PredictUnit(TrainableModule):
     def _regist_losses(self):
 
         self.TrainCpasule.registe_default_optimer(
-            torch.optim.SGD, lr=params.lr, momentum=0.95
+            torch.optim.SGD, lr=self.params.lr, momentum=0.95
         )
 
         if self.use_local_atten:
@@ -152,7 +117,7 @@ class PredictUnit(TrainableModule):
 
         self.regist_loss("global_dis", "g_D")
 
-        self.regist_loss("classifer", "C")
+        self.regist_loss("predict", "C")
 
     def _local_dis(self, features):
         """ given a feature mask, producing it's local attention mask.
@@ -214,12 +179,12 @@ class PredictUnit(TrainableModule):
             # go throught bottleneck layers
             g_features = self.B(features)
 
+            ## NOTE the attention value will be calculated without grad.
             # cal global attention and make predictionp
             g_domain_predict = self.g_D(g_features)
             g_atten = entropy(g_domain_predict.detach())
             g_atten = 1 + g_atten
 
-            ## NOTE the attention value will be calculated without grad.
             ## the grad will be compute.
             ## here l_atten and g_atten's requires_grad = True
             self.attentions = (l_atten, g_atten)
@@ -259,14 +224,13 @@ class PredictUnit(TrainableModule):
         ## begain stage two
         ## in the stage tow, classes prediction are made
         #########################################
-        elif stage == STAGE["updating"]:
+        elif stage == STAGE["training"]:
             assert is_training
             predict_loss = datas
-
             l_diss, g_diss = self.dis_losses
             ## REVIEW here constant 49 revers the 'average' op when calculate it.
             ## WARM here the constance revers opration should be cheacked
-            if self.use_local_attn:
+            if self.use_local_atten:
                 self._update_loss("local_dis", l_diss * self.spital_size)
             self._update_loss("global_dis", g_diss)
             self._update_loss("predict", predict_loss)
@@ -281,8 +245,8 @@ class PredictUnit(TrainableModule):
 
         if stage == STAGE["adaptation"]:
             if self.turn_key == self.hold_key:
-                _, conf = self._stage(stage, datas, is_training=True)
-                # self.dis_losses = dis
+                dis, conf = self._stage(stage, datas, is_training=True)
+                self.dis_losses = dis
                 self.confuse_losses = conf
             else:
                 self._stage(stage, datas, is_training=True)
@@ -294,10 +258,10 @@ class PredictUnit(TrainableModule):
             self._stage(stage, datas, is_training=True)
 
         else:
-            raise Exception('No such stage!')
+            raise Exception("No such stage!")
 
     def _finish_a_train_process(self):
-        if self.current_stage == STAGE['training']:
+        if self.current_stage == STAGE["training"]:
             self.golbal_step += 1
 
     def _log_process(self):
@@ -330,8 +294,9 @@ class PredictUnit(TrainableModule):
 
 
 class Network(TrainableModule):
-    def __init__(self, params):
-        super(Network, self).__init__(params)
+    def __init__(self):
+        super(Network, self).__init__(get_params())
+        params = get_params()
 
         self.use_local_atten = params.local_attention
         # init multi source image folder handler
@@ -399,7 +364,7 @@ class Network(TrainableModule):
         ## two stage featrue extractor
         #########################################
         bottleneck = Bottleneck(self.params)
-        F = FeatureExtroctor(self.params)
+        F = Res50FeatureExtroctor(self.params)
 
         #########################################
         ## prediction union and units
@@ -427,12 +392,12 @@ class Network(TrainableModule):
     def _regist_losses(self):
 
         self.TrainCpasule.registe_default_optimer(
-            torch.optim.SGD, lr=params.lr, momentum=0.95
+            torch.optim.SGD, lr=self.params.lr, momentum=0.95
         )
-        self.regist_loss('loss', self.networks['B'], self.networks['F'])
+        self.regist_loss("loss", self.networks["B"], self.networks["F"])
 
-        self.regist_log('prediction')
-        self.regist_log('confusion')
+        self.regist_log("prediction")
+        self.regist_log("confusion")
 
     def _prepare_data(self):
         """ return dataloader.
@@ -508,12 +473,11 @@ class Network(TrainableModule):
     def _train_process(self, datas, **kwargs):
 
         ## NOTE in a trainning process, multi batch will be feed
-
-        target_data = ((datas[-1], None),)  # t_img = datas[-1]
         source_datas = [
             (datas[i], datas[i + 1])
             for i in range(0, len(self.unit_order) * 2, 2)
         ]
+        target_data = ((datas[-1], None),)
 
         def get_losses_from(datas, domain):
             """ based on feeded 'datas' and correspond 'domain' calculating 
@@ -595,14 +559,12 @@ class Network(TrainableModule):
             source_datas, Domain.S
         )
 
-    
         t_lconf, t_gconf, t_predict = get_losses_from(
             target_data, Domain.T
         )
 
         predict_loss = s_predict + self.params.gamma * t_predict
         confuse_loss = s_gconf + t_gconf
-
 
         inputs = (STAGE["training"], predict_loss)
 
@@ -611,11 +573,14 @@ class Network(TrainableModule):
             u.set_data(inputs)
             u.train_module()
 
-        self._update_log('prediction', predict_loss)
-        self._update_log('confusion', confuse_loss)
+        self._iter_all_unit(train_unit)
 
-        self._update_loss('loss', predict_loss + confuse_loss, retain_graph=False)
+        self._update_log("prediction", predict_loss)
+        self._update_log("confusion", confuse_loss)
 
+        self._update_loss(
+            "loss", predict_loss + confuse_loss, retain_graph=False
+        )
 
         ## OPTIMIZE delete varilable
         del datas, predict_loss, confuse_loss
@@ -803,4 +768,3 @@ if __name__ == "__main__":
         n.train_module()
     finally:
         current_gpu_usage()
-
