@@ -603,6 +603,7 @@ class Network(TrainableModule):
         predict_loss = s_predict + self.params.gamma * t_predict
         confuse_loss = s_gconf + t_gconf
 
+
         inputs = (STAGE["training"], predict_loss)
 
         def train_unit(idx, domain):
