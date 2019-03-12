@@ -418,8 +418,9 @@ class Network(TrainableModule):
 
         data_info = None
 
+        ## NOTE drop last batch here
         icgs, target_loader, valid_loader = (
-            self.mhandler.seperation_with_loader()
+            self.mhandler.seperation_with_loader(drop_last=True)
         )
 
         # return all iters
