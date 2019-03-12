@@ -8,7 +8,7 @@ def make_weighted_sum(vw):
     return r
 
 
-def entropy(inputs, reduction="none"):
+def entropy(inputs, reduction="none", binary = True):
     """given a propobility inputs in range [0-1], calculate entroy
     
     Arguments:
@@ -21,7 +21,10 @@ def entropy(inputs, reduction="none"):
     def entropy(p):
         return -1 * p * torch.log(p)
 
-    e = entropy(inputs) + entropy(1 - inputs)
+    if binary:
+        e = entropy(inputs) + entropy(1 - inputs)
+    else:
+        e = entropy(inputs)
 
     if reduction == "none":
         return e

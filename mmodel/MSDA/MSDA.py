@@ -182,7 +182,7 @@ class PredictUnit(TrainableModule):
             ## NOTE the attention value will be calculated without grad.
             # cal global attention and make predictionp
             g_domain_predict = self.g_D(g_features)
-            g_atten = entropy(g_domain_predict.detach())
+            g_atten = entropy(g_domain_predict)
             g_atten = 1 + g_atten
 
             ## the grad will be compute.
@@ -232,8 +232,8 @@ class PredictUnit(TrainableModule):
             ## WARM here the constance revers opration should be cheacked
             if self.use_local_atten:
                 self._update_loss("local_dis", l_diss * self.spital_size)
-            self._update_loss("global_dis", g_diss)
-            self._update_loss("predict", predict_loss)
+            self._update_loss("global_dis", g_diss + predict_loss)
+            # self._update_loss("predict", predict_loss)
 
             del self.dis_losses
 
@@ -281,11 +281,8 @@ class PredictUnit(TrainableModule):
         # original gan loss will be:
         # loss_G = bce_loss(source_predict, TARGET_DOMAIN)
         # loss_G = bce_loss(target_predict, SOURCE_DOMAIN)
-        other_domain = torch.abs(original_domain - 1)
-        loss_G = creterion(prediton, original_domain) + creterion(
-            prediton, other_domain
-        )
-        loss_G = 0.5 * loss_G
+        target = torch.abs(original_domain - 0.5)
+        loss_G = creterion(prediton, target) 
 
         return loss_D, loss_G
 
@@ -376,16 +373,28 @@ class Network(TrainableModule):
 
         def create_predict_unit(idx, domain):
             hold_key = (idx, domain)
-            unions[idx][domain] = PredictUnit(
+            p = PredictUnit(
                 self._turn_key,
                 hold_key,
                 classes_sep[idx],
                 self.params,
                 bottleneck,
             )
+            unions[idx][domain] = p
 
         self._iter_all_unit(create_predict_unit)
         self.unions = unions
+
+        classifer = list()
+        discriminator = list()
+
+        def get_classifer(idx, domain):
+            p = self.unions[idx][domain]
+            classifer.append(p.networks["C"])
+            discriminator.append(p.networks["g_D"])
+
+        self.classifers = classifer
+        self.discriminators = discriminator
 
         return {"F": F, "B": bottleneck, "softmax": nn.Softmax(dim=0)}
 
@@ -394,9 +403,15 @@ class Network(TrainableModule):
         self.TrainCpasule.registe_default_optimer(
             torch.optim.SGD, lr=self.params.lr, momentum=0.95
         )
-        self.regist_loss("loss", self.networks["B"], self.networks["F"])
+        self.regist_loss(
+            "loss",
+            self.networks["B"],
+            self.networks["F"],
+            *self.classifers
+        )
 
-        self.regist_log("prediction")
+        self.regist_log("s_prediction")
+        self.regist_log("t_prediction")
         self.regist_log("confusion")
 
     def _prepare_data(self):
@@ -419,8 +434,8 @@ class Network(TrainableModule):
         data_info = None
 
         ## NOTE drop last batch here
-        icgs, target_loader, valid_loader = (
-            self.mhandler.seperation_with_loader(drop_last=True)
+        icgs, target_loader, valid_loader = self.mhandler.seperation_with_loader(
+            drop_last=True
         )
 
         # return all iters
@@ -521,13 +536,16 @@ class Network(TrainableModule):
                 #########################################
                 final_predict = self._make_prediction(feature, domain)
 
+
                 #########################################
                 #! calculate predicton losses
                 #########################################
                 if label is not None:
                     predict_loss = self.CE(final_predict, label)
                 else:
-                    predict_loss = entropy(final_predict, reduction="mean")
+                    predict_loss = entropy(
+                        final_predict, reduction="mean", binary=False
+                    )
                 predict_losses.append(predict_loss)
 
             assert len(predict_losses) == len(datas)
@@ -576,7 +594,8 @@ class Network(TrainableModule):
 
         self._iter_all_unit(train_unit)
 
-        self._update_log("prediction", predict_loss)
+        self._update_log("s_prediction", s_predict)
+        self._update_log("t_prediction", t_predict)
         self._update_log("confusion", confuse_loss)
 
         self._update_loss(
@@ -671,15 +690,13 @@ class Network(TrainableModule):
             ]
 
         else:
-            enhanced_global_feature = [
-                self.B(feature) for i in range(len(union_range))
-            ]
+            enhanced_global_feature = self.B(feature)
 
         ## make prediction from all unit
         predict = [{} for i in union_range]
 
         def stage_classify(idx, domain):
-            inputs = (STAGE["prediction"], enhanced_global_feature[idx])
+            inputs = (STAGE["prediction"], enhanced_global_feature)
             unit = self.unions[idx][domain]
             unit.set_data(inputs)
             unit_process(unit)
@@ -702,6 +719,7 @@ class Network(TrainableModule):
             [union_predict[i] * union_g_atten[i] for i in union_range],
             dim=1,
         )
+
         final_predict = self.softmax(final_predict)
 
         return final_predict

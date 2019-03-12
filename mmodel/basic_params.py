@@ -28,7 +28,7 @@ def get_param_parser():
 
     parser.add_argument("--log_per_step", type=int, default=10, help="Epochs of train data")
 
-    parser.add_argument("--eval_per_step", type=int, default=1000, help="Epochs of train data")
+    parser.add_argument("--eval_per_step", type=int, default=50, help="Epochs of train data")
 
     parser.add_argument(
         "--sdsname", type=str, default="SVHN", help="data base we will use"
