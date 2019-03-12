@@ -283,10 +283,13 @@ class TrainableModule(ABC, nn.Module):
 
         self.losses[loss_name]
         t = TrainCapsule(self.losses[loss_name], networks)
+        self.train_caps[loss_name] = t
+
+    def regist_log(self, loss_name):
+        self.losses[loss_name]
         l = LogCapsule(
             self.losses[loss_name], loss_name, to_file=self.params.log
         )
-        self.train_caps[loss_name] = t
         self.loggers[loss_name] = l
 
     def train_module(self, **kwargs):
@@ -316,7 +319,6 @@ class TrainableModule(ABC, nn.Module):
 
             # begain eval
             if self.golbal_step % self.eval_step == (self.eval_step - 1):
-
                 self.eval_module(**kwargs)
                 # set all networks to train mode
                 for _, i in self.networks.items():
@@ -339,7 +341,6 @@ class TrainableModule(ABC, nn.Module):
                 datas = anpai(
                     datas, self.params.use_gpu, need_logging=False
                 )
-
             self._eval_process(datas, **kwargs)
 
             if datas is None or self.eval_once:
@@ -347,8 +348,11 @@ class TrainableModule(ABC, nn.Module):
 
     def _update_loss(self, loss_name, value, retain_graph=True):
         self.losses[loss_name].value = value
-        self.loggers[loss_name].record()
         self.train_caps[loss_name].train_step(retain_graph)
+    
+    def _update_log(self, loss_name, value):
+        self.losses[loss_name].value = value
+        self.loggers[loss_name].record()
 
 
 class DAModule(TrainableModule):

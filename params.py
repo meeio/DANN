@@ -9,7 +9,7 @@ def get_param_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--batch_size", type=int, default=2, help="Size for Mini-Batch Optimization"
+        "--batch_size", type=int, default=4, help="Size for Mini-Batch Optimization"
     )
 
     parser.add_argument(
@@ -28,7 +28,7 @@ def get_param_parser():
 
     parser.add_argument("--log_per_step", type=int, default=100, help="Epochs of train data")
 
-    parser.add_argument("--eval_per_step", type=int, default=500, help="Epochs of train data")
+    parser.add_argument("--eval_per_step", type=int, default=1000, help="Epochs of train data")
 
     parser.add_argument(
         "--sdsname", type=str, default="SVHN", help="data base we will use"

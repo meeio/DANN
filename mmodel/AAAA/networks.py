@@ -2,7 +2,19 @@ import torch
 from torch import nn
 from mmodel.basic_module import WeightedModule
 from torchvision.models import resnet50
+from torch import FunctionSchema
 
+class TenthGrad(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x):
+        return x.view_as(x)
+
+    @staticmethod
+    def backward(ctx, grad_output):
+        return grad_output * 0.1
+
+def one_tenth_grad(x):
+    return TenthGrad.apply(x)
 
 class FeatureExtroctor(WeightedModule):
     
@@ -17,6 +29,7 @@ class FeatureExtroctor(WeightedModule):
     
     def forward(self, inputs):
         features = self.F(inputs)
+        features = one_tenth_grad(features)
         return features
 
     def output_size(self):
