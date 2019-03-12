@@ -30,5 +30,7 @@ def entropy(inputs, reduction="none", binary = True):
         return e
     elif reduction == "mean":
         return torch.mean(e)
+    elif reduction == 'sum':
+        return torch.sum(e)
     else:
         raise Exception("Not have such reduction mode.")

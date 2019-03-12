@@ -232,7 +232,7 @@ class PredictUnit(TrainableModule):
             ## WARM here the constance revers opration should be cheacked
             if self.use_local_atten:
                 self._update_loss("local_dis", l_diss * self.spital_size)
-            self._update_loss("global_dis", g_diss + predict_loss)
+            self._update_loss("global_dis", g_diss)
             # self._update_loss("predict", predict_loss)
 
             del self.dis_losses
@@ -407,7 +407,7 @@ class Network(TrainableModule):
             "loss",
             self.networks["B"],
             self.networks["F"],
-            *self.classifers
+            # *self.classifers,
         )
 
         self.regist_log("s_prediction")
@@ -544,7 +544,7 @@ class Network(TrainableModule):
                     predict_loss = self.CE(final_predict, label)
                 else:
                     predict_loss = entropy(
-                        final_predict, reduction="mean", binary=False
+                        final_predict, reduction="sum", binary=False
                     )
                 predict_losses.append(predict_loss)
 
@@ -599,7 +599,7 @@ class Network(TrainableModule):
         self._update_log("confusion", confuse_loss)
 
         self._update_loss(
-            "loss", predict_loss + confuse_loss, retain_graph=False
+            "loss", confuse_loss, retain_graph=False
         )
 
         ## OPTIMIZE delete varilable
