@@ -12,35 +12,17 @@ def get_param_parser():
         "--batch_size", type=int, default=32, help="Size for Mini-Batch Optimization"
     )
 
-    parser.add_argument(
-        "--gray", type=bool, default=True, help="Size for Mini-Batch Optimization"
-    )
-
-    # parser.add_argument(
-    #     "--class_num", type=int, default=10, help="Class number of data set"
-    # )
 
     parser.add_argument(
         "--use_gpu", type=bool, default=True, help="Use GPU to train the model"
     )
 
-    parser.add_argument("--steps", type=int, default=10000, help="Epochs of train data")
+    parser.add_argument("--steps", type=int, default=25000, help="Epochs of train data")
 
-    parser.add_argument("--log_per_step", type=int, default=50, help="Epochs of train data")
+    parser.add_argument("--log_per_step", type=int, default=100, help="Epochs of train data")
 
-    parser.add_argument("--eval_per_step", type=int, default=300, help="Epochs of train data")
+    parser.add_argument("--eval_per_step", type=int, default=500, help="Epochs of train data")
 
-    parser.add_argument(
-        "--dataset", type=str, default="OFFICE", help="data base we will use"
-    )
-
-    parser.add_argument(
-        "--source", type=str, default="A", help="data base we will use"
-    )
-
-    parser.add_argument(
-        "--target", type=str, default="W", help="data base we will use"
-    )
 
     parser.add_argument(
         "--log", type=bool, default=True, help="log record data to file or not."
@@ -53,7 +35,19 @@ def get_param_parser():
     )
 
     parser.add_argument(
-        "--lr", type=float, default=0.1
+        "--lr", type=float, default=0.01
+    )
+
+    parser.add_argument(
+        "--dataset", type=str, default="OFFICE", help="data base we will use"
+    )
+
+    parser.add_argument(
+        "--source", type=str, default="A", help="data base we will use"
+    )
+
+    parser.add_argument(
+        "--target", type=str, default="W", help="data base we will use"
     )
 
     return parser

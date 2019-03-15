@@ -1,7 +1,5 @@
 import itertools
 
-import torch
-
 from mdata.partial_folder import MultiFolderDataHandler
 from mground.gpu_utils import current_gpu_usage
 from mground.math_utils import entropy, make_weighted_sum
@@ -42,7 +40,7 @@ class DANN(DAModule):
         def grader_reverse_lambda():
             return get_lambda(self.current_step, max_iter=self.total_steps)
 
-        F = AlexNetFc(bottleneck_dim=256, new_cls=True, class_num=31)
+        F = AlexNetFc(use_bottleneck=True,bottleneck_dim=256, new_cls=True, class_num=31)
         D = nn.Sequential(
             GradReverseLayer(coeff=grader_reverse_lambda),
             DomainClassifier(input_dim=256),

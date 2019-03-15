@@ -455,20 +455,20 @@ class DAModule(TrainableModule):
 
         train_S_set = mdl.get_dataset(dataset, source, split="train")
         train_T_set = mdl.get_dataset(dataset, target, split="train")
-        valid_set = mdl.get_dataset(dataset, source, split="test")
+        valid_set = mdl.get_dataset(dataset, target, split="test")
 
-        def get_loader(dataset, shuffle):
+        def get_loader(dataset, shuffle, drop_last):
             l = torch.utils.data.DataLoader(
                 dataset,
                 batch_size=params.batch_size,
-                drop_last=False,
+                drop_last=drop_last,
                 shuffle=shuffle,
             )
             return l
 
-        train_S_l = get_loader(train_S_set, shuffle=False)
-        train_T_l = get_loader(train_T_set, shuffle=False)
-        valid_l = get_loader(valid_set, shuffle=False)
+        train_S_l = get_loader(train_S_set, shuffle=True, drop_last=True)
+        train_T_l = get_loader(train_T_set, shuffle=True, drop_last=True)
+        valid_l = get_loader(valid_set, shuffle=True, drop_last=True)
 
         iters = {
             "train": {

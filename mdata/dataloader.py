@@ -62,7 +62,7 @@ def get_dataset(
     if split == "train":   
         trans = [
             transforms.Resize(256),
-            transforms.RandomResizedCrop(224),
+            transforms.RandomResizedCrop(227),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406],
@@ -71,7 +71,7 @@ def get_dataset(
     else:
         trans = [
             transforms.Resize(256),
-            transforms.CenterCrop(224),
+            transforms.CenterCrop(227),
             transforms.ToTensor(),
             transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                 std=[0.229, 0.224, 0.225])
@@ -104,7 +104,7 @@ def get_dataset(
                 root = root + 'Office/' + domain,
                 transform=transform
             )
-            
+
     else:
         raise Exception(str(dsname) + ' Not Support')
 
