@@ -114,7 +114,8 @@ class TrainCapsule(nn.Module):
             self.lr_scheduler.step()
 
         for g in self.optimer.param_groups:
-            g['lr'] = g['lr'] * g['lr_mult']
+            lr = g['lr'] * g['lr_mult']
+            g['lr'] = lr
 
 
 

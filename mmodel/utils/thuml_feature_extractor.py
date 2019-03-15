@@ -13,8 +13,8 @@ class AlexNetFc(WeightedModule):
         self,
         use_bottleneck=True,
         bottleneck_dim=256,
-        new_cls=False,
-        class_num=1000,
+        new_cls=True,
+        class_num=31,
     ):
         super(AlexNetFc, self).__init__()
         model_alexnet = models.alexnet(pretrained=True)

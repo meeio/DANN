@@ -16,9 +16,9 @@ def get_param_parser():
         "--gray", type=bool, default=True, help="Size for Mini-Batch Optimization"
     )
 
-    parser.add_argument(
-        "--class_num", type=int, default=10, help="Class number of data set"
-    )
+    # parser.add_argument(
+    #     "--class_num", type=int, default=10, help="Class number of data set"
+    # )
 
     parser.add_argument(
         "--use_gpu", type=bool, default=True, help="Use GPU to train the model"
@@ -39,7 +39,7 @@ def get_param_parser():
     )
 
     parser.add_argument(
-        "--target", type=str, default="D", help="data base we will use"
+        "--target", type=str, default="W", help="data base we will use"
     )
 
     parser.add_argument(
@@ -53,7 +53,7 @@ def get_param_parser():
     )
 
     parser.add_argument(
-        "--lr", type=float, default=0.003
+        "--lr", type=float, default=0.1
     )
 
     return parser

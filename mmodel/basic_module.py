@@ -541,7 +541,9 @@ class DAModule(TrainableModule):
             # calculate valid accurace and make record
             current_size = label.size()[0]
             _, predic_class = torch.max(predict, 1)
-            corrent_count = (predic_class == label).sum().float()
+            corrent_count = (torch.squeeze(predic_class) == label).sum().float()
+
+            print(corrent_count.item())
 
             self._update_logs(
                 {
@@ -559,9 +561,10 @@ class DAModule(TrainableModule):
             self.corret += right
         else:
             logger.log(VALID, "End a evaling step.")
-            accu = self.corret * 1.0 / self.total
+            accu = self.corret / self.total
             self.best_accurace = max((self.best_accurace, accu))
-            self.total = self.corret = 0
+            self.total = 0
+            self.corret = 0
             losses = [
                 (k, v.log_current_avg_loss(self.current_step + 1))
                 for k, v in self.valid_loggers.items()

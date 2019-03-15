@@ -102,12 +102,12 @@ class DANN(DAModule):
         ls_class, ls_dis = for_losses(s_img, s_label)
 
         loss_classify = ls_class
-        loss_dis = (ls_dis + lt_dis) / 2
+        loss_dis = (ls_dis + lt_dis) 
 
         self._update_logs({"classify": loss_classify, "discrim": loss_dis})
 
         self._update_losses(
-            {"loss_prediction": loss_classify}
+            {"loss_prediction": loss_classify, 'loss_discrim': loss_dis}
         )
 
     def _valid_step(self, img):
