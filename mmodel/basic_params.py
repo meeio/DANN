@@ -9,7 +9,7 @@ def get_param_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--batch_size", type=int, default=64, help="Size for Mini-Batch Optimization"
+        "--batch_size", type=int, default=32, help="Size for Mini-Batch Optimization"
     )
 
     parser.add_argument(
@@ -53,7 +53,16 @@ def get_param_parser():
     )
 
     parser.add_argument(
-        "--lr", type=float, default=0.01
+        "--lr", type=float, default=0.003
     )
 
     return parser
+
+# 0.01
+# A > W
+# W > D
+# W > A
+# D > A
+# 0.003
+# A > D
+# D > W

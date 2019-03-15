@@ -32,7 +32,6 @@ def get_dataset(
     domain=None,
     split="train",
     size=224,
-    gray=False,
 ):
     """Helpper function to get `DataLoader` of specific datasets 
     
@@ -59,17 +58,24 @@ def get_dataset(
     #########################################
 
     ## UGLY need optim 
-    
-    trans = [
-        transforms.Resize(size),
-        transforms.ToTensor(),
-        # transforms.Normalize(mean, std),
-    ]
 
-    if gray:
-        trans.insert(0, transforms.Grayscale(1))
+    if split == "train":   
+        trans = [
+            transforms.Resize(256),
+            transforms.RandomResizedCrop(224),
+            transforms.RandomHorizontalFlip(),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                std=[0.229, 0.224, 0.225])
+        ]   
     else:
-        trans.insert(0, transforms.Grayscale(3))
+        trans = [
+            transforms.Resize(256),
+            transforms.CenterCrop(224),
+            transforms.ToTensor(),
+            transforms.Normalize(mean=[0.485, 0.456, 0.406],
+                                std=[0.229, 0.224, 0.225])
+        ]
 
     transform = transforms.Compose(trans)
 

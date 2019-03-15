@@ -400,7 +400,6 @@ class DAModule(TrainableModule):
     def __init__(self, params):
         super(DAModule, self).__init__(params)
 
-        self.relr_everytime = False
         self.best_accurace = 0.0
         self.total = self.corret = 0
 
@@ -456,7 +455,7 @@ class DAModule(TrainableModule):
 
         train_S_set = mdl.get_dataset(dataset, source, split="train")
         train_T_set = mdl.get_dataset(dataset, target, split="train")
-        valid_set = mdl.get_dataset(dataset, target, split="test")
+        valid_set = mdl.get_dataset(dataset, source, split="test")
 
         def get_loader(dataset, shuffle):
             l = torch.utils.data.DataLoader(
@@ -468,7 +467,7 @@ class DAModule(TrainableModule):
             return l
 
         train_S_l = get_loader(train_S_set, shuffle=False)
-        train_T_l = get_loader(train_T_set, shuffle=True)
+        train_T_l = get_loader(train_T_set, shuffle=False)
         valid_l = get_loader(valid_set, shuffle=False)
 
         iters = {
