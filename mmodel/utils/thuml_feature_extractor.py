@@ -11,13 +11,13 @@ def init_weights(m):
     classname = m.__class__.__name__
     if classname.find('Conv2d') != -1 or classname.find('ConvTranspose2d') != -1:
         nn.init.kaiming_uniform_(m.weight)
-        nn.init.zeros_(m.bias)
+        nn.init.constant_(m.bias, 0)
     elif classname.find('BatchNorm') != -1:
         nn.init.normal_(m.weight, 1.0, 0.02)
-        nn.init.zeros_(m.bias)
+        nn.init.constant_(m.bias, 0)
     elif classname.find('Linear') != -1:
         nn.init.xavier_normal_(m.weight)
-        nn.init.zeros_(m.bias)
+        nn.init.constant_(m.bias, 0)
 
 class LRN(nn.Module):
     def __init__(self, local_size=1, alpha=1.0, beta=0.75, ACROSS_CHANNELS=True):
