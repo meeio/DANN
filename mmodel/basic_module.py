@@ -1,16 +1,19 @@
 import torch
 import torch.nn as nn
 import torch.nn.init as init
-import logging
 
 from mground.gpu_utils import anpai
 
 import os
 from mtrain.train_capsule import TrainCapsule, LossHolder
 from mtrain.mloger import LogCapsule
+from mtrain.mloger import get_colored_logger, TRAIN, VALID, BUILD, HINTS
+from mground.log_utils import tabulate_log_losses
 
 import mdata.dataloader as mdl
 from abc import ABC, abstractclassmethod
+
+logger = get_colored_logger("GLOBAL")
 
 
 def _basic_weights_init_helper(modul, params=None):
@@ -20,6 +23,7 @@ def _basic_weights_init_helper(modul, params=None):
         modul (nn.Module): torch module
         params (dict, optional): Defaults to None. not used.
     """
+
     for m in modul.children():
         # init Conv2d with norm
         if isinstance(m, nn.Conv2d):
@@ -42,18 +46,10 @@ def _basic_weights_init_helper(modul, params=None):
 
 
 class WeightedModule(nn.Module):
-
-    static_weight_handler = None
-
     def __init__(self):
         super().__init__()
         self.has_init = False
-        self.lr_mult = 1
-
-    def __call__(self, *input, **kwargs):
-        # if not self.has_init:
-        #     raise Exception("Init weight before you use it")
-        return super().__call__(*input, **kwargs)
+        self.tag = None
 
     def weight_init(self, handler=None, record_path=None):
         """initial weights with help function `handler` or a path of check point `record_path` to restore, if neither of those are provide, leave init 
@@ -70,24 +66,24 @@ class WeightedModule(nn.Module):
         str = name + "'s weights init from %s."
 
         if self.has_init:
-            # logging.info(str % "Pretraied Model")
-            return
+            infos = str % "class inner define"
 
         if record_path is not None:
             f = torch.load(record_path)
             self.load_state_dict(f)
-            logging.info(str % "check point")
+            infos = str % "check point"
 
         elif handler is not None:
             handler(self)
-            logging.info(str % "provided init function")
+            infos = str % "provided init function"
 
         elif WeightedModule.static_weight_handler is not None:
             WeightedModule.static_weight_handler(self)
-            logging.info(str % "WeightedModule's register init function")
 
         else:
-            logging.info(str % "Pytorch's inner mechainist")
+            infos = str % "Pytorch's inner mechainist"
+
+        logger.log(BUILD, infos)
 
         self.has_init = True
 
@@ -110,6 +106,7 @@ class ELoaderIter:
     """
 
     def __init__(self, dataloader):
+        assert dataloader is not None
         self.l = dataloader
         self.it = None
 
@@ -156,13 +153,14 @@ class TrainableModule(ABC):
         self.relr_everytime = False
         self.eval_once = False
 
-        self.steps = self.params.steps
-        self.golbal_step = 0.0
+        self.total_steps = self.params.steps
+        self.current_step = 0.0
         self.current_epoch = 0.0
 
         self.losses = LossHolder()
         self.train_caps = dict()
-        self.loggers = dict()
+        self.train_loggers = dict()
+        self.valid_loggers = dict()
 
         T = torch.zeros(1)
         S = torch.ones(1)
@@ -179,11 +177,21 @@ class TrainableModule(ABC):
         networks = self._regist_networks()
         assert type(networks) is dict
 
-        for _, i in networks.items():
+        def init_weight_and_key(n, k):
             try:
-                i.weight_init()
-            except Exception:
-                pass
+                n.weight_init()
+                n.tag = k
+            except AttributeError:
+                logger.log(BUILD, '%s is not instace of WeightedModule.' % n.__class__.__name__)
+
+        for k, i in networks.items():
+            if type(i) is nn.Sequential:
+                i.tag = k
+                for c in i.children():
+                    init_weight_and_key(c, k)                 
+            else:
+                init_weight_and_key(i, k)
+
         # send networks to gup
         networks = {
             i: anpai(j, use_gpu=self.params.use_gpu)
@@ -265,7 +273,9 @@ class TrainableModule(ABC):
         """
         return
 
-    def regist_loss(self, loss_name, *networks_key):
+    def define_loss(
+        self, loss_name, networks, optimer: dict, decay_op: dict = None
+    ):
         """registe loss according loss_name and relative networks.
         after this process the loss will bind to the weight of networks, which means this loss will used to update weights of provied networks.
         
@@ -274,21 +284,43 @@ class TrainableModule(ABC):
             networks_key {list} -- relative network names
         """
 
-        if type(networks_key[0]) is str:
-            networks = [self.networks[i] for i in networks_key]
-        else:
-            networks = networks_key
+        networks = (
+            [networks]
+            if not isinstance(networks, (tuple, list))
+            else networks
+        )
+
+        networks = [self.networks[i] for i in networks]
+
+        optimer = optimer.copy()
+        optimer_info = [optimer.pop("type"), optimer]
+
+        decay_info = None
+        if decay_op is not None:
+            decay_op = decay_op.copy()
+            decay_info = [decay_op.pop("type"), decay_op]
 
         self.losses[loss_name]
-        t = TrainCapsule(self.losses[loss_name], networks)
+        t = TrainCapsule(
+            self.losses[loss_name],
+            networks,
+            optimer_info=optimer_info,
+            decay_info=decay_info,
+        )
         self.train_caps[loss_name] = t
 
-    def regist_log(self, loss_name):
-        self.losses[loss_name]
-        l = LogCapsule(
-            self.losses[loss_name], loss_name, to_file=self.params.log
-        )
-        self.loggers[loss_name] = l
+    def define_log(self, *loss_name, group="train"):
+        def log_name(name):
+            self.losses[name]
+            l = LogCapsule(
+                self.losses[name], name, to_file=self.params.log
+            )
+            if group == "train":
+                self.train_loggers[name] = l
+            else:
+                self.valid_loggers[name] = l
+
+        [log_name(name) for name in loss_name]
 
     def train_module(self, **kwargs):
 
@@ -299,24 +331,23 @@ class TrainableModule(ABC):
         for _, i in self.networks.items():
             i.train(True)
 
-        for _ in range(self.steps):
+        for _ in range(self.total_steps):
 
             datas = self._feed_data(mode="train")
+
+            # re calculate learning rates
+            for c in self.train_caps.values():
+                c.decary_lr_rate()
 
             datas = anpai(datas, self.params.use_gpu, need_logging=False)
             self._train_process(datas, **kwargs)
 
-            # re calculate learning rates
-            if self.relr_everytime:
-                for c in self.train_caps.values():
-                    c.decary_lr_rate()
-
             # making log
-            if self.golbal_step % self.log_step == (self.log_step - 1):
+            if self.current_step % self.log_step == (self.log_step - 1):
                 self._log_process()
 
             # begain eval
-            if self.golbal_step % self.eval_step == (self.eval_step - 1):
+            if self.current_step % self.eval_step == (self.eval_step - 1):
                 self.eval_module(**kwargs)
                 # set all networks to train mode
                 for _, i in self.networks.items():
@@ -325,7 +356,7 @@ class TrainableModule(ABC):
             self._finish_a_train_process()
 
     def _finish_a_train_process(self):
-        self.golbal_step += 1
+        self.current_step += 1
 
     def eval_module(self, **kwargs):
         # set all networks to eval mode
@@ -348,9 +379,21 @@ class TrainableModule(ABC):
         self.losses[loss_name].value = value
         self.train_caps[loss_name].train_step(retain_graph)
 
-    def _update_log(self, loss_name, value):
+    def _update_losses(self, a: dict):
+        for index, key in enumerate(a):
+            reach_last = index == (len(a) - 1)
+            self._update_loss(key, a[key], retain_graph=not reach_last)
+
+    def _update_log(self, loss_name, value, group="train"):
         self.losses[loss_name].value = value
-        self.loggers[loss_name].record()
+        if group == "train":
+            self.train_loggers[loss_name].record()
+        else:
+            self.valid_loggers[loss_name].record()
+
+    def _update_logs(self, a: dict, group="train"):
+        for k, v in a.items():
+            self._update_log(k, v, group)
 
 
 class DAModule(TrainableModule):
@@ -363,32 +406,18 @@ class DAModule(TrainableModule):
 
         # set usefully loss function
         self.ce = nn.CrossEntropyLoss()
-        self.bce = nn.BCELoss()
+        self._bce = nn.BCELoss()
 
         self.TrainCpasule = TrainCapsule
-        # set default optim function
-        TrainCapsule.registe_default_optimer(
-            torch.optim.SGD,
-            lr=params.lr,
-            weight_decay=0.0005,
-            momentum=0.9,
-        )
 
         # define valid losses
-        self.log_valid_loss = LogCapsule(
-            self.losses["valid_loss"], "valid_loss", to_file=params.log
-        )
-        self.log_valid_acrr = LogCapsule(
-            self.losses["valid_acuu"], "valid_acuu", to_file=params.log
-        )
+        self.define_log("valid_loss", "valid_accu", group="valid")
 
         # set total train step
         self.total_step = self.params.steps
 
         # init global label
-        self.TARGET, self.SOURCE = self.__batch_domain_label__(
-            params.batch_size
-        )
+        self.TARGET, self.SOURCE = self.__batch_domain_label__(1)
 
     @abstractclassmethod
     def _train_step(self, s_img, s_label, t_img):
@@ -398,13 +427,21 @@ class DAModule(TrainableModule):
     def _valid_step(self, img):
         pass
 
+    def bce(self, inputs, target):
+        return self._bce(
+            inputs,
+            target.expand_as(inputs)
+            if inputs.size() != target.size()
+            else target,
+        )
+
     def _prepare_data(self):
 
         params = self.params
 
         dataset = params.dataset
-        source = params.sdsname
-        target = params.tdsname
+        source = params.source
+        target = params.target
 
         def get_set(dataset, domain, split):
             if dataset is None:
@@ -422,35 +459,36 @@ class DAModule(TrainableModule):
         valid_set = mdl.get_dataset(dataset, target, split="test")
 
         def get_loader(dataset, shuffle):
-            DataLoader = torch.utils.data.DataLoader
-            train_S_loader = DataLoader(
-                train_S_set,
+            l = torch.utils.data.DataLoader(
+                dataset,
                 batch_size=params.batch_size,
                 drop_last=False,
                 shuffle=shuffle,
             )
+            return l
 
         train_S_l = get_loader(train_S_set, shuffle=False)
         train_T_l = get_loader(train_T_set, shuffle=True)
         valid_l = get_loader(valid_set, shuffle=False)
 
-        return None, (train_S_l, train_T_l), (valid_l,)
+        iters = {
+            "train": {
+                "S": ELoaderIter(train_S_l),
+                "T": ELoaderIter(train_T_l),
+            },
+            "valid": ELoaderIter(valid_l),
+        }
+
+        return None, iters
 
     def _feed_data(self, mode, *args, **kwargs):
 
-        if self.iters[mode] is None:
-            if mode == "train":
-                sloader, tloader = self.train_loaders
-                eits = ELoaderIter(sloader), ELoaderIter(tloader)
-            else:
-                loader = self.valid_loaders[0]
-                eits = ELoaderIter(loader)
-            self.iters[mode] = eits
+        assert mode in ["train", "valid"]
 
         its = self.iters[mode]
         if mode == "train":
-            s_img, s_label = its[0].next()
-            t_img, _ = its[1].next()
+            s_img, s_label = its["S"].next()
+            t_img, _ = its["T"].next()
             return s_img, s_label, t_img
         else:
             return its.next(need_end=True)
@@ -459,32 +497,33 @@ class DAModule(TrainableModule):
 
         s_img, s_label, t_img = datas
 
-        # re calculate learning rates
-        if self.relr_everytime:
-            for c in self.train_caps.values():
-                c.decary_lr_rate()
-
         # begain a train step
         self._train_step(s_img, s_label, t_img)
 
     def _log_process(self):
 
-        logging.info(
+        logger.log(
+            HINTS,
             "Steps %3d ends. Remain %3d steps to go. Fished %.2f%%"
             % (
-                self.golbal_step + 1,
-                self.params.steps - self.golbal_step - 1,
-                (self.golbal_step + 1) / (self.params.steps + 1) * 100,
-            )
+                self.current_step + 1,
+                self.params.steps - self.current_step - 1,
+                (self.current_step + 1) / (self.params.steps + 1) * 100,
+            ),
         )
 
-        logging.info(
+        logger.log(
+            HINTS,
             "Current best accurace is %3.3f%%."
-            % (self.best_accurace * 100)
+            % (self.best_accurace * 100),
         )
 
-        for v in self.loggers.values():
-            v.log_current_avg_loss(self.golbal_step + 1)
+        losses = [
+            (k, v.log_current_avg_loss(self.current_step + 1))
+            for k, v in self.train_loggers.items()
+        ]
+
+        tabulate_log_losses(losses, trace="dalosses", mode="train")
 
     def _eval_process(self, datas):
 
@@ -500,16 +539,18 @@ class DAModule(TrainableModule):
             # get result from a valid_step
             predict = self._valid_step(img)
 
-            self.losses["valid_loss"].value = self.ce(predict, label)
-            self.log_valid_loss.record()
-
             # calculate valid accurace and make record
             current_size = label.size()[0]
             _, predic_class = torch.max(predict, 1)
             corrent_count = (predic_class == label).sum().float()
 
-            self.losses["valid_acuu"].value = corrent_count / current_size
-            self.log_valid_acrr.record()
+            self._update_logs(
+                {
+                    "valid_loss": self.ce(predict, label),
+                    "valid_accu": corrent_count * 100 / current_size,
+                },
+                group="valid",
+            )
 
             return corrent_count, current_size
 
@@ -518,12 +559,16 @@ class DAModule(TrainableModule):
             self.total += size
             self.corret += right
         else:
-            logging.info("End a evaling step.")
-            self.log_valid_loss.log_current_avg_loss(self.golbal_step)
-            self.log_valid_acrr.log_current_avg_loss(self.golbal_step)
+            logger.log(VALID, "End a evaling step.")
             accu = self.corret * 1.0 / self.total
             self.best_accurace = max((self.best_accurace, accu))
             self.total = self.corret = 0
+            losses = [
+                (k, v.log_current_avg_loss(self.current_step + 1))
+                for k, v in self.valid_loggers.items()
+            ]
+
+            tabulate_log_losses(losses, trace="validloss", mode="valid")
 
     def __batch_domain_label__(self, batch_size):
         # Generate all Source and Domain label.

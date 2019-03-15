@@ -51,7 +51,7 @@ def get_dataset(
         [DataLoader] -- [a DataLoader for the dataset]
     """
 
-    if split in ["train", "test", "valid"]:
+    if split not in ["train", "test", "valid"]:
         raise Exception("Not support " + str(split))
 
     #########################################
@@ -93,10 +93,13 @@ def get_dataset(
     elif dsname == "OFFICE":
         if domain not in ['A', 'D', 'W']:
             raise Exception(str(domain) + ' not in OFFICE dataset.')
+        else:
             data_set = ds.ImageFolder(
                 root = root + 'Office/' + domain,
                 transform=transform
             )
+    else:
+        raise Exception(str(dsname) + ' Not Support')
 
 
     return data_set #, data_loader

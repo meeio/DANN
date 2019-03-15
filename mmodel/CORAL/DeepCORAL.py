@@ -32,7 +32,7 @@ class DeepCORAL(DAModule):
         self.TrainCpasule.registe_default_optimer(
             torch.optim.Adam, lr=params.lr
         )
-        self.regist_loss("predict", "C")
+        self.define_loss("predict", "C")
 
     def _train_step(self, s_img, s_label, t_img):
 

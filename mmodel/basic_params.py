@@ -9,7 +9,7 @@ def get_param_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--batch_size", type=int, default=4, help="Size for Mini-Batch Optimization"
+        "--batch_size", type=int, default=64, help="Size for Mini-Batch Optimization"
     )
 
     parser.add_argument(
@@ -24,18 +24,22 @@ def get_param_parser():
         "--use_gpu", type=bool, default=True, help="Use GPU to train the model"
     )
 
-    parser.add_argument("--steps", type=int, default=150000, help="Epochs of train data")
+    parser.add_argument("--steps", type=int, default=10000, help="Epochs of train data")
 
-    parser.add_argument("--log_per_step", type=int, default=10, help="Epochs of train data")
+    parser.add_argument("--log_per_step", type=int, default=50, help="Epochs of train data")
 
-    parser.add_argument("--eval_per_step", type=int, default=50, help="Epochs of train data")
+    parser.add_argument("--eval_per_step", type=int, default=300, help="Epochs of train data")
 
     parser.add_argument(
-        "--sdsname", type=str, default="SVHN", help="data base we will use"
+        "--dataset", type=str, default="OFFICE", help="data base we will use"
     )
 
     parser.add_argument(
-        "--tdsname", type=str, default="MNIST", help="data base we will use"
+        "--source", type=str, default="A", help="data base we will use"
+    )
+
+    parser.add_argument(
+        "--target", type=str, default="D", help="data base we will use"
     )
 
     parser.add_argument(
@@ -49,11 +53,7 @@ def get_param_parser():
     )
 
     parser.add_argument(
-        "--step_size", type=int, default=5, help="Step size for decaying lr."
-    )
-
-    parser.add_argument(
-        "--lr", type=float, default=0.0001, help="Gamma for decaying lr."
+        "--lr", type=float, default=0.01
     )
 
     return parser

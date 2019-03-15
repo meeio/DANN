@@ -21,7 +21,7 @@ class LossHolder(object):
     def __getitem__(self, index):
         if self.fixed is True:
             return self.loss_dic[index]
-            
+
         if not index in self.loss_dic:
             self.loss_dic[index] = LossBuket()
         return self.loss_dic[index]
@@ -47,12 +47,18 @@ class TrainCapsule(nn.Module):
 
     __recal_lr__ = None
 
-    def __init__(self, optim_loss: LossBuket, optim_networks, tagname=None):
+    def __init__(
+        self,
+        optim_loss: LossBuket,
+        optim_networks,
+        optimer_info,
+        decay_info,
+        tagname=None,
+    ):
         super(TrainCapsule, self).__init__()
 
-        self.optim_loss = optim_loss
         self.tag = tagname
-        self.epoch = 0
+        self.optim_loss = optim_loss
 
         # get all networks, and store them as list
         if not isinstance(optim_networks, (tuple, list)):
@@ -64,34 +70,38 @@ class TrainCapsule(nn.Module):
 
         # get all parameters in network list
         self.all_params = list()
+        optimer_type, optimer_kwargs = optimer_info
 
+        lr_mult_map = optimer_kwargs.get('lr_mult', dict())
+        assert type(lr_mult_map) is dict
+        
         for i in networks_list:
-            if(isinstance(i, torch.nn.DataParallel)):
+            if isinstance(i, torch.nn.DataParallel):
                 i = i.module
+            lr_mult = lr_mult_map.get(i.tag, 1)
             self.all_params.append(
                 {
-                'params': list(i.parameters()),
-                'lr_mult': i.lr_mult,
+                    "params": list(i.parameters()),
+                    "lr_mult": lr_mult,
+                    "lr": lr_mult * optimer_kwargs["lr"],
                 }
             )
 
         # init optimer base on type and args
-        self.optimer = TrainCapsule.__optim_type__(
-            self.all_params, **TrainCapsule.__optim_args__
-        )
+        optimer_kwargs.pop('lr_mult', None)
+        self.optimer = optimer_type(self.all_params, **optimer_kwargs)
 
-        # init lr_schder for optimer
+        # init optimer decay option
         self.lr_scheduler = None
-        if TrainCapsule.__recal_lr__ is None:
-            if TrainCapsule.__decay_op__ is not None:
-                self.lr_scheduler = TrainCapsule.__decay_op__(
-                    self.optimer, **TrainCapsule.__decay_args__
-                )
-        
+        if decay_info is not None:
+            decay_type, decay_arg = decay_info
+            self.lr_scheduler = decay_type(self.optimer, **decay_arg)
+
     def __all_networks_call(self, func_name):
         def __one_networkd_call(i):
             func = getattr(i, func_name)
             return func()
+
         map(__one_networkd_call, self.optim_network)
 
     def train_step(self, retain_graph=True):
@@ -99,44 +109,14 @@ class TrainCapsule(nn.Module):
         self.optim_loss.value.backward(retain_graph=retain_graph)
         self.optimer.step()
 
-    def registe_default_optimer(optim_type, **kwargs):
-        TrainCapsule.__optim_args__ = kwargs
-        TrainCapsule.__optim_type__ = optim_type
-        logging.info(
-            "Resiest %s as default optimizer with args %s ."
-            % (optim_type.__name__, kwargs)
-        )
-
-    def registe_decay_op(decay_op, **kwargs):
-        TrainCapsule.__decay_args__ = kwargs
-        TrainCapsule.__decay_op__ = decay_op
-        logging.info(
-            "Resiest %s as default lr scheduler with args %s ."
-            % (decay_op.__name__, kwargs)
-        )
-
-    def registe_new_lr_calculator(cal):
-        TrainCapsule.__recal_lr__ = cal
-
     def decary_lr_rate(self):
-        if self.__recal_lr__ is not None:
-            new_lr = self.__recal_lr__(self.epoch)
-            for param_group in self.optimer.param_groups:
-                try:
-                    scale = param_group["lr_mult"]
-                except:
-                    scale = 1
-                param_group["lr"] = new_lr * scale
-                # param_group['weight_decay'] = weight_decay * param_group['decay_mult']
-
-        elif self.lr_scheduler is not None:
+        if self.lr_scheduler is not None:
             self.lr_scheduler.step()
-        
-        else:
-            pass
-        # for param_group in self.optimer.param_groups:
-        #     logging.info("Current >learning rate< is >%1.9f< ." % param_group["lr"])
-        self.epoch += 1
+
+        for g in self.optimer.param_groups:
+            g['lr'] = g['lr'] * g['lr_mult']
+
+
 
 if __name__ == "__main__":
 

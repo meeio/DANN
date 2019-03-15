@@ -56,12 +56,12 @@ class TADA(DAModule):
         self.TrainCpasule.registe_default_optimer(
             torch.optim.SGD, lr=params.lr, momentum=0.95
         )
-        self.regist_loss('loss_F', self.F)
+        self.define_loss('loss_F', self.F)
 
-        self.regist_loss('loss_B', self.B)
-        self.regist_loss('loss_gD', self.gD)
+        self.define_loss('loss_B', self.B)
+        self.define_loss('loss_gD', self.gD)
         lDs = [v for k, v in self.networks.items() if 'lD_' in k]
-        self.regist_loss('loss_lD', lDs)
+        self.define_loss('loss_lD', lDs)
     
     def _make_predicitons(self, img):
 

@@ -1,4 +1,4 @@
-import logging
+from mtrain.mloger import get_colored_logger, BUILD
 
 import numpy as np
 import torch
@@ -6,6 +6,7 @@ import torch.nn as nn
 import torch.cuda as cuda
 import torch.utils as utils
 
+logger = get_colored_logger('gpu')
 
 def anpai(tom, use_gpu, need_logging=True):
     ''' Send tensor or module(tom) to correspond devices(cpu or gpu) based on 'use_gpu'.
@@ -52,16 +53,16 @@ def anpai(tom, use_gpu, need_logging=True):
             info += str(i)
         info += '.'
         if need_logging:
-            logging.info(info)
+            logger.log(BUILD,info)
 
     def __handle_tensor(tensor, d):
         handle.append(tensor.to(d))
         name = tensor.__class__.__name__
         if need_logging :
             if str(d.type) == 'cpu':
-                logging.info("Has no gpu or not use, %s will sent to CPU." % name)
+                logger.log(BUILD,"Has no gpu or not use, %s will sent to CPU." % name)
             else:
-                logging.info("A >%s< object sent to GPU." % name)
+                logger.log(BUILD,"A >%s< object sent to GPU." % name)
 
     device = torch.device("cpu")
     # When use_gpu and has gpu to use
@@ -82,7 +83,7 @@ def anpai(tom, use_gpu, need_logging=True):
                     __handle_tensor(i,device)
                 else:
                     if need_logging:
-                        logging.error(i.__class__.__name__ + 'not spuuort')
+                        logger.log(BUILD,i.__class__.__name__ + 'not spuuort')
 
             # When only one gpu can be used
             else:

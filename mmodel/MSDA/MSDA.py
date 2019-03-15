@@ -41,7 +41,7 @@ class PredictUnit(TrainableModule):
         self.output_shape = None
         self.datas = None
 
-        self.steps = 1
+        self.total_steps = 1
         self.eval_step = -1
         self.eval_once = True
 
@@ -49,6 +49,8 @@ class PredictUnit(TrainableModule):
         self.local_bceloss = torch.nn.BCELoss(reduction="none")
 
         self.spital_size = 49
+
+        self.g_dis_losses = list()
 
         ## NOTE checking important attribute.
         assert self.eval_once == True
@@ -113,11 +115,11 @@ class PredictUnit(TrainableModule):
             local_dis_nets = [
                 "l_D_" + str(i) for i in range(self.spital_size)
             ]
-            self.regist_loss("local_dis", *local_dis_nets)
+            self.define_loss("local_dis", *local_dis_nets)
 
-        self.regist_loss("global_dis", "g_D")
+        self.define_loss("global_dis", "g_D")
 
-        self.regist_loss("predict", "C")
+        self.define_loss("predict", "C")
 
     def _local_dis(self, features):
         """ given a feature mask, producing it's local attention mask.
@@ -182,7 +184,7 @@ class PredictUnit(TrainableModule):
             ## NOTE the attention value will be calculated without grad.
             # cal global attention and make predictionp
             g_domain_predict = self.g_D(g_features)
-            g_atten = entropy(g_domain_predict)
+            g_atten = entropy(g_domain_predict.detach())
             g_atten = 1 + g_atten
 
             ## the grad will be compute.
@@ -227,7 +229,9 @@ class PredictUnit(TrainableModule):
         elif stage == STAGE["training"]:
             assert is_training
             predict_loss = datas
-            l_diss, g_diss = self.dis_losses
+            g_diss = sum(self.g_dis_losses)
+            print(g_diss)
+
             ## REVIEW here constant 49 revers the 'average' op when calculate it.
             ## WARM here the constance revers opration should be cheacked
             if self.use_local_atten:
@@ -235,7 +239,8 @@ class PredictUnit(TrainableModule):
             self._update_loss("global_dis", g_diss)
             # self._update_loss("predict", predict_loss)
 
-            del self.dis_losses
+            self.g_dis_losses.clear()
+            del g_diss
 
         else:
             raise Exception("stage false." + str(stage))
@@ -246,7 +251,7 @@ class PredictUnit(TrainableModule):
         if stage == STAGE["adaptation"]:
             if self.turn_key == self.hold_key:
                 dis, conf = self._stage(stage, datas, is_training=True)
-                self.dis_losses = dis
+                self.g_dis_losses.append(dis[1])
                 self.confuse_losses = conf
             else:
                 self._stage(stage, datas, is_training=True)
@@ -262,7 +267,7 @@ class PredictUnit(TrainableModule):
 
     def _finish_a_train_process(self):
         if self.current_stage == STAGE["training"]:
-            self.golbal_step += 1
+            self.current_step += 1
 
     def _log_process(self):
         return
@@ -403,16 +408,17 @@ class Network(TrainableModule):
         self.TrainCpasule.registe_default_optimer(
             torch.optim.SGD, lr=self.params.lr, momentum=0.95
         )
-        self.regist_loss(
+        self.define_loss(
             "loss",
             self.networks["B"],
             self.networks["F"],
             # *self.classifers,
         )
 
-        self.regist_log("s_prediction")
-        self.regist_log("t_prediction")
-        self.regist_log("confusion")
+        self.define_log("s_prediction")
+        self.define_log("t_prediction")
+        self.define_log("s_confusion")
+        self.define_log("t_confusion")
 
     def _prepare_data(self):
         """ return dataloader.
@@ -596,7 +602,8 @@ class Network(TrainableModule):
 
         self._update_log("s_prediction", s_predict)
         self._update_log("t_prediction", t_predict)
-        self._update_log("confusion", confuse_loss)
+        self._update_log("s_confusion", s_gconf)
+        self._update_log("t_confusion", t_gconf)
 
         self._update_loss(
             "loss", confuse_loss, retain_graph=False
@@ -720,6 +727,11 @@ class Network(TrainableModule):
             dim=1,
         )
 
+        if self.current_step % 10 ==0:
+            print(str(self.current_step) + '===========================')
+            for i in union_range:
+                print(union_g_atten[i][0].item())
+
         final_predict = self.softmax(final_predict)
 
         return final_predict
@@ -746,7 +758,7 @@ class Network(TrainableModule):
         else:
             percent = sum(self.eval_right) / sum(self.eval_count)
             self.accur_logger.update_record(percent)
-            self.accur_logger.log_current_avg_loss(self.golbal_step)
+            self.accur_logger.log_current_avg_loss(self.current_step)
             self.eval_count.clear()
             self.eval_count.clear()
             self.best_accurace = max([self.best_accurace, percent])
@@ -756,9 +768,9 @@ class Network(TrainableModule):
         logging.info(
             "Steps %3d ends. Remain %3d steps to go. Fished %.2f%%"
             % (
-                self.golbal_step + 1,
-                self.params.steps - self.golbal_step - 1,
-                (self.golbal_step + 1) / (self.params.steps + 1) * 100,
+                self.current_step + 1,
+                self.params.steps - self.current_step - 1,
+                (self.current_step + 1) / (self.params.steps + 1) * 100,
             )
         )
 
@@ -767,8 +779,8 @@ class Network(TrainableModule):
             % (self.best_accurace * 100)
         )
 
-        for v in self.loggers.values():
-            v.log_current_avg_loss(self.golbal_step + 1)
+        for v in self.train_loggers.values():
+            v.log_current_avg_loss(self.current_step + 1)
 
 
 if __name__ == "__main__":

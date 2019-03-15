@@ -55,6 +55,8 @@ class DomainClassifier(WeightedModule):
         self.layer2.bias.data.fill_(0.0)
         self.layer3.bias.data.fill_(0.0)      
 
+        self.has_init = True
+
         self.droupout1 = nn.Dropout(0.5)
         self.droupout2 = nn.Dropout(0.5)
         
@@ -62,7 +64,6 @@ class DomainClassifier(WeightedModule):
         self.relu2 = nn.LeakyReLU()
         self.sigmoid = nn.Sigmoid()
 
-        self.has_init = True
 
     def forward(self, inputs):
         b = inputs.size()[0]
