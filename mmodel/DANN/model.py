@@ -33,91 +33,29 @@ def get_lr_scaler(iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75):
     return lr_scaler
 
 
-# class DANN(DAModule):
-#     def __init__(self):
-#         super(DANN, self).__init__(param)
-#         self._all_ready()
-
-#     def _regist_networks(self):
-#         def grader_reverse_lambda():
-#             return get_lambda(self.current_step, max_iter=self.total_steps)
-
-#         F = AlexNetFeatureExtractor()
-#         C = BottleneckedClassifier(
-#             input_dim=F.output_dim, class_num=31, bottleneck_dim=256
-#         )
-#         D = nn.Sequential(
-#             GradReverseLayer(coeff=grader_reverse_lambda),
-#             DomainClassifier(input_dim=256),
-#         )
-
-#         return {"F": F, "C": C, "D": D}
-
-#     def _regist_losses(self):
-
-#         ## WARM need weight decay?
-
-#         optimer = {
-#             "type": torch.optim.SGD,
-#             "lr": self.params.lr,
-#             "momentum": 0.95,
-#             "lr_mult": {"F": 0.1},
-#         }
-
-#         lr_scheduler = {
-#             "type": torch.optim.lr_scheduler.LambdaLR,
-#             "lr_lambda": lambda steps: get_lr_scaler(steps, self.total_steps),
-#             "last_epoch": 0,
-#         }
-
-#         self.define_loss(
-#             "global_looss",
-#             networks=["F", "C", "D"],
-#             optimer=optimer,
-#             decay_op=lr_scheduler,
-#         )
-
-#         self.define_log("classify", "discrim")
-
-#     def _train_step(self, s_img, s_label, t_img):
-
-#         imgs = torch.cat([s_img, t_img], dim=0)
-#         domain = torch.cat([self.SOURCE, self.TARGET], dim=0)
-
-#         backbone_feature = self.F(imgs)
-#         feature, pred_class = self.C(backbone_feature)
-#         pred_domain = self.D(feature)
-
-#         s_pred_class, _ = torch.chunk(pred_class, chunks=2, dim=0)
-#         loss_classify = self.ce(s_pred_class, s_label)
-
-#         loss_dis = self.bce(pred_domain, domain)
-
-#         self._update_logs({"classify": loss_classify, "discrim": loss_dis})
-#         self._update_loss("global_looss", loss_classify + loss_dis)
-
-#         del loss_classify, loss_dis
-
-#     def _valid_step(self, img):
-#         feature = self.F(img)
-#         _, prediction = self.C(feature)
-#         return prediction
-
 class DANN(DAModule):
     def __init__(self):
         super(DANN, self).__init__(param)
         self._all_ready()
 
     def _regist_networks(self):
+        def grader_reverse_lambda():
+            return get_lambda(self.current_step, max_iter=self.total_steps)
 
         F = AlexNetFeatureExtractor()
         C = BottleneckedClassifier(
             input_dim=F.output_dim, class_num=31, bottleneck_dim=256
         )
+        D = nn.Sequential(
+            GradReverseLayer(coeff=grader_reverse_lambda),
+            DomainClassifier(input_dim=256),
+        )
 
-        return {"F": F, "C": C}
+        return {"F": F, "C": C, "D": D}
 
     def _regist_losses(self):
+
+        ## WARM need weight decay?
 
         optimer = {
             "type": torch.optim.SGD,
@@ -134,26 +72,88 @@ class DANN(DAModule):
 
         self.define_loss(
             "global_looss",
-            networks=["F", "C"],
+            networks=["F", "C", "D"],
             optimer=optimer,
             decay_op=lr_scheduler,
         )
 
-        self.define_log("classify")
+        self.define_log("classify", "discrim")
 
     def _train_step(self, s_img, s_label, t_img):
 
-        backbone_feature = self.F(s_img)
-        _, pred_class = self.C(backbone_feature)
+        imgs = torch.cat([s_img, t_img], dim=0)
+        domain = torch.cat([self.SOURCE, self.TARGET], dim=0)
 
-        loss_classify = self.ce(pred_class, s_label)
+        backbone_feature = self.F(imgs)
+        feature, pred_class = self.C(backbone_feature)
+        pred_domain = self.D(feature)
 
-        self._update_logs({"classify": loss_classify})
-        self._update_loss("global_looss", loss_classify)
+        s_pred_class, _ = torch.chunk(pred_class, chunks=2, dim=0)
+        loss_classify = self.ce(s_pred_class, s_label)
 
-        del loss_classify
+        loss_dis = self.bce(pred_domain, domain)
+
+        self._update_logs({"classify": loss_classify, "discrim": loss_dis})
+        self._update_loss("global_looss", loss_classify + loss_dis)
+
+        del loss_classify, loss_dis
 
     def _valid_step(self, img):
         feature = self.F(img)
         _, prediction = self.C(feature)
         return prediction
+
+# class DANN(DAModule):
+#     def __init__(self):
+#         super(DANN, self).__init__(param)
+#         self._all_ready()
+
+#     def _regist_networks(self):
+
+#         F = AlexNetFeatureExtractor()
+#         C = BottleneckedClassifier(
+#             input_dim=F.output_dim, class_num=31, bottleneck_dim=256
+#         )
+
+#         return {"F": F, "C": C}
+
+#     def _regist_losses(self):
+
+#         optimer = {
+#             "type": torch.optim.SGD,
+#             "lr": self.params.lr,
+#             "momentum": 0.95,
+#             "lr_mult": {"F": 0.1},
+#         }
+
+#         lr_scheduler = {
+#             "type": torch.optim.lr_scheduler.LambdaLR,
+#             "lr_lambda": lambda steps: get_lr_scaler(steps, self.total_steps),
+#             "last_epoch": 0,
+#         }
+
+#         self.define_loss(
+#             "global_looss",
+#             networks=["F", "C"],
+#             optimer=optimer,
+#             decay_op=lr_scheduler,
+#         )
+
+#         self.define_log("classify")
+
+#     def _train_step(self, s_img, s_label, t_img):
+
+#         backbone_feature = self.F(s_img)
+#         _, pred_class = self.C(backbone_feature)
+
+#         loss_classify = self.ce(pred_class, s_label)
+
+#         self._update_logs({"classify": loss_classify})
+#         self._update_loss("global_looss", loss_classify)
+
+#         del loss_classify
+
+#     def _valid_step(self, img):
+#         feature = self.F(img)
+#         _, prediction = self.C(feature)
+#         return prediction
