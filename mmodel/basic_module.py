@@ -405,7 +405,7 @@ class DAModule(TrainableModule):
 
         # set usefully loss function
         self.ce = nn.CrossEntropyLoss()
-        self._bce = nn.BCELoss()
+        self.bce = nn.BCELoss()
 
         self.TrainCpasule = TrainCapsule
 
@@ -416,7 +416,7 @@ class DAModule(TrainableModule):
         self.total_step = self.params.steps
 
         # init global label
-        self.TARGET, self.SOURCE = self.__batch_domain_label__(1)
+        self.TARGET, self.SOURCE = self.__batch_domain_label(self.params.batch_size)
 
     @abstractclassmethod
     def _train_step(self, s_img, s_label, t_img):
@@ -426,13 +426,13 @@ class DAModule(TrainableModule):
     def _valid_step(self, img):
         pass
 
-    def bce(self, inputs, target):
-        return self._bce(
-            inputs,
-            target.expand_as(inputs)
-            if inputs.size() != target.size()
-            else target,
-        )
+    # def bce(self, inputs, target):
+    #     return self._bce(
+    #         inputs,
+    #         target.expand_as(inputs)
+    #         if inputs.size() != target.size()
+    #         else target,
+    #     )
 
     def _prepare_data(self):
 
@@ -543,8 +543,6 @@ class DAModule(TrainableModule):
             _, predic_class = torch.max(predict, 1)
             corrent_count = (torch.squeeze(predic_class) == label).sum().float()
 
-            print(corrent_count.item())
-
             self._update_logs(
                 {
                     "valid_loss": self.ce(predict, label),
@@ -572,7 +570,7 @@ class DAModule(TrainableModule):
 
             tabulate_log_losses(losses, trace="validloss", mode="valid")
 
-    def __batch_domain_label__(self, batch_size):
+    def __batch_domain_label(self, batch_size):
         # Generate all Source and Domain label.
         SOURCE = 1
         TARGET = 0

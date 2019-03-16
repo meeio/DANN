@@ -2,6 +2,18 @@ import torch
 from torch import nn
 from mmodel.basic_module import WeightedModule
 
+def init_weights(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv2d') != -1 or classname.find('ConvTranspose2d') != -1:
+        nn.init.kaiming_uniform_(m.weight)
+        nn.init.constant_(m.bias, 0)
+    elif classname.find('BatchNorm') != -1:
+        nn.init.normal_(m.weight, 1.0, 0.02)
+        nn.init.constant_(m.bias, 0)
+    elif classname.find('Linear') != -1:
+        nn.init.xavier_normal_(m.weight)
+        nn.init.constant_(m.bias, 0)
+
 class DomainClassifier(WeightedModule):
     def __init__(self, input_dim = 2048):
         super().__init__()
@@ -17,13 +29,13 @@ class DomainClassifier(WeightedModule):
         self.layer2.bias.data.fill_(0.0)
         self.layer3.bias.data.fill_(0.0)      
 
-        self.has_init = True
-
         self.droupout1 = nn.Dropout(0.5)
         self.droupout2 = nn.Dropout(0.5)
-        
-        self.relu1 = nn.LeakyReLU()  
-        self.relu2 = nn.LeakyReLU()
+
+        self.has_init = True
+
+        self.relu1 = nn.LeakyReLU(inplace=True)  
+        self.relu2 = nn.LeakyReLU(inplace=True)
         self.sigmoid = nn.Sigmoid()
 
 
@@ -41,4 +53,29 @@ class DomainClassifier(WeightedModule):
         x = self.sigmoid(x)
         return x
 
-                
+
+class BottleneckedClassifier(WeightedModule):
+
+    def __init__(self, input_dim, class_num, bottleneck_dim = 256):
+        super(BottleneckedClassifier, self).__init__()   
+
+        bottleneck = nn.Linear(input_dim, bottleneck_dim)
+        classifer = nn.Linear(bottleneck_dim, class_num)
+
+        nn.init.xavier_normal_(bottleneck.weight)
+        nn.init.constant_(bottleneck.bias, 0)
+
+        nn.init.xavier_normal_(classifer.weight)
+        nn.init.constant_(classifer.bias, 0)
+
+        self.bottleneck = bottleneck
+        self.classifer = classifer
+
+        self.has_init = True
+    
+    def forward(self, inputs):
+
+        feature = self.bottleneck(inputs)
+        prediction = self.classifer(feature)
+
+        return feature, prediction

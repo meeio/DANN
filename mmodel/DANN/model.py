@@ -7,7 +7,7 @@ from mtrain.mloger import GLOBAL, LogCapsule
 
 import numpy as np
 from ..basic_module import DAModule
-from ..utils.thuml_feature_extractor import AlexNetFc
+from ..utils.thuml_feature_extractor import AlexNetFeatureExtractor
 from ..utils.gradient_reverse import GradReverseLayer
 from .networks import *
 from .params import get_params
@@ -40,13 +40,16 @@ class DANN(DAModule):
         def grader_reverse_lambda():
             return get_lambda(self.current_step, max_iter=self.total_steps)
 
-        F = AlexNetFc(use_bottleneck=True,bottleneck_dim=256, new_cls=True, class_num=31)
+        F = AlexNetFeatureExtractor()
+        C = BottleneckedClassifier(
+            input_dim=F.output_dim, class_num=31, bottleneck_dim=256
+        )
         D = nn.Sequential(
             GradReverseLayer(coeff=grader_reverse_lambda),
             DomainClassifier(input_dim=256),
         )
 
-        return {"F": F, "D": D}
+        return {"F": F, "C": C, "D": D}
 
     def _regist_losses(self):
 
@@ -65,14 +68,8 @@ class DANN(DAModule):
         }
 
         self.define_loss(
-            "loss_prediction",
-            networks=["F"],
-            optimer=optimer,
-            decay_op=lr_scheduler,
-        )
-        self.define_loss(
-            "loss_discrim",
-            networks=["D", "F"],
+            "global_looss",
+            networks=["F", "C", "D"],
             optimer=optimer,
             decay_op=lr_scheduler,
         )
@@ -80,34 +77,25 @@ class DANN(DAModule):
         self.define_log("classify", "discrim")
 
     def _train_step(self, s_img, s_label, t_img):
-        def for_losses(img, label):
 
-            feature, predict_class = self.F(img)
-            predict_domain = self.D(feature)
+        imgs = torch.cat([s_img, t_img], dim=0)
+        domain = torch.cat([self.SOURCE, self.TARGET], dim=0)
 
-            if label is None:
-                domain = self.TARGET
-                loss_classifi = 0
-            else:
-                domain = self.SOURCE
-                loss_classifi = self.ce(predict_class, label)
+        backbone_feature = self.F(imgs)
+        feature, pred_class = self.C(backbone_feature)
+        pred_domain = self.D(feature)
 
-            loss_discrimi = self.bce(predict_domain, domain)
+        s_pred_class, _ = torch.chunk(pred_class, chunks=2, dim=0)
+        loss_classify = self.ce(s_pred_class, s_label)
 
-            return loss_classifi, loss_discrimi
-
-        _, lt_dis = for_losses(t_img, None)
-        ls_class, ls_dis = for_losses(s_img, s_label)
-
-        loss_classify = ls_class
-        loss_dis = (ls_dis + lt_dis) 
+        loss_dis = self.bce(pred_domain, domain)
 
         self._update_logs({"classify": loss_classify, "discrim": loss_dis})
+        self._update_loss("global_looss", loss_classify + loss_dis)
 
-        self._update_losses(
-            {"loss_prediction": loss_classify, 'loss_discrim': loss_dis}
-        )
+        del loss_classify, loss_dis
 
     def _valid_step(self, img):
-        _, predict = self.F(img)
-        return predict
+        feature = self.F(img)
+        _, prediction = self.C(feature)
+        return prediction

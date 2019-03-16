@@ -12,11 +12,39 @@ from enum import Enum
 
 import os
 
-DS = [
-    "SVHN",
-    "MNIST",
-    "OFFIE",
-]
+DS = ["SVHN", "MNIST", "OFFIE"]
+
+
+class Normalize(object):
+    """Normalize an tensor image with mean and standard deviation.
+    Given mean: (R, G, B),
+    will normalize each channel of the torch.*Tensor, i.e.
+    channel = channel - mean
+    Args:
+        mean (sequence): Sequence of means for R, G, B channels respecitvely.
+    """
+
+    def __init__(self, mean=None, meanfile=None):
+        if mean:
+            self.mean = mean
+        else:
+            arr = np.load(meanfile)
+            self.mean = torch.from_numpy(arr.astype("float32") / 255.0)[
+                [2, 1, 0], :, :
+            ]
+
+    def __call__(self, tensor):
+        """
+        Args:
+            tensor (Tensor): Tensor image of size (C, H, W) to be normalized.
+        Returns:
+            Tensor: Normalized image.
+        """
+        # TODO: make efficient
+        for t, m in zip(tensor, self.mean):
+            t.sub_(m)
+        return tensor
+
 
 class DSStastic:
     """Mean and Std for very Datasets
@@ -27,12 +55,7 @@ class DSStastic:
     MNIST = np.array(([0.44, 0.44, 0.44], [0.19, 0.19, 0.191]))
 
 
-def get_dataset(
-    dsname,
-    domain=None,
-    split="train",
-    size=224,
-):
+def get_dataset(dsname, domain=None, split="train", size=224):
     """Helpper function to get `DataLoader` of specific datasets 
     
     Arguments:
@@ -57,24 +80,26 @@ def get_dataset(
     #! Prepare dataset translation
     #########################################
 
-    ## UGLY need optim 
+    ## UGLY need optim
 
-    if split == "train":   
+    if split == "train":
         trans = [
             transforms.Resize(256),
             transforms.RandomResizedCrop(227),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                std=[0.229, 0.224, 0.225])
-        ]   
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+            ),
+        ]
     else:
         trans = [
             transforms.Resize(256),
             transforms.CenterCrop(227),
             transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406],
-                                std=[0.229, 0.224, 0.225])
+            transforms.Normalize(
+                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+            ),
         ]
 
     transform = transforms.Compose(trans)
@@ -97,19 +122,17 @@ def get_dataset(
         )
     ## OFFICE dataset
     elif dsname == "OFFICE":
-        if domain not in ['A', 'D', 'W']:
-            raise Exception(str(domain) + ' not in OFFICE dataset.')
+        if domain not in ["A", "D", "W"]:
+            raise Exception(str(domain) + " not in OFFICE dataset.")
         else:
             data_set = ds.ImageFolder(
-                root = root + 'Office/' + domain,
-                transform=transform
+                root=root + "Office/" + domain, transform=transform
             )
 
     else:
-        raise Exception(str(dsname) + ' Not Support')
+        raise Exception(str(dsname) + " Not Support")
 
-
-    return data_set #, data_loader
+    return data_set  # , data_loader
 
 
 def load_img_dataset(

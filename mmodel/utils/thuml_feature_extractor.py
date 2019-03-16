@@ -7,33 +7,43 @@ from torch.autograd import Variable
 
 from mmodel.basic_module import WeightedModule
 
+
 def init_weights(m):
     classname = m.__class__.__name__
-    if classname.find('Conv2d') != -1 or classname.find('ConvTranspose2d') != -1:
+    if (
+        classname.find("Conv2d") != -1
+        or classname.find("ConvTranspose2d") != -1
+    ):
         nn.init.kaiming_uniform_(m.weight)
         nn.init.constant_(m.bias, 0)
-    elif classname.find('BatchNorm') != -1:
+    elif classname.find("BatchNorm") != -1:
         nn.init.normal_(m.weight, 1.0, 0.02)
         nn.init.constant_(m.bias, 0)
-    elif classname.find('Linear') != -1:
+    elif classname.find("Linear") != -1:
         nn.init.xavier_normal_(m.weight)
         nn.init.constant_(m.bias, 0)
 
+
 class LRN(nn.Module):
-    def __init__(self, local_size=1, alpha=1.0, beta=0.75, ACROSS_CHANNELS=True):
+    def __init__(
+        self, local_size=1, alpha=1.0, beta=0.75, ACROSS_CHANNELS=True
+    ):
         super(LRN, self).__init__()
         self.ACROSS_CHANNELS = ACROSS_CHANNELS
         if ACROSS_CHANNELS:
-            self.average=nn.AvgPool3d(kernel_size=(local_size, 1, 1),
-                    stride=1,
-                    padding=(int((local_size-1.0)/2), 0, 0))
+            self.average = nn.AvgPool3d(
+                kernel_size=(local_size, 1, 1),
+                stride=1,
+                padding=(int((local_size - 1.0) / 2), 0, 0),
+            )
         else:
-            self.average=nn.AvgPool2d(kernel_size=local_size,
-                    stride=1,
-                    padding=int((local_size-1.0)/2))
+            self.average = nn.AvgPool2d(
+                kernel_size=local_size,
+                stride=1,
+                padding=int((local_size - 1.0) / 2),
+            )
         self.alpha = alpha
         self.beta = beta
-
 
     def forward(self, x):
         if self.ACROSS_CHANNELS:
@@ -47,8 +57,8 @@ class LRN(nn.Module):
         x = x.div(div)
         return x
 
-class AlexNet(nn.Module):
 
+class AlexNet(nn.Module):
     def __init__(self, num_classes=1000):
         super(AlexNet, self).__init__()
         self.features = nn.Sequential(
@@ -80,7 +90,6 @@ class AlexNet(nn.Module):
 
     def forward(self, x):
         x = self.features(x)
-        print(x.size())
         x = x.view(x.size(0), 256 * 6 * 6)
         x = self.classifier(x)
         return x
@@ -94,45 +103,78 @@ def alexnet(pretrained=False, **kwargs):
     """
     model = AlexNet(**kwargs)
     if pretrained:
-        model_path = './_PUBLIC_DATASET_/alexnet.pth.tar'
+        model_path = "./_PUBLIC_DATASET_/alexnet.pth.tar"
         pretrained_model = torch.load(model_path)
-        model.load_state_dict(pretrained_model['state_dict'])
+        model.load_state_dict(pretrained_model["state_dict"])
     return model
+
 
 # convnet without the last layer
 class AlexNetFc(WeightedModule):
-  def __init__(self, use_bottleneck=True, bottleneck_dim=256, new_cls=False, class_num=1000):
-    super(AlexNetFc, self).__init__()
-    model_alexnet = alexnet(pretrained=True)
-    self.has_init = True
-    self.features = model_alexnet.features
-    self.classifier = nn.Sequential()
-    for i in range(6):
-      self.classifier.add_module("classifier"+str(i), model_alexnet.classifier[i])
-    self.feature_layers = nn.Sequential(self.features, self.classifier)
+    def __init__(
+        self,
+        use_bottleneck=True,
+        bottleneck_dim=256,
+        new_cls=False,
+        class_num=1000,
+    ):
+        super(AlexNetFc, self).__init__()
+        model_alexnet = alexnet(pretrained=True)
+        self.has_init = True
+        self.features = model_alexnet.features
+        self.classifier = nn.Sequential()
+        for i in range(6):
+            self.classifier.add_module(
+                "classifier" + str(i), model_alexnet.classifier[i]
+            )
+        self.feature_layers = nn.Sequential(self.features, self.classifier)
 
-    self.use_bottleneck = use_bottleneck
-    self.new_cls = new_cls
-    if new_cls:
-        if self.use_bottleneck:
-            self.bottleneck = nn.Linear(4096, bottleneck_dim)
-            self.fc = nn.Linear(bottleneck_dim, class_num)
-            self.bottleneck.apply(init_weights)
-            self.fc.apply(init_weights)
-            self.__in_features = bottleneck_dim
+        self.use_bottleneck = use_bottleneck
+        self.new_cls = new_cls
+        if new_cls:
+            if self.use_bottleneck:
+                self.bottleneck = nn.Linear(4096, bottleneck_dim)
+                self.fc = nn.Linear(bottleneck_dim, class_num)
+                self.bottleneck.apply(init_weights)
+                self.fc.apply(init_weights)
+                self.__in_features = bottleneck_dim
+            else:
+                self.fc = nn.Linear(4096, class_num)
+                self.fc.apply(init_weights)
+                self.__in_features = 4096
         else:
-            self.fc = nn.Linear(4096, class_num)
-            self.fc.apply(init_weights)
+            self.fc = model_alexnet.classifier[6]
             self.__in_features = 4096
-    else:
-        self.fc = model_alexnet.classifier[6]
-        self.__in_features = 4096
 
-  def forward(self, x):
-    x = self.features(x)
-    x = x.view(x.size(0), -1)
-    x = self.classifier(x)
-    if self.use_bottleneck and self.new_cls:
-        x = self.bottleneck(x)
-    y = self.fc(x)
-    return x, y
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        if self.use_bottleneck and self.new_cls:
+            x = self.bottleneck(x)
+        y = self.fc(x)
+        return x, y
+
+
+class AlexNetFeatureExtractor(WeightedModule):
+    def __init__(self):
+        super(AlexNetFeatureExtractor, self).__init__()
+
+        model_alexnet = alexnet(pretrained=True)
+        self.features = model_alexnet.features
+        self.classifier = nn.Sequential()
+        for i in range(6):
+            self.classifier.add_module(
+                "classifier" + str(i), model_alexnet.classifier[i]
+            )
+
+        self.output_dim = 4096
+        self.has_init = True
+
+
+    def forward(self, x):
+        x = self.features(x)
+        x = x.view(x.size(0), -1)
+        x = self.classifier(x)
+        return x
+
