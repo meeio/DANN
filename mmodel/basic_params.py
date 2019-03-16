@@ -47,7 +47,7 @@ def get_param_parser():
     )
 
     parser.add_argument(
-        "--target", type=str, default="A", help="data base we will use"
+        "--target", type=str, default="W", help="data base we will use"
     )
 
     return parser
