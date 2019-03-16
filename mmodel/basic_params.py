@@ -17,7 +17,7 @@ def get_param_parser():
         "--use_gpu", type=bool, default=True, help="Use GPU to train the model"
     )
 
-    parser.add_argument("--steps", type=int, default=100000, help="Epochs of train data")
+    parser.add_argument("--steps", type=int, default=5000, help="Epochs of train data")
 
     parser.add_argument("--log_per_step", type=int, default=100, help="Epochs of train data")
 
@@ -39,7 +39,7 @@ def get_param_parser():
     )
 
     parser.add_argument(
-        "--dataset", type=str, default="OFFICE", help="data base we will use"
+        "--dataset", type=str, default="Office", help="data base we will use"
     )
 
     parser.add_argument(
@@ -47,7 +47,7 @@ def get_param_parser():
     )
 
     parser.add_argument(
-        "--target", type=str, default="W", help="data base we will use"
+        "--target", type=str, default="A", help="data base we will use"
     )
 
     return parser

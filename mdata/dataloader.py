@@ -82,23 +82,37 @@ def get_dataset(dsname, domain=None, split="train", size=224):
 
     ## UGLY need optim
 
+    if dsname in [None, 'NONE']:
+        dsname = domain
+    
+    assert dsname.upper() in ["MNIST", "SVHN", "OFFICE"]
+
+    if dsname in ["MNIST", "MNIST"]:
+        resize = 29
+        crop = 28
+    else:
+        resize = 256
+        crop = 227
+
     if split == "train":
         trans = [
-            transforms.Resize(256),
-            transforms.RandomResizedCrop(227),
+            transforms.Resize(resize),
+            transforms.RandomResizedCrop(crop),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                # mean=[0.5], std=[0.5]
             ),
         ]
     else:
         trans = [
-            transforms.Resize(256),
-            transforms.CenterCrop(227),
+            transforms.Resize(resize),
+            transforms.CenterCrop(crop),
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                # mean=[0.5], std=[0.5]
             ),
         ]
 
@@ -118,15 +132,24 @@ def get_dataset(dsname, domain=None, split="train", size=224):
     ## SVHN dataset
     elif dsname == "SVHN":
         data_set = ds.SVHN(
-            root=root, split=split, transform=transform, download=True
+            root=root+'SVHN/', split=split, transform=transform, download=True
         )
     ## OFFICE dataset
-    elif dsname == "OFFICE":
+    elif dsname.upper() == "OFFICE":
         if domain not in ["A", "D", "W"]:
             raise Exception(str(domain) + " not in OFFICE dataset.")
         else:
             data_set = ds.ImageFolder(
                 root=root + "Office/" + domain, transform=transform
+            )
+    
+        ## OFFICE dataset
+    elif dsname == "OfficeHome":
+        if domain not in ["Ar", "D", "W"]:
+            raise Exception(str(domain) + " not in OFFICE dataset.")
+        else:
+            data_set = ds.ImageFolder(
+                root=root + "OfficeHome/" + domain, transform=transform
             )
 
     else:

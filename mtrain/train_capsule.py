@@ -108,16 +108,17 @@ class TrainCapsule(nn.Module):
 
     def train_step(self, retain_graph=True):
         self.optimer.zero_grad()
-        self.optim_loss.value.backward(retain_graph=retain_graph)
+        self.optim_loss.value.backward(retain_graph=True)
         self.optimer.step()
 
     def decary_lr_rate(self):
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
 
-        for g in self.optimer.param_groups:
-            lr = g['lr'] * g['lr_mult']
-            g['lr'] = lr
+
+        # for g in self.optimer.param_groups:
+        #     lr = g['lr'] * g['lr_mult']
+        #     g['lr'] = lr
 
 
 

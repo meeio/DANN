@@ -65,10 +65,11 @@ class WeightedModule(nn.Module):
         name = self.__class__.__name__
         str = name + "'s weights init from %s."
 
+        infos = str % "Pytorch's inner mechainist"
         if self.has_init:
             infos = str % "class inner define"
 
-        if record_path is not None:
+        elif record_path is not None:
             f = torch.load(record_path)
             self.load_state_dict(f)
             infos = str % "check point"
@@ -79,9 +80,6 @@ class WeightedModule(nn.Module):
 
         elif WeightedModule.static_weight_handler is not None:
             WeightedModule.static_weight_handler(self)
-
-        else:
-            infos = str % "Pytorch's inner mechainist"
 
         logger.log(BUILD, infos)
 
@@ -443,7 +441,7 @@ class DAModule(TrainableModule):
         target = params.target
 
         def get_set(dataset, domain, split):
-            if dataset is None:
+            if dataset is None or dataset == 'NONE':
                 dataset = mdl.get_dataset(
                     dataset=domain, domain=None, split=split
                 )

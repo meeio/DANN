@@ -9,3 +9,6 @@ def get_module(name):
     elif name == 'DANN':
         from .DANN import params, model
         return params.get_params(), model.DANN()
+    elif name == 'MNIST':
+        from .MNIST import mnist
+        return None, mnist.MNIST()
