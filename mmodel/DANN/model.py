@@ -56,8 +56,8 @@ class DANN(DAModule):
             "type": torch.optim.SGD,
             "lr": self.params.lr,
             "momentum": 0.95,
-            "weight_decay": 0.001,
-            "nesterov": True,
+            # "weight_decay": 0.001,
+            # "nesterov": True,
             "lr_mult": {"F": 0.1},
         }
 
