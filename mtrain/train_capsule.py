@@ -84,12 +84,14 @@ class TrainCapsule(nn.Module):
                     "params": list(i.parameters()),
                     "lr_mult": lr_mult,
                     "lr": lr_mult * optimer_kwargs["lr"],
+                    "initial_lr": optimer_kwargs["lr"],
                 }
             )
 
         # init optimer base on type and args
         optimer_kwargs.pop('lr_mult', None)
         self.optimer = optimer_type(self.all_params, **optimer_kwargs)
+
 
         # init optimer decay option
         self.lr_scheduler = None

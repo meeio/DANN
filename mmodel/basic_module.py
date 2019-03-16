@@ -551,6 +551,8 @@ class DAModule(TrainableModule):
                 group="valid",
             )
 
+            del predict
+
             return corrent_count, current_size
 
         if not end_epoch:

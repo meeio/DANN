@@ -24,11 +24,13 @@ def get_lambda(iter_num, max_iter=10000.0, high=1.0, low=0.0, alpha=10.0):
     )
 
 
-def get_lr(iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75):
-    lr = np.float(
-        init_lr * (1 + alpha * (iter_num / max_iter)) ** (-power)
-    )
-    return lr
+def get_lr_scaler(iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75):
+    # lr = np.float(
+    #     init_lr * (1 + alpha * (iter_num / max_iter)) ** (-power)
+    # )
+
+    lr_scaler = np.float((1 + alpha * (iter_num / max_iter)) ** (-power))
+    return lr_scaler
 
 
 class DANN(DAModule):
@@ -64,7 +66,8 @@ class DANN(DAModule):
 
         lr_scheduler = {
             "type": torch.optim.lr_scheduler.LambdaLR,
-            "lr_lambda": lambda steps: get_lr(steps, self.total_steps),
+            "lr_lambda": lambda steps: get_lr_scaler(steps, self.total_steps),
+            "last_epoch": 0,
         }
 
         self.define_loss(
