@@ -25,9 +25,6 @@ def get_lambda(iter_num, max_iter=10000.0, high=1.0, low=0.0, alpha=10.0):
 
 
 def get_lr_scaler(iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75):
-    # lr = np.float(
-    #     init_lr * (1 + alpha * (iter_num / max_iter)) ** (-power)
-    # )
 
     lr_scaler = np.float((1 + alpha * (iter_num / max_iter)) ** (-power))
     return lr_scaler
@@ -55,12 +52,12 @@ class DANN(DAModule):
 
     def _regist_losses(self):
 
-        ## WARM need weight decay?
-
         optimer = {
             "type": torch.optim.SGD,
             "lr": self.params.lr,
             "momentum": 0.95,
+            "weight_decay": 0.001,
+            "nesterov": True,
             "lr_mult": {"F": 0.1},
         }
 
@@ -102,58 +99,3 @@ class DANN(DAModule):
         feature = self.F(img)
         _, prediction = self.C(feature)
         return prediction
-
-# class DANN(DAModule):
-#     def __init__(self):
-#         super(DANN, self).__init__(param)
-#         self._all_ready()
-
-#     def _regist_networks(self):
-
-#         F = AlexNetFeatureExtractor()
-#         C = BottleneckedClassifier(
-#             input_dim=F.output_dim, class_num=31, bottleneck_dim=256
-#         )
-
-#         return {"F": F, "C": C}
-
-#     def _regist_losses(self):
-
-#         optimer = {
-#             "type": torch.optim.SGD,
-#             "lr": self.params.lr,
-#             "momentum": 0.95,
-#             "lr_mult": {"F": 0.1},
-#         }
-
-#         lr_scheduler = {
-#             "type": torch.optim.lr_scheduler.LambdaLR,
-#             "lr_lambda": lambda steps: get_lr_scaler(steps, self.total_steps),
-#             "last_epoch": 0,
-#         }
-
-#         self.define_loss(
-#             "global_looss",
-#             networks=["F", "C"],
-#             optimer=optimer,
-#             decay_op=lr_scheduler,
-#         )
-
-#         self.define_log("classify")
-
-#     def _train_step(self, s_img, s_label, t_img):
-
-#         backbone_feature = self.F(s_img)
-#         _, pred_class = self.C(backbone_feature)
-
-#         loss_classify = self.ce(pred_class, s_label)
-
-#         self._update_logs({"classify": loss_classify})
-#         self._update_loss("global_looss", loss_classify)
-
-#         del loss_classify
-
-#     def _valid_step(self, img):
-#         feature = self.F(img)
-#         _, prediction = self.C(feature)
-#         return prediction
