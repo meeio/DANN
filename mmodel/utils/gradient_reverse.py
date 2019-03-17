@@ -13,4 +13,4 @@ class GradReverseLayer(Module):
         return inputs.view_as(inputs)
 
     def backward(self, grad_output):
-        return grad_output * -self.coeff()
+        return -self.coeff() * grad_output.clone() 

@@ -23,12 +23,10 @@ def get_lambda(iter_num, max_iter=10000.0, high=1.0, low=0.0, alpha=10.0):
         + low
     )
 
-
 def get_lr_scaler(iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75):
 
     lr_scaler = np.float((1 + alpha * (iter_num / max_iter)) ** (-power))
     return lr_scaler
-
 
 class DANN(DAModule):
     def __init__(self):
@@ -56,8 +54,8 @@ class DANN(DAModule):
             "type": torch.optim.SGD,
             "lr": self.params.lr,
             "momentum": 0.95,
-            # "weight_decay": 0.001,
-            # "nesterov": True,
+            "weight_decay": 0.001,
+            "nesterov": True,
             "lr_mult": {"F": 0.1},
         }
 
