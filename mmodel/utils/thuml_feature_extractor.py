@@ -175,6 +175,6 @@ class AlexNetFeatureExtractor(WeightedModule):
     def forward(self, x):
         x = self.features(x)
         x = x.view(x.size(0), -1)
-        x = self.classifier(x)
-        return x
+        feature = self.classifier(x)
+        return feature
 

@@ -92,17 +92,16 @@ def get_dataset(dsname, domain=None, split="train", size=224):
         crop = 28
     else:
         resize = 256
-        crop = 227
+        crop = 224
 
     if split == "train":
         trans = [
-            transforms.Resize(resize),
-            transforms.RandomResizedCrop(crop),
-            transforms.RandomHorizontalFlip(),
+            transforms.Resize(crop),
+            # transforms.RandomResizedCrop(crop),
+            # transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                # mean=[0.5], std=[0.5]
             ),
         ]
     else:
@@ -112,7 +111,6 @@ def get_dataset(dsname, domain=None, split="train", size=224):
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
-                # mean=[0.5], std=[0.5]
             ),
         ]
 
@@ -143,7 +141,7 @@ def get_dataset(dsname, domain=None, split="train", size=224):
                 root=root + "Office/" + domain, transform=transform
             )
     
-        ## OFFICE dataset
+    ## OFFICE dataset
     elif dsname == "OfficeHome":
         if domain not in ["Ar", "D", "W"]:
             raise Exception(str(domain) + " not in OFFICE dataset.")

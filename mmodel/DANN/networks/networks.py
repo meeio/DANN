@@ -67,11 +67,12 @@ class BottleneckedClassifier(WeightedModule):
         bottleneck = nn.Linear(input_dim, bottleneck_dim)
         classifer = nn.Linear(bottleneck_dim, class_num)
 
-        nn.init.xavier_normal_(bottleneck.weight)
-        nn.init.constant_(bottleneck.bias, 0)
 
-        nn.init.xavier_normal_(classifer.weight)
-        nn.init.constant_(classifer.bias, 0)
+        nn.init.normal_(bottleneck.weight, 0, 0.01)
+        nn.init.normal_(classifer.weight, 0, 0.005)
+
+        nn.init.constant_(bottleneck.bias, 0.1)
+        nn.init.constant_(classifer.bias, 0.1)
 
         self.bottleneck = bottleneck
         self.classifer = classifer

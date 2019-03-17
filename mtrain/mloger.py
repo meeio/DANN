@@ -160,7 +160,7 @@ class LogCapsule(object):
 
     def record(self):
         # closs = self.loss_bucket.value.item()
-        closs = self.loss_bucket.value.detach()
+        closs = self.loss_bucket.value.clone().detach()
         if self.range_loss is None:
             self.range_loss = closs
         else:
