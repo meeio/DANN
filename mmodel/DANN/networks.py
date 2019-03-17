@@ -15,7 +15,7 @@ def init_weights(m):
         nn.init.constant_(m.bias, 0)
 
 class DomainClassifier(WeightedModule):
-    def __init__(self, input_dim = 2048):
+    def __init__(self, input_dim = 2048, reversed_function=None):
         super().__init__()
         self.layer1 = nn.Linear(input_dim,1024)
         self.layer2 = nn.Linear(1024,1024)
@@ -38,11 +38,16 @@ class DomainClassifier(WeightedModule):
         self.relu2 = nn.LeakyReLU(inplace=True)
         self.sigmoid = nn.Sigmoid()
 
+        # assert callable(reversed_hook)
+        self.reversed_function = reversed_function
+
 
     def forward(self, inputs):
+        inputs = self.reversed_function(inputs)
+        
         b = inputs.size()[0]
         x = inputs.view(b,-1)
-
+        
         x = self.layer1(x)
         x = self.relu1(x)
         x = self.droupout1(x)

@@ -15,8 +15,7 @@ from .params import get_params
 
 param = get_params()
 
-
-def get_lambda(iter_num, max_iter=10000.0, high=1.0, low=0.0, alpha=10.0):
+def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
     return np.float(
         2.0 * (high - low) / (1.0 + np.exp(-alpha * iter_num / max_iter))
         - (high - low)
@@ -41,10 +40,9 @@ class DANN(DAModule):
         C = BottleneckedClassifier(
             input_dim=F.output_dim, class_num=31, bottleneck_dim=256
         )
-        D = nn.Sequential(
-            GradReverseLayer(coeff=grader_reverse_lambda),
-            DomainClassifier(input_dim=256),
-        )
+
+        grad_reverse = GradReverseLayer(coeff=grader_reverse_lambda)
+        D = DomainClassifier(input_dim=256, reversed_function = grad_reverse)
 
         return {"F": F, "C": C, "D": D}
 
