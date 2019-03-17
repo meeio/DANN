@@ -92,12 +92,12 @@ def get_dataset(dsname, domain=None, split="train", size=224):
         crop = 28
     else:
         resize = 256
-        crop = 224
+        crop = 226
 
     if split == "train":
         trans = [
-            transforms.Resize(crop),
-            # transforms.RandomResizedCrop(crop),
+            transforms.Resize(resize),
+            transforms.RandomResizedCrop(crop),
             # transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(
