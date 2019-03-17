@@ -159,7 +159,8 @@ class LogCapsule(object):
         self.record()
 
     def record(self):
-        closs = self.loss_bucket.value.item()
+        # closs = self.loss_bucket.value.item()
+        closs = self.loss_bucket.value.detach()
         if self.range_loss is None:
             self.range_loss = closs
         else:
@@ -178,7 +179,7 @@ class LogCapsule(object):
             result = 0
         self.range_loss = None
         self.range_step = 0
-        return result
+        return result.item()
 
     def __loss__(self, steps, values):
         """record loss to log file
