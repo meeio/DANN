@@ -40,17 +40,24 @@ class DANN(DAModule):
 
         if True:
             from .networks.resnet50 import ResFc, ResClassifer
+
             F = ResFc()
             C = ResClassifer(class_num=31)
         else:
             from .networks.alex import AlexNetFc, AlexClassifer
+
             F = AlexNetFc()
             C = AlexClassifer(class_num=31)
 
-        grad_reverse = GradReverseLayer(
-            coeff=lambda: get_lambda(self.current_step, self.total_steps)
+        # grad_reverse = GradReverseLayer(
+        #     coeff=lambda: get_lambda(self.current_step, self.total_steps)
+        # )
+        D = DomainClassifier(
+            input_dim=2048,
+            reversed_coeff=lambda: get_lambda(
+                self.current_step, self.total_steps
+            ),
         )
-        D = DomainClassifier(input_dim=2048, reversed_function=grad_reverse)
 
         return {"F": F, "C": C, "D": D}
 

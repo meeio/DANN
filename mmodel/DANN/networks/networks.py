@@ -14,8 +14,13 @@ def init_weights(m):
         nn.init.xavier_normal_(m.weight)
         nn.init.constant_(m.bias, 0)
 
+def grl_hook(coeff):
+    def fun1(grad):
+        return -coeff*grad.clone()
+    return fun1
+
 class DomainClassifier(WeightedModule):
-    def __init__(self, input_dim = 2048, reversed_function=None):
+    def __init__(self, input_dim = 2048, reversed_coeff=lambda: 1):
         super().__init__()
         self.layer1 = nn.Linear(input_dim,1024)
         self.layer2 = nn.Linear(1024,1024)
@@ -39,13 +44,15 @@ class DomainClassifier(WeightedModule):
         self.sigmoid = nn.Sigmoid()
 
         # assert callable(reversed_hook)
-        self.reversed_function = reversed_function
+        # self.reversed_function = reversed_function
+        assert callable(reversed_coeff)
+        self.reversed_coeff = reversed_coeff
 
 
     def forward(self, inputs):
 
-        inputs = self.reversed_function(inputs)
-
+        # inputs = self.reversed_function(inputs)
+        inputs.register_hook(grl_hook(self.reversed_coeff()))
         b = inputs.size()[0]
         x = inputs.view(b,-1)
         
