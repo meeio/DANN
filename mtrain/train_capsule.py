@@ -108,7 +108,7 @@ class TrainCapsule(nn.Module):
 
     def train_step(self, retain_graph=True):
         self.optimer.zero_grad()
-        self.optim_loss.value.backward(retain_graph=retain_graph)
+        self.optim_loss.value.backward(retain_graph=True)
         self.optimer.step()
 
     def decary_lr_rate(self):
