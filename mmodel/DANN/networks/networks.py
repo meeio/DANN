@@ -43,7 +43,8 @@ class DomainClassifier(WeightedModule):
 
 
     def forward(self, inputs):
-        inputs = self.reversed_function(inputs)
+        # inputs = self.reversed_function(inputs)
+        # inputs = 
         
         b = inputs.size()[0]
         x = inputs.view(b,-1)

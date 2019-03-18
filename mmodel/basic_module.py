@@ -424,14 +424,6 @@ class DAModule(TrainableModule):
     def _valid_step(self, img):
         pass
 
-    # def bce(self, inputs, target):
-    #     return self._bce(
-    #         inputs,
-    #         target.expand_as(inputs)
-    #         if inputs.size() != target.size()
-    #         else target,
-    #     )
-
     def _prepare_data(self):
 
         params = self.params
