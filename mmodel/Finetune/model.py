@@ -40,7 +40,6 @@ class Finetune(DAModule):
 
         if True:
             from .networks.resnet50 import ResFc, ResClassifer
-
             F = ResFc()
             C = ResClassifer(class_num=31)
         else:

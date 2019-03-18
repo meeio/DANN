@@ -60,7 +60,8 @@ def get_dataset(dsname, domain=None, split="train", size=224):
         crop = 28
     else:
         resize = 256
-        crop = 226
+        crop = 224
+        # 224 for resnet
 
     if split == "train":
         trans = [
