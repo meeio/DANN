@@ -107,7 +107,7 @@ class DANN(DAModule):
         )
 
         self._update_logs({"classify": loss_classify, "discrim": loss_dis})
-        self._update_loss("global_looss", loss_classify + loss_dis)
+        self._update_loss("global_looss", loss_classify)
 
         del loss_classify, loss_dis
 
