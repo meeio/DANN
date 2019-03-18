@@ -55,7 +55,7 @@ class Finetune(DAModule):
         optimer = {
             "type": torch.optim.SGD,
             "lr": self.params.lr,
-            "momentum": 0.95,
+            "momentum": 0.9,
             "weight_decay": 0.001,
             "nesterov": True,
             "lr_mult": {"F": 0.1},
