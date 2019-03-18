@@ -7,5 +7,6 @@ if __name__ == "__main__":
 
     torch.backends.cudnn.benchmark = True
     torch.cuda.empty_cache()
-    _, A = get_module("Finetune")
+    name = input('model name:')
+    _, A = get_module(name)
     A.train_module()
