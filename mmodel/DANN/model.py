@@ -88,6 +88,9 @@ class DANN(DAModule):
 
     def _train_step(self, s_img, s_label, t_img):
 
+        self._train_step_bounded(s_img, s_label, t_img)
+        return
+
         g_source_feature = self.F(s_img)
         g_target_feature = self.F(t_img)
 
@@ -105,9 +108,28 @@ class DANN(DAModule):
         )
 
         self._update_logs({"classify": loss_classify, "discrim": loss_dis})
+        self._update_loss("global_looss", loss_classify + loss)
+
+        del loss_classify, loss_dis
+    
+    def _train_step_bounded(self, s_img, s_label, t_img):
+        imgs = torch.cat([s_img, t_img], dim=0)
+        domain = torch.cat([self.SOURCE, self.TARGET], dim=0)
+
+        backbone_feature = self.F(imgs)
+        feature, pred_class = self.C(backbone_feature)
+
+        pred_domain = self.D(feature)
+
+        s_pred_class, _ = torch.chunk(pred_class, chunks=2, dim=0)
+        loss_classify = self.ce(s_pred_class, s_label)
+        loss_dis = self.bce(pred_domain, domain)
+
+        self._update_logs({"classify": loss_classify, "discrim": loss_dis})
         self._update_loss("global_looss", loss_classify + loss_dis)
 
         del loss_classify, loss_dis
+
 
     def _valid_step(self, img):
         feature = self.F(img)
