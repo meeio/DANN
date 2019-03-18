@@ -50,8 +50,7 @@ class DomainClassifier(WeightedModule):
 
 
     def forward(self, inputs):
-
-        # inputs = self.reversed_function(inputs)
+        
         inputs.register_hook(grl_hook(self.reversed_coeff()))
         b = inputs.size()[0]
         x = inputs.view(b,-1)
@@ -66,30 +65,3 @@ class DomainClassifier(WeightedModule):
         x = self.sigmoid(x)
         return x
 
-
-class BottleneckedClassifier(WeightedModule):
-
-    def __init__(self, input_dim, class_num, bottleneck_dim = 256):
-        super(BottleneckedClassifier, self).__init__()   
-
-        bottleneck = nn.Linear(input_dim, bottleneck_dim)
-        classifer = nn.Linear(bottleneck_dim, class_num)
-
-
-        nn.init.normal_(bottleneck.weight, 0, 0.01)
-        nn.init.normal_(classifer.weight, 0, 0.005)
-
-        nn.init.constant_(bottleneck.bias, 0.1)
-        nn.init.constant_(classifer.bias, 0.1)
-
-        self.bottleneck = bottleneck
-        self.classifer = classifer
-
-        self.has_init = True
-    
-    def forward(self, inputs):
-
-        feature = self.bottleneck(inputs)
-        prediction = self.classifer(feature)
-
-        return feature, prediction

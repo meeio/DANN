@@ -49,9 +49,6 @@ class DANN(DAModule):
             F = AlexNetFc()
             C = AlexClassifer(class_num=31)
 
-        # grad_reverse = GradReverseLayer(
-        #     coeff=lambda: get_lambda(self.current_step, self.total_steps)
-        # )
         D = DomainClassifier(
             input_dim=2048,
             reversed_coeff=lambda: get_lambda(
@@ -104,7 +101,7 @@ class DANN(DAModule):
         loss_dis = self.bce(pred_domain, domain)
 
         self._update_logs({"classify": loss_classify, "discrim": loss_dis})
-        self._update_loss("global_looss", loss_classify + loss_dis)
+        self._update_loss("global_looss", loss_classify )
 
         del loss_classify, loss_dis
 

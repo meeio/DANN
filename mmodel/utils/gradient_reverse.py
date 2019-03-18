@@ -2,11 +2,6 @@ from mmodel.basic_module import WeightedModule
 from torch.nn import Module
 import torch
 
-# def grl_hook(coeff):
-#     def fun1(grad):
-#         return -coeff*grad.clone()
-#     return fun1
-
 class GradReverseLayer(torch.autograd.Function):
     def __init__(self, coeff=lambda: 1):
         super(GradReverseLayer, self).__init__()
