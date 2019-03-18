@@ -63,7 +63,7 @@ class DANN(DAModule):
         optimer = {
             "type": torch.optim.SGD,
             "lr": self.params.lr,
-            "momentum": 0.95,
+            "momentum": 0.9,
             "weight_decay": 0.001,
             "nesterov": True,
             "lr_mult": {"F": 0.1},
@@ -105,7 +105,7 @@ class DANN(DAModule):
         )
 
         self._update_logs({"classify": loss_classify, "discrim": loss_dis})
-        self._update_loss("global_looss", loss_classify)
+        self._update_loss("global_looss", loss_classify + loss_dis)
 
         del loss_classify, loss_dis
 
