@@ -14,38 +14,6 @@ import os
 
 DS = ["SVHN", "MNIST", "OFFIE"]
 
-
-class Normalize(object):
-    """Normalize an tensor image with mean and standard deviation.
-    Given mean: (R, G, B),
-    will normalize each channel of the torch.*Tensor, i.e.
-    channel = channel - mean
-    Args:
-        mean (sequence): Sequence of means for R, G, B channels respecitvely.
-    """
-
-    def __init__(self, mean=None, meanfile=None):
-        if mean:
-            self.mean = mean
-        else:
-            arr = np.load(meanfile)
-            self.mean = torch.from_numpy(arr.astype("float32") / 255.0)[
-                [2, 1, 0], :, :
-            ]
-
-    def __call__(self, tensor):
-        """
-        Args:
-            tensor (Tensor): Tensor image of size (C, H, W) to be normalized.
-        Returns:
-            Tensor: Normalized image.
-        """
-        # TODO: make efficient
-        for t, m in zip(tensor, self.mean):
-            t.sub_(m)
-        return tensor
-
-
 class DSStastic:
     """Mean and Std for very Datasets
     """
@@ -96,8 +64,8 @@ def get_dataset(dsname, domain=None, split="train", size=224):
 
     if split == "train":
         trans = [
-            transforms.Resize(resize),
-            transforms.RandomResizedCrop(crop),
+            transforms.Resize(crop),
+            # transforms.RandomResizedCrop(crop),
             # transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(
@@ -106,8 +74,8 @@ def get_dataset(dsname, domain=None, split="train", size=224):
         ]
     else:
         trans = [
-            transforms.Resize(resize),
-            transforms.CenterCrop(crop),
+            transforms.Resize(crop),
+            # transforms.CenterCrop(crop),
             transforms.ToTensor(),
             transforms.Normalize(
                 mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]

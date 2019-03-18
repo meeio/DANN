@@ -461,7 +461,6 @@ class DAModule(TrainableModule):
                 batch_size=params.batch_size,
                 drop_last=drop_last,
                 shuffle=shuffle,
-                # num_workers=8,
             )
             return l
 
