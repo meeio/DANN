@@ -36,7 +36,7 @@ class ResClassifer(WeightedModule):
         classifer = nn.Linear(2048, class_num)
 
         nn.init.xavier_normal_(classifer.weight)
-        nn.init.zeros_(classifer.bias)
+        nn.init.constant_(classifer.bias, 0)
 
         self.has_init = True
 
