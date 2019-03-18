@@ -12,3 +12,10 @@ def get_module(name):
     elif name == 'MNIST':
         from .MNIST import mnist
         return None, mnist.MNIST()
+    elif name == 'Finetune':
+        from .Finetune import model
+        return None, model.Finetune()
+
+def get_params():
+    from .basic_params import get_param_parser
+    return get_param_parser().parse_args()

@@ -9,7 +9,7 @@ def get_param_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--batch_size", type=int, default=2, help="Size for Mini-Batch Optimization"
+        "--batch_size", type=int, default=32, help="Size for Mini-Batch Optimization"
     )
 
 
