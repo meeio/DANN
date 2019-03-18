@@ -89,19 +89,25 @@ class DANN(DAModule):
     def _train_step(self, s_img, s_label, t_img):
 
         imgs = torch.cat([s_img, t_img], dim=0)
-        domain = torch.cat([self.SOURCE, self.TARGET], dim=0)
 
-        backbone_feature = self.F(imgs)
-        feature, pred_class = self.C(backbone_feature)
-        pred_domain = self.D(feature)
+        g_source_feature = self.F(s_img)
+        g_target_feature = self.F(t_img)
 
-        s_pred_class, _ = torch.chunk(pred_class, chunks=2, dim=0)
-        loss_classify = self.ce(s_pred_class, s_label)
+        source_feature, predcition = self.C(g_source_feature)
+        target_feature, _ = self.C(g_target_feature)
 
-        loss_dis = self.bce(pred_domain, domain)
+        loss_classify = self.ce(predcition, s_label)
+
+        pred_domain = self.D(
+            torch.cat([source_feature, target_feature], dim=0)
+        )
+
+        loss_dis = self.bce(
+            pred_domain, torch.cat([self.SOURCE, self.TARGET], dim=0)
+        )
 
         self._update_logs({"classify": loss_classify, "discrim": loss_dis})
-        self._update_loss("global_looss", loss_classify )
+        self._update_loss("global_looss", loss_classify + loss_dis)
 
         del loss_classify, loss_dis
 
