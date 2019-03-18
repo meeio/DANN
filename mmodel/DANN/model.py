@@ -88,8 +88,6 @@ class DANN(DAModule):
 
     def _train_step(self, s_img, s_label, t_img):
 
-        imgs = torch.cat([s_img, t_img], dim=0)
-
         g_source_feature = self.F(s_img)
         g_target_feature = self.F(t_img)
 
