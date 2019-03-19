@@ -39,7 +39,7 @@ class Finetune(DAModule):
     def _regist_networks(self):
 
         # aa
-        if False:
+        if True:
             from .networks.resnet50 import ResFc, ResClassifer
             F = ResFc()
             C = ResClassifer(class_num=31)
