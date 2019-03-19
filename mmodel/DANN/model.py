@@ -88,9 +88,6 @@ class DANN(DAModule):
 
     def _train_step(self, s_img, s_label, t_img):
 
-        self._train_step_bounded(s_img, s_label, t_img)
-        return
-
         g_source_feature = self.F(s_img)
         g_target_feature = self.F(t_img)
 
@@ -108,7 +105,7 @@ class DANN(DAModule):
         )
 
         self._update_logs({"classify": loss_classify, "discrim": loss_dis})
-        self._update_loss("global_looss", loss_classify + loss)
+        self._update_loss("global_looss", loss_classify + loss_dis)
 
         del loss_classify, loss_dis
     
