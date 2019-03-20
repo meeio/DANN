@@ -14,6 +14,7 @@ import os
 
 DS = ["SVHN", "MNIST", "OFFIE"]
 
+
 class DSStastic:
     """Mean and Std for very Datasets
     """
@@ -50,9 +51,9 @@ def get_dataset(dsname, domain=None, split="train", size=224):
 
     ## UGLY need optim
 
-    if dsname in [None, 'NONE']:
+    if dsname in [None, "NONE"]:
         dsname = domain
-    
+
     assert dsname.upper() in ["MNIST", "SVHN", "OFFICE"]
 
     if dsname in ["MNIST", "MNIST"]:
@@ -64,22 +65,28 @@ def get_dataset(dsname, domain=None, split="train", size=224):
         # 224 for resnet
         # 227 for alexnet
 
+    mean_color = [
+        104.0069879317889 / 255,
+        116.66876761696767 / 255,
+        122.6789143406786 / 255,
+    ]
+
     if split == "train":
         trans = [
             transforms.Resize(crop),
             transforms.RandomHorizontalFlip(),
             transforms.ToTensor(),
             transforms.Normalize(
-                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                mean=mean_color, std=[1, 1, 1]
             ),
         ]
     else:
         trans = [
-            transforms.Resize(resize),
-            transforms.CenterCrop(crop),
+            transforms.Resize(crop),
+            # transforms.CenterCrop(crop),
             transforms.ToTensor(),
             transforms.Normalize(
-                mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]
+                mean=mean_color, std=[1, 1, 1]
             ),
         ]
 
@@ -99,7 +106,10 @@ def get_dataset(dsname, domain=None, split="train", size=224):
     ## SVHN dataset
     elif dsname == "SVHN":
         data_set = ds.SVHN(
-            root=root+'SVHN/', split=split, transform=transform, download=True
+            root=root + "SVHN/",
+            split=split,
+            transform=transform,
+            download=True,
         )
     ## OFFICE dataset
     elif dsname.upper() == "OFFICE":
@@ -109,7 +119,7 @@ def get_dataset(dsname, domain=None, split="train", size=224):
             data_set = ds.ImageFolder(
                 root=root + "Office/" + domain, transform=transform
             )
-    
+
     ## OFFICE dataset
     elif dsname == "OfficeHome":
         if domain not in ["Ar", "D", "W"]:
