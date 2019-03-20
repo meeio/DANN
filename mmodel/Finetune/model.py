@@ -38,7 +38,7 @@ class Finetune(DAModule):
 
     def _regist_networks(self):
 
-        if True:
+        if False:
             from .networks.resnet50 import ResFc, ResClassifer
             F = ResFc()
             C = ResClassifer(class_num=31)
@@ -56,8 +56,8 @@ class Finetune(DAModule):
             "type": torch.optim.SGD,
             "lr": self.params.lr,
             "momentum": 0.9,
-            "weight_decay": 0.001,
-            "nesterov": True,
+            # "weight_decay": 0.001,
+            # "nesterov": True,
             "lr_mult": {"F": 0.1},
         }
 
