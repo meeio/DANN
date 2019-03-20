@@ -88,15 +88,21 @@ class AlexClassifer(WeightedModule):
         super(AlexClassifer, self).__init__()   
 
         bottleneck = nn.Linear(4096, 256)
-        classifer = nn.Linear(256, class_num)
-
+        classifer = nn.Linear(100, class_num)
+        
         nn.init.normal_(bottleneck.weight, 0, 0.01)
         nn.init.normal_(classifer.weight, 0, 0.005)
 
         nn.init.constant_(bottleneck.bias, 0.1)
         nn.init.constant_(classifer.bias, 0.1)
 
-        self.bottleneck = bottleneck
+        bottleneck_layer = nn.Sequential(
+            bottleneck,
+            nn.BatchNorm1d(100),
+            nn.LeakyReLU(inplace=True),
+        )
+
+        self.bottleneck = bottleneck_layer
         self.classifer = classifer
 
         self.has_init = True
