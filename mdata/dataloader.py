@@ -24,6 +24,11 @@ class DSStastic:
     MNIST = np.array(([0.44, 0.44, 0.44], [0.19, 0.19, 0.191]))
 
 
+class _ToTensorWithoutScaling(object):
+    """H x W x C -> C x H x W"""
+    def __call__(self, picture):
+        return torch.FloatTensor(np.array(picture)).permute(2, 0, 1).contiguous()
+
 def get_dataset(dsname, domain=None, split="train", size=224):
     """Helpper function to get `DataLoader` of specific datasets 
     
@@ -66,16 +71,18 @@ def get_dataset(dsname, domain=None, split="train", size=224):
         # 227 for alexnet
 
     mean_color = [
-        104.0069879317889 / 255,
-        116.66876761696767 / 255,
-        122.6789143406786 / 255,
+        104.0069879317889 ,
+        116.66876761696767 ,
+        122.6789143406786 ,
     ]
+
+    op_toTensor = _ToTensorWithoutScaling() if True else transforms.ToTensor()
 
     if split == "train":
         trans = [
             transforms.Resize(crop),
             transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
+            op_toTensor,
             transforms.Normalize(
                 mean=mean_color, std=[1, 1, 1]
             ),
@@ -83,8 +90,7 @@ def get_dataset(dsname, domain=None, split="train", size=224):
     else:
         trans = [
             transforms.Resize(crop),
-            # transforms.CenterCrop(crop),
-            transforms.ToTensor(),
+            op_toTensor,
             transforms.Normalize(
                 mean=mean_color, std=[1, 1, 1]
             ),

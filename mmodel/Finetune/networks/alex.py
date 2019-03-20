@@ -69,6 +69,10 @@ class AlexNetFc(WeightedModule):
 
         self.features = model_alexnet.features
 
+
+        self.fc = nn.Sequential()
+        for i in range(6):
+            self.fc.add_module("classifier" + str(i), model_alexnet.classifier[i])
         
         self.has_init = True
 
@@ -76,6 +80,7 @@ class AlexNetFc(WeightedModule):
     def forward(self, input_data):
         feature = self.features(input_data)
         feature = feature.view(-1, 256 * 6 * 6)
+        feature = self.fc(feature)
         return feature
 
 
@@ -86,9 +91,6 @@ class AlexClassifer(WeightedModule):
 
         model_alexnet = alexnet(pretrained=True)
 
-        self.fc = nn.Sequential()
-        for i in range(6):
-            self.fc.add_module("classifier" + str(i), model_alexnet.classifier[i])
 
         bottleneck = nn.Linear(4096, 256)
         classifer = nn.Linear(256, class_num)
@@ -105,8 +107,7 @@ class AlexClassifer(WeightedModule):
         self.has_init = True
     
     def forward(self, inputs):
-        x = self.fc(inputs)
-        feature = self.bottleneck(x)
+        feature = self.bottleneck(inputs)
         prediction = self.classifer(feature)
 
         return feature, prediction
