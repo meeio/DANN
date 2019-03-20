@@ -60,6 +60,7 @@ class TrainCapsule(nn.Module):
         self.tag = tagname
         self.optim_loss = optim_loss
 
+
         # get all networks, and store them as list
         if not isinstance(optim_networks, (tuple, list)):
             networks_list = list()
@@ -75,6 +76,9 @@ class TrainCapsule(nn.Module):
         lr_mult_map = optimer_kwargs.get('lr_mult', dict())
         assert type(lr_mult_map) is dict
         
+        def count_parameters(model):
+            return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
         for i in networks_list:
             if isinstance(i, torch.nn.DataParallel):
                 i = i.module
@@ -84,14 +88,14 @@ class TrainCapsule(nn.Module):
                     "params": list(i.parameters()),
                     "lr_mult": lr_mult,
                     "lr": lr_mult * optimer_kwargs["lr"],
-                    "initial_lr": optimer_kwargs["lr"],
+                    "initial_lr": lr_mult * optimer_kwargs["lr"],
                 }
             )
+        
 
         # init optimer base on type and args
         optimer_kwargs.pop('lr_mult', None)
         self.optimer = optimer_type(self.all_params, **optimer_kwargs)
-
 
         # init optimer decay option
         self.lr_scheduler = None
@@ -107,18 +111,20 @@ class TrainCapsule(nn.Module):
         map(__one_networkd_call, self.optim_network)
 
     def train_step(self, retain_graph=True):
-        self.optimer.zero_grad()
-        self.optim_loss.value.backward(retain_graph=retain_graph)
+        # self.optimer.zero_grad()
+        self.optim_loss.value.backward()
         self.optimer.step()
+    
+    def make_zero_grad(self):
+        self.optimer.zero_grad()
 
     def decary_lr_rate(self):
         if self.lr_scheduler is not None:
             self.lr_scheduler.step()
+        
+        # print(self.optimer.param_groups[0]['lr'])
+        # print(self.optimer.param_groups[1]['lr'])
 
-
-        # for g in self.optimer.param_groups:
-        #     lr = g['lr'] * g['lr_mult']
-        #     g['lr'] = lr
 
 
 

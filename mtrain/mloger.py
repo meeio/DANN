@@ -160,25 +160,29 @@ class LogCapsule(object):
 
     def record(self):
         # closs = self.loss_bucket.value.item()
-        closs = self.loss_bucket.value.clone().detach()
+        try:
+            closs = self.loss_bucket.value.clone().detach()
+        except:
+            closs = self.loss_bucket.value
         if self.range_loss is None:
             self.range_loss = closs
         else:
             self.range_loss += closs
+        
         self.range_step += 1
 
     def log_current_avg_loss(self, step=None):
         loss = self.avg_record()
-        self.__loss__(step, loss)
+        # self.__loss__(step, loss)
         return loss
 
     def avg_record(self):
         try:
             result = self.range_loss / self.range_step
         except:
-            result = 0
+            result = 0.0
         self.range_loss = None
-        self.range_step = 0
+        self.range_step = 0.0
         return result.item()
 
     def __loss__(self, steps, values):

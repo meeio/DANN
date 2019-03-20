@@ -72,7 +72,7 @@ def anpai(tom, use_gpu, need_logging=True):
         device = torch.device("cuda:0")
  
         for i in tom:
-            i.cuda()
+            i.to(device)
             # When usable gpu more then one
             if cuda.device_count() > 1:
                 # for Module object use parallel

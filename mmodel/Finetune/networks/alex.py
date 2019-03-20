@@ -89,25 +89,21 @@ class AlexClassifer(WeightedModule):
     def __init__(self, class_num):
         super(AlexClassifer, self).__init__()   
 
-        model_alexnet = alexnet(pretrained=True)
-
-
-        bottleneck = nn.Linear(4096, 256)
-        classifer = nn.Linear(256, class_num)
+        self.bottleneck = nn.Linear(4096, 256)
+        self.classifer = nn.Linear(256, class_num)
         
-        nn.init.normal_(bottleneck.weight, 0, 0.01)
-        nn.init.normal_(classifer.weight, 0, 0.005)
+        nn.init.normal_(self.bottleneck.weight, 0, 0.01)
+        nn.init.normal_(self.classifer.weight, 0, 0.005)
 
-        nn.init.constant_(bottleneck.bias, 0.1)
-        nn.init.constant_(classifer.bias, 0.1)
-
-        self.bottleneck = bottleneck
-        self.classifer = classifer
+        nn.init.constant_(self.bottleneck.bias, 0.1)
+        nn.init.constant_(self.classifer.bias, 0.1)
 
         self.has_init = True
     
     def forward(self, inputs):
-        feature = self.bottleneck(inputs)
+
+        i = inputs.view_as(inputs)
+        feature = self.bottleneck(i)
         prediction = self.classifer(feature)
 
         return feature, prediction

@@ -19,9 +19,9 @@ def get_param_parser():
 
     parser.add_argument("--steps", type=int, default=10000, help="Epochs of train data")
 
-    parser.add_argument("--log_per_step", type=int, default=100, help="Epochs of train data")
+    parser.add_argument("--log_per_step", type=int, default=20, help="Epochs of train data")
 
-    parser.add_argument("--eval_per_step", type=int, default=500, help="Epochs of train data")
+    parser.add_argument("--eval_per_step", type=int, default=100, help="Epochs of train data")
 
 
     parser.add_argument(

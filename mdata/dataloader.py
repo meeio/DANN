@@ -29,6 +29,8 @@ class _ToTensorWithoutScaling(object):
     def __call__(self, picture):
         return torch.FloatTensor(np.array(picture)).permute(2, 0, 1).contiguous()
 
+
+
 def get_dataset(dsname, domain=None, split="train", size=224):
     """Helpper function to get `DataLoader` of specific datasets 
     
@@ -82,7 +84,7 @@ def get_dataset(dsname, domain=None, split="train", size=224):
         trans = [
             transforms.Resize(crop),
             transforms.RandomHorizontalFlip(),
-            op_toTensor,
+            _ToTensorWithoutScaling(),
             transforms.Normalize(
                 mean=mean_color, std=[1, 1, 1]
             ),
@@ -90,12 +92,12 @@ def get_dataset(dsname, domain=None, split="train", size=224):
     else:
         trans = [
             transforms.Resize(crop),
-            op_toTensor,
+            _ToTensorWithoutScaling(),
             transforms.Normalize(
                 mean=mean_color, std=[1, 1, 1]
             ),
         ]
-
+    
     transform = transforms.Compose(trans)
 
     #########################################

@@ -15,19 +15,15 @@ from .params import get_params
 
 param = get_params()
 
-
-def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
-    return np.float(
-        2.0 * (high - low) / (1.0 + np.exp(-alpha * iter_num / max_iter))
-        - (high - low)
-        + low
-    )
+def count_parameters(model):
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
 
 
 def get_lr_scaler(
     iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75
 ):
-    lr_scaler = np.float((1 + alpha * (iter_num / max_iter)) ** (-power))
+    iter_num = iter_num - 1
+    lr_scaler = 1 / (1 + 10 * iter_num / 10000)**power
     return lr_scaler
 
 
@@ -71,7 +67,7 @@ class Finetune(DAModule):
 
         self.define_loss(
             "global_looss",
-            networks=["F", "C"],
+            networks=['F', "C"],
             optimer=optimer,
             decay_op=lr_scheduler,
         )
@@ -87,8 +83,9 @@ class Finetune(DAModule):
 
         loss_classify = self.ce(pred_class, s_label)
 
-        self._update_logs({"classify": loss_classify})
+
         self._update_loss("global_looss", loss_classify )
+        self._update_logs({"classify": loss_classify})
 
         del loss_classify
 

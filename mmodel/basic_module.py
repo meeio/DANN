@@ -325,17 +325,18 @@ class TrainableModule(ABC):
         # fixed loss key to prenvent missing
         self.losses.fix_loss_keys()
 
-        # set all networks to train mode
-        for _, i in self.networks.items():
-            i.train(True)
-
         for _ in range(self.total_steps):
 
-            datas = self._feed_data(mode="train")
+            # set all networks to train mode
+            for _, i in self.networks.items():
+                i.train(True)
 
             # re calculate learning rates
             for c in self.train_caps.values():
                 c.decary_lr_rate()
+                c.make_zero_grad()
+
+            datas = self._feed_data(mode="train")
 
             datas = anpai(datas, self.params.use_gpu, need_logging=False)
             self._train_process(datas, **kwargs)
@@ -447,7 +448,8 @@ class DAModule(TrainableModule):
         train_T_set = mdl.get_dataset(dataset, target, split="train")
         valid_set = mdl.get_dataset(dataset, target, split="test")
 
-        def get_loader(dataset, shuffle, drop_last):
+        def get_loader(dataset, shuffle, drop_last, batch_size = None):
+            batch_size = params.batch_size if batch_size is None else batch_size
             l = torch.utils.data.DataLoader(
                 dataset,
                 batch_size=params.batch_size,
@@ -458,7 +460,7 @@ class DAModule(TrainableModule):
 
         train_S_l = get_loader(train_S_set, shuffle=True, drop_last=True)
         train_T_l = get_loader(train_T_set, shuffle=True, drop_last=True)
-        valid_l = get_loader(valid_set, shuffle=True, drop_last=True)
+        valid_l = get_loader(valid_set, shuffle=True, drop_last=True, batch_size=params.batch_size/2)
 
         iters = {
             "train": {
@@ -522,14 +524,16 @@ class DAModule(TrainableModule):
 
         def handle_datas(datas):
 
-            right = total = 0
-
             img, label = datas
             # get result from a valid_step
             predict = self._valid_step(img)
 
             # calculate valid accurace and make record
             current_size = label.size()[0]
+
+            # pred_cls = predict.data.max(1)[1]
+            # corrent_count = pred_cls.eq(label.data).sum()
+
             _, predic_class = torch.max(predict, 1)
             corrent_count = (torch.squeeze(predic_class) == label).sum().float()
 
@@ -540,8 +544,6 @@ class DAModule(TrainableModule):
                 },
                 group="valid",
             )
-
-            del predict
 
             return corrent_count, current_size
 
