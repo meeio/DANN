@@ -117,6 +117,8 @@ class AlexClassifer(WeightedModule):
         super(AlexClassifer, self).__init__()
 
         self.bottleneck = nn.Linear(4096, 256)
+        self.norm = nn.BatchNorm1d(256)
+        self.lrelu = nn.LeakyReLU(inplace=True)
         self.classifer = nn.Linear(256, class_num)
 
         nn.init.normal_(self.bottleneck.weight, 0, 0.01)
@@ -125,12 +127,15 @@ class AlexClassifer(WeightedModule):
         nn.init.constant_(self.bottleneck.bias, 0.1)
         nn.init.constant_(self.classifer.bias, 0.1)
 
+
         self.has_init = True
 
     def forward(self, inputs):
 
         i = inputs.view_as(inputs)
         feature = self.bottleneck(i)
+        feature = self.norm(feature)
+        feature = self.lrelu(feature)
         prediction = self.classifer(feature)
 
         return feature, prediction
@@ -152,6 +157,10 @@ class AlexClassifer(WeightedModule):
             {
                 "params": get_parameters(self.classifer, "bias"),
                 "lr_mult": 2,
+            },
+            {
+                "params": self.norm.parameters(),
+                "lr_mult": 1,
             },
         ]
 
