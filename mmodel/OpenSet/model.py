@@ -44,8 +44,6 @@ class OpensetDA(DAModule):
         print(source)
         print(target)
 
-        assert False
-
         back_bone = "alexnet"
         source_ld, target_ld, valid_ld = require_openset_dataloader(
             source_class=source,
