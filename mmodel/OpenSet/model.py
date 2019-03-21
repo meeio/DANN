@@ -38,11 +38,8 @@ class OpensetDA(DAModule):
 
     def _prepare_data(self):
 
-        # source = ORDERED_OFFICE_CLASS[0:10] + ORDERED_OFFICE_CLASS[11:20]
-        # target = ORDERED_OFFICE_CLASS[0:10] + ORDERED_OFFICE_CLASS[21:31]
-
-        source = ORDERED_OFFICE_CLASS
-        target = ORDERED_OFFICE_CLASS
+        source = ORDERED_OFFICE_CLASS[0:10]
+        target = ORDERED_OFFICE_CLASS[0:10]
 
         back_bone = "alexnet"
         source_ld, target_ld, valid_ld = require_openset_dataloader(
