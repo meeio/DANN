@@ -145,6 +145,7 @@ class LogCapsule(object):
             file_handler = logging.FileHandler(log_file)
             file_handler.setFormatter(FILE_FORMATTER)
             logger.addHandler(file_handler)
+            logger.setLevel(logging.INFO)
 
         self.LOSS_FORMAT = ">%-12s< at step [%6d] -> [%.3f]."
         self.PRT_FORMAT = "At >%-12s< stage, loss is [%.3f]."
@@ -173,7 +174,7 @@ class LogCapsule(object):
 
     def log_current_avg_loss(self, step=None):
         loss = self.avg_record()
-        # self.__loss__(step, loss)
+        self.__loss__(step, loss)
         return loss
 
     def avg_record(self):

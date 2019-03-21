@@ -63,40 +63,45 @@ def get_dataset(dsname, domain=None, split="train", size=224):
     assert dsname.upper() in ["MNIST", "SVHN", "OFFICE"]
 
     if dsname in ["MNIST", "MNIST"]:
-        resize = 29
+        resize = 28
         crop = 28
+
+        trans = [
+            transforms.Resize(crop),
+            transforms.ToTensor(),
+        ]
     else:
         resize = 256
         crop = 227
         # 224 for resnet
         # 227 for alexnet
 
-    mean_color = [
-        104.0069879317889 ,
-        116.66876761696767 ,
-        122.6789143406786 ,
-    ]
-
-    op_toTensor = _ToTensorWithoutScaling() if True else transforms.ToTensor()
-
-    if split == "train":
-        trans = [
-            transforms.Resize(crop),
-            transforms.RandomHorizontalFlip(),
-            _ToTensorWithoutScaling(),
-            transforms.Normalize(
-                mean=mean_color, std=[1, 1, 1]
-            ),
+        mean_color = [
+            104.0069879317889 ,
+            116.66876761696767 ,
+            122.6789143406786 ,
         ]
-    else:
-        trans = [
-            transforms.Resize(resize),
-            transforms.CenterCrop(crop),
-            _ToTensorWithoutScaling(),
-            transforms.Normalize(
-                mean=mean_color, std=[1, 1, 1]
-            ),
-        ]
+
+        op_toTensor = _ToTensorWithoutScaling() if True else transforms.ToTensor()
+
+        if split == "train":
+            trans = [
+                transforms.Resize(crop),
+                transforms.RandomHorizontalFlip(),
+                _ToTensorWithoutScaling(),
+                transforms.Normalize(
+                    mean=mean_color, std=[1, 1, 1]
+                ),
+            ]
+        else:
+            trans = [
+                transforms.Resize(resize),
+                transforms.CenterCrop(crop),
+                _ToTensorWithoutScaling(),
+                transforms.Normalize(
+                    mean=mean_color, std=[1, 1, 1]
+                ),
+            ]
     
     transform = transforms.Compose(trans)
 

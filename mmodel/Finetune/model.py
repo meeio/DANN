@@ -67,7 +67,7 @@ class Finetune(DAModule):
 
         self.define_loss(
             "global_looss",
-            networks=['F', "C"],
+            networks=["C"],
             optimer=optimer,
             decay_op=lr_scheduler,
         )

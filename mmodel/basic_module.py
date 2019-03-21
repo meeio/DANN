@@ -180,13 +180,17 @@ class TrainableModule(ABC):
                 n.weight_init()
                 n.tag = k
             except AttributeError:
-                logger.log(BUILD, '%s is not instace of WeightedModule.' % n.__class__.__name__)
+                logger.log(
+                    BUILD,
+                    "%s is not instace of WeightedModule."
+                    % n.__class__.__name__,
+                )
 
         for k, i in networks.items():
             if type(i) is nn.Sequential:
                 i.tag = k
                 for c in i.children():
-                    init_weight_and_key(c, k)                 
+                    init_weight_and_key(c, k)
             else:
                 init_weight_and_key(i, k)
 
@@ -265,12 +269,6 @@ class TrainableModule(ABC):
         """
         pass
 
-    @abstractclassmethod
-    def _log_process(self):
-        """ make logs
-        """
-        return
-
     def define_loss(
         self, loss_name, networks, optimer: dict, decay_op: dict = None
     ):
@@ -343,7 +341,31 @@ class TrainableModule(ABC):
 
             # making log
             if self.current_step % self.log_step == (self.log_step - 1):
-                self._log_process()
+                
+                logger.log(
+                    HINTS,
+                    "Steps %3d ends. Remain %3d steps to go. Fished %.2f%%"
+                    % (
+                        self.current_step + 1,
+                        self.params.steps - self.current_step - 1,
+                        (self.current_step + 1)
+                        / (self.params.steps + 1)
+                        * 100,
+                    ),
+                )
+
+                logger.log(
+                    HINTS,
+                    "Current best accurace is %3.3f%%."
+                    % (self.best_accurace * 100),
+                )
+
+                losses = [
+                    (k, v.log_current_avg_loss(self.current_step + 1))
+                    for k, v in self.train_loggers.items()
+                ]
+
+                tabulate_log_losses(losses, trace="dalosses", mode="train")
 
             # begain eval
             if self.current_step % self.eval_step == (self.eval_step - 1):
@@ -369,10 +391,18 @@ class TrainableModule(ABC):
                 datas = anpai(
                     datas, self.params.use_gpu, need_logging=False
                 )
-            self._eval_process(datas, **kwargs)
+            losses = self._eval_process(datas, **kwargs)
 
             if datas is None or self.eval_once:
                 break
+
+        losses = [
+            (k, v.log_current_avg_loss(self.current_step + 1))
+            for k, v in self.valid_loggers.items()
+        ]
+        tabulate_log_losses(
+            losses, trace="validloss", mode="valid"
+        )
 
     def _update_loss(self, loss_name, value, retain_graph=True):
         self.losses[loss_name].value = value
@@ -415,7 +445,9 @@ class DAModule(TrainableModule):
         self.total_step = self.params.steps
 
         # init global label
-        self.TARGET, self.SOURCE = self.__batch_domain_label(self.params.batch_size)
+        self.TARGET, self.SOURCE = self.__batch_domain_label(
+            self.params.batch_size
+        )
 
     @abstractclassmethod
     def _train_step(self, s_img, s_label, t_img):
@@ -434,7 +466,7 @@ class DAModule(TrainableModule):
         target = params.target
 
         def get_set(dataset, domain, split):
-            if dataset is None or dataset == 'NONE':
+            if dataset is None or dataset == "NONE":
                 dataset = mdl.get_dataset(
                     dataset=domain, domain=None, split=split
                 )
@@ -448,8 +480,10 @@ class DAModule(TrainableModule):
         train_T_set = mdl.get_dataset(dataset, target, split="train")
         valid_set = mdl.get_dataset(dataset, target, split="test")
 
-        def get_loader(dataset, shuffle, drop_last, batch_size = None):
-            batch_size = params.batch_size if batch_size is None else batch_size
+        def get_loader(dataset, shuffle, drop_last, batch_size=None):
+            batch_size = (
+                params.batch_size if batch_size is None else batch_size
+            )
             l = torch.utils.data.DataLoader(
                 dataset,
                 batch_size=params.batch_size,
@@ -460,7 +494,12 @@ class DAModule(TrainableModule):
 
         train_S_l = get_loader(train_S_set, shuffle=True, drop_last=True)
         train_T_l = get_loader(train_T_set, shuffle=True, drop_last=True)
-        valid_l = get_loader(valid_set, shuffle=True, drop_last=True, batch_size=params.batch_size/2)
+        valid_l = get_loader(
+            valid_set,
+            shuffle=True,
+            drop_last=True,
+            batch_size=params.batch_size / 2,
+        )
 
         iters = {
             "train": {
@@ -493,28 +532,7 @@ class DAModule(TrainableModule):
 
     def _log_process(self):
 
-        logger.log(
-            HINTS,
-            "Steps %3d ends. Remain %3d steps to go. Fished %.2f%%"
-            % (
-                self.current_step + 1,
-                self.params.steps - self.current_step - 1,
-                (self.current_step + 1) / (self.params.steps + 1) * 100,
-            ),
-        )
-
-        logger.log(
-            HINTS,
-            "Current best accurace is %3.3f%%."
-            % (self.best_accurace * 100),
-        )
-
-        losses = [
-            (k, v.log_current_avg_loss(self.current_step + 1))
-            for k, v in self.train_loggers.items()
-        ]
-
-        tabulate_log_losses(losses, trace="dalosses", mode="train")
+        return losses
 
     def _eval_process(self, datas):
 
@@ -535,7 +553,9 @@ class DAModule(TrainableModule):
             # corrent_count = pred_cls.eq(label.data).sum()
 
             _, predic_class = torch.max(predict, 1)
-            corrent_count = (torch.squeeze(predic_class) == label).sum().float()
+            corrent_count = (
+                (torch.squeeze(predic_class) == label).sum().float()
+            )
 
             self._update_logs(
                 {
@@ -557,12 +577,8 @@ class DAModule(TrainableModule):
             self.best_accurace = max((self.best_accurace, accu))
             self.total = 0
             self.corret = 0
-            losses = [
-                (k, v.log_current_avg_loss(self.current_step + 1))
-                for k, v in self.valid_loggers.items()
-            ]
 
-            tabulate_log_losses(losses, trace="validloss", mode="valid")
+
 
     def __batch_domain_label(self, batch_size):
         # Generate all Source and Domain label.

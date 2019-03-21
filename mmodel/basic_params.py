@@ -9,9 +9,12 @@ def get_param_parser():
     parser = argparse.ArgumentParser()
 
     parser.add_argument(
-        "--batch_size", type=int, default=100, help="Size for Mini-Batch Optimization"
+        "--batch_size", type=int, default=50, help="Size for Mini-Batch Optimization"
     )
 
+    parser.add_argument(
+        "--eval_batch_size", type=int, default=36, help="Size for Mini-Batch Optimization"
+    )
 
     parser.add_argument(
         "--use_gpu", type=bool, default=True, help="Use GPU to train the model"

@@ -8,6 +8,9 @@ import torch.utils as utils
 
 logger = get_colored_logger('gpu')
 
+device_cpu = torch.device("cpu")
+device_gpu = torch.device("cuda:0")
+
 def anpai(tom, use_gpu, need_logging=True):
     ''' Send tensor or module(tom) to correspond devices(cpu or gpu) based on 'use_gpu'.
     
@@ -64,12 +67,12 @@ def anpai(tom, use_gpu, need_logging=True):
             else:
                 logger.log(BUILD,"A >%s< object sent to GPU." % name)
 
-    device = torch.device("cpu")
+    device = device_cpu
     # When use_gpu and has gpu to use
     if use_gpu and cuda.is_available():
 
         # init a default device when has gpu
-        device = torch.device("cuda:0")
+        device = device_gpu
  
         for i in tom:
             i.to(device)

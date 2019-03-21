@@ -3,18 +3,17 @@ import itertools
 import numpy as np
 import torch
 
-from mdata.partial_folder import MultiFolderDataHandler
-from mground.gpu_utils import current_gpu_usage
-from mground.math_utils import entropy, make_weighted_sum
-from mtrain.mloger import GLOBAL, LogCapsule
-
-from ..basic_module import DAModule
 from .networks.networks import DomainClassifier
-from ..utils.gradient_reverse import GradReverseLayer
+
+from ..basic_module import DAModule, ELoaderIter
 from .params import get_params
 
-param = get_params()
 
+from mdata.partial.partial_dataset import require_openset_dataloader
+from mdata.partial.partial_dataset import ORDERED_OFFICE_CLASS
+from mdata.transfrom import get_transfrom
+
+param = get_params()
 
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
     return np.float(
@@ -31,26 +30,49 @@ def get_lr_scaler(
     return lr_scaler
 
 
-class DANN(DAModule):
+class OpensetDA(DAModule):
     def __init__(self):
-        super(DANN, self).__init__(param)
+        super(OpensetDA, self).__init__(param)
+
         self._all_ready()
+
+    def _prepare_data(self):
+
+        # source = ORDERED_OFFICE_CLASS[0:10] + ORDERED_OFFICE_CLASS[11:20]
+        # target = ORDERED_OFFICE_CLASS[0:10] + ORDERED_OFFICE_CLASS[21:31]
+
+        source = ORDERED_OFFICE_CLASS
+        target = ORDERED_OFFICE_CLASS
+
+        back_bone = "alexnet"
+        source_ld, target_ld, valid_ld = require_openset_dataloader(
+            source_class=source,
+            target_class=target,
+            train_transforms=get_transfrom(back_bone, is_train=True),
+            valid_transform=get_transfrom(back_bone, is_train=False),
+            params=self.params,
+        )
+
+        iters = {
+            "train": {
+                "S": ELoaderIter(source_ld),
+                "T": ELoaderIter(target_ld),
+            },
+            "valid": ELoaderIter(valid_ld),
+        }
+
+        return None, iters
 
     def _regist_networks(self):
 
-        if False:
-            from .networks.resnet50 import ResFc, ResClassifer
-
-            F = ResFc()
-            C = ResClassifer(class_num=31)
-        else:
-            from .networks.alex_bn import AlexNetFc, AlexClassifer
+        if True:
+            from .networks.alex import AlexNetFc, AlexClassifer
 
             F = AlexNetFc()
             C = AlexClassifer(class_num=31)
 
         D = DomainClassifier(
-            input_dim=100,
+            input_dim=256,
             reversed_coeff=lambda: get_lambda(
                 self.current_step, self.total_steps
             ),
@@ -79,12 +101,13 @@ class DANN(DAModule):
 
         self.define_loss(
             "global_looss",
-            networks=["C", "D"],
+            networks=["F", "C", "D"],
             optimer=optimer,
             decay_op=lr_scheduler,
         )
 
-        self.define_log("classify", "discrim")
+        self.define_log("valid_loss", "valid_accu", group="valid")
+        self.define_log("classify", "discrim", group="train")
 
     def _train_step(self, s_img, s_label, t_img):
 
@@ -108,25 +131,6 @@ class DANN(DAModule):
         self._update_loss("global_looss", loss_classify + loss_dis)
 
         del loss_classify, loss_dis
-    
-    def _train_step_bounded(self, s_img, s_label, t_img):
-        imgs = torch.cat([s_img, t_img], dim=0)
-        domain = torch.cat([self.SOURCE, self.TARGET], dim=0)
-
-        backbone_feature = self.F(imgs)
-        feature, pred_class = self.C(backbone_feature)
-
-        pred_domain = self.D(feature)
-
-        s_pred_class, _ = torch.chunk(pred_class, chunks=2, dim=0)
-        loss_classify = self.ce(s_pred_class, s_label)
-        loss_dis = self.bce(pred_domain, domain)
-
-        self._update_logs({"classify": loss_classify, "discrim": loss_dis})
-        self._update_loss("global_looss", loss_classify + loss_dis)
-
-        del loss_classify, loss_dis
-
 
     def _valid_step(self, img):
         feature = self.F(img)

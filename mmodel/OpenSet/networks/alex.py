@@ -76,7 +76,7 @@ class AlexNetFc(WeightedModule):
         self.features = model_alexnet.features
 
         self.fc = nn.Sequential()
-        for i in range(7):
+        for i in range(6):
             self.fc.add_module(
                 "classifier" + str(i), model_alexnet.classifier[i]
             )
@@ -116,10 +116,8 @@ class AlexClassifer(WeightedModule):
     def __init__(self, class_num):
         super(AlexClassifer, self).__init__()
 
-        self.bottleneck = nn.Linear(1000, 100)
-        self.norm = nn.BatchNorm1d(100)
-        self.lrelu = nn.LeakyReLU(inplace=True)
-        self.classifer = nn.Linear(100, class_num)
+        self.bottleneck = nn.Linear(4096, 256)
+        self.classifer = nn.Linear(256, class_num)
 
         nn.init.normal_(self.bottleneck.weight, 0, 0.01)
         nn.init.normal_(self.classifer.weight, 0, 0.005)
@@ -134,8 +132,6 @@ class AlexClassifer(WeightedModule):
 
         i = inputs.view_as(inputs)
         feature = self.bottleneck(i)
-        feature = self.norm(feature)
-        feature = self.lrelu(feature)
         prediction = self.classifer(feature)
 
         return feature, prediction
@@ -157,10 +153,6 @@ class AlexClassifer(WeightedModule):
             {
                 "params": get_parameters(self.classifer, "bias"),
                 "lr_mult": 2,
-            },
-            {
-                "params": self.norm.parameters(),
-                "lr_mult": 1,
             },
         ]
 
