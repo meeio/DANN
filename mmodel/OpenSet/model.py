@@ -41,6 +41,11 @@ class OpensetDA(DAModule):
         source = ORDERED_OFFICE_CLASS[0:10]
         target = ORDERED_OFFICE_CLASS[0:10]
 
+        print(source)
+        print(target)
+
+        assert False
+
         back_bone = "alexnet"
         source_ld, target_ld, valid_ld = require_openset_dataloader(
             source_class=source,
@@ -66,7 +71,7 @@ class OpensetDA(DAModule):
             from .networks.alex import AlexNetFc, AlexClassifer
 
             F = AlexNetFc()
-            C = AlexClassifer(class_num=31)
+            C = AlexClassifer(class_num=10)
 
         D = DomainClassifier(
             input_dim=256,
