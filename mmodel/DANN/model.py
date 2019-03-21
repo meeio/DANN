@@ -38,7 +38,7 @@ class DANN(DAModule):
 
     def _regist_networks(self):
 
-        if True:
+        if False:
             from .networks.resnet50 import ResFc, ResClassifer
 
             F = ResFc()
@@ -50,7 +50,7 @@ class DANN(DAModule):
             C = AlexClassifer(class_num=31)
 
         D = DomainClassifier(
-            input_dim=2048,
+            input_dim=256,
             reversed_coeff=lambda: get_lambda(
                 self.current_step, self.total_steps
             ),

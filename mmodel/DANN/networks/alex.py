@@ -4,8 +4,15 @@ import torch.nn as nn
 from mmodel.basic_module import WeightedModule
 
 
-class AlexNet(WeightedModule):
+def get_parameters(module, flag):
+    """ flag = 'weight' or 'bias'
+    """
+    for name, param in module.named_parameters():
+        if flag in name:
+            yield param
 
+
+class AlexNet(WeightedModule):
     def __init__(self, num_classes=1000):
         super(AlexNet, self).__init__()
         self.features = nn.Sequential(
@@ -52,7 +59,7 @@ def alexnet(pretrained=False, **kwargs):
     """
     model = AlexNet(**kwargs)
     if pretrained:
-        model_path = './_PUBLIC_DATASET_/alexnet_caffe.pth'
+        model_path = "./_PUBLIC_DATASET_/alexnet_caffe.pth"
         pretrained_model = torch.load(model_path)
         model.load_state_dict(pretrained_model)
     return model
@@ -70,40 +77,82 @@ class AlexNetFc(WeightedModule):
 
         self.fc = nn.Sequential()
         for i in range(6):
-            self.fc.add_module("classifier" + str(i), model_alexnet.classifier[i])
-        
-        self.has_init = True
+            self.fc.add_module(
+                "classifier" + str(i), model_alexnet.classifier[i]
+            )
 
+        self.has_init = True
 
     def forward(self, input_data):
         feature = self.features(input_data)
         feature = feature.view(-1, 256 * 6 * 6)
-        feature_output = self.fc(feature)
-        return feature_output
+        feature = self.fc(feature)
+        return feature
+
+    def get_params(self):
+        return [
+            {
+                "params": get_parameters(self.features, "weight"),
+                "lr_mult": 0.1,
+            },
+            {
+                "params": get_parameters(self.features, "bias"),
+                "lr_mult": 0.2,
+                "decay_mult": 0,
+            },
+            {
+                "params": get_parameters(self.fc, "weight"),
+                "lr_mult": 0.1,
+            },
+            {
+                "params": get_parameters(self.fc, "bias"),
+                "lr_mult": 0.2,
+                "decay_mult": 0,
+            },
+        ]
 
 
 class AlexClassifer(WeightedModule):
-
     def __init__(self, class_num):
-        super(AlexClassifer, self).__init__()   
+        super(AlexClassifer, self).__init__()
 
-        bottleneck = nn.Linear(4096, 256)
-        classifer = nn.Linear(256, class_num)
+        self.bottleneck = nn.Linear(4096, 256)
+        self.classifer = nn.Linear(256, class_num)
 
-        nn.init.normal_(bottleneck.weight, 0, 0.01)
-        nn.init.normal_(classifer.weight, 0, 0.005)
+        nn.init.normal_(self.bottleneck.weight, 0, 0.01)
+        nn.init.normal_(self.classifer.weight, 0, 0.005)
 
-        nn.init.constant_(bottleneck.bias, 0.1)
-        nn.init.constant_(classifer.bias, 0.1)
+        nn.init.constant_(self.bottleneck.bias, 0.1)
+        nn.init.constant_(self.classifer.bias, 0.1)
 
-        self.bottleneck = bottleneck
-        self.classifer = classifer
 
         self.has_init = True
-    
+
     def forward(self, inputs):
 
-        feature = self.bottleneck(inputs)
+        i = inputs.view_as(inputs)
+        feature = self.bottleneck(i)
         prediction = self.classifer(feature)
 
         return feature, prediction
+
+    def get_params(self):
+        return [
+            {
+                "params": get_parameters(self.bottleneck, "weight"),
+                "lr_mult": 1,
+            },
+            {
+                "params": get_parameters(self.bottleneck, "bias"),
+                "lr_mult": 2,
+            },
+            {
+                "params": get_parameters(self.classifer, "weight"),
+                "lr_mult": 1,
+            },
+            {
+                "params": get_parameters(self.classifer, "bias"),
+                "lr_mult": 2,
+            },
+        ]
+

@@ -90,7 +90,7 @@ class TrainCapsule(nn.Module):
             except Exception:
                 lr_mult = lr_mult_map.get(i.tag, 1)
                 param_info = [{
-                    "params": list(i.parameters()),
+                    "params": i.parameters(),
                     "lr_mult": lr_mult,
                     "lr": lr_mult * base_lr,
                     "initial_lr": lr_mult * base_lr,
