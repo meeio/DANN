@@ -25,7 +25,6 @@ class DSStastic:
 
 
 class _ToTensorWithoutScaling(object):
-    """H x W x C -> C x H x W"""
     def __call__(self, picture):
         return torch.FloatTensor(np.array(picture)).permute(2, 0, 1).contiguous()
 
@@ -91,7 +90,8 @@ def get_dataset(dsname, domain=None, split="train", size=224):
         ]
     else:
         trans = [
-            transforms.Resize(crop),
+            transforms.Resize(resize),
+            transforms.CenterCrop(crop),
             _ToTensorWithoutScaling(),
             transforms.Normalize(
                 mean=mean_color, std=[1, 1, 1]

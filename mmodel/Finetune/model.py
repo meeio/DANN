@@ -23,7 +23,7 @@ def get_lr_scaler(
     iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75
 ):
     iter_num = iter_num - 1
-    lr_scaler = 1 / (1 + 10 * iter_num / 10000)**power
+    lr_scaler = 1 / (1 + 10 * iter_num / max_iter)**power
     return lr_scaler
 
 
@@ -52,8 +52,8 @@ class Finetune(DAModule):
             "type": torch.optim.SGD,
             "lr": self.params.lr,
             "momentum": 0.9,
-            # "weight_decay": 0.001,
-            # "nesterov": True,
+            "weight_decay": 0.001,
+            "nesterov": True,
             "lr_mult": {"F": 0.1},
         }
 
