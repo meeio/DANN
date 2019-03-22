@@ -44,13 +44,13 @@ class DANN(DAModule):
             F = ResFc()
             C = ResClassifer(class_num=31)
         else:
-            from .networks.alex_bn import AlexNetFc, AlexClassifer
+            from .networks.alex import AlexNetFc, AlexClassifer
 
             F = AlexNetFc()
-            C = AlexClassifer(class_num=31)
+            C = AlexClassifer(class_num=10)
 
         D = DomainClassifier(
-            input_dim=100,
+            input_dim=256,
             reversed_coeff=lambda: get_lambda(
                 self.current_step, self.total_steps
             ),
@@ -79,7 +79,7 @@ class DANN(DAModule):
 
         self.define_loss(
             "global_looss",
-            networks=["C", "D"],
+            networks=["F", "C", "D"],
             optimer=optimer,
             decay_op=lr_scheduler,
         )
