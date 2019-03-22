@@ -4,6 +4,8 @@ from torch import optim as optim
 from torch import nn as nn
 import torch
 
+from mground.func_utlis import get_args_dict
+
 
 class LossBuket(object):
     def __init__(self):
@@ -86,6 +88,7 @@ class TrainCapsule(nn.Module):
                 for p in param_info:
                     p['initial_lr'] = p.get('lr_mult', 1) * base_lr
                     p['weight_decay'] = p.get('decay_mult', 1) * base_decay
+                    p['tag'] = i.tag
                 
             except Exception:
                 lr_mult = lr_mult_map.get(i.tag, 1)
@@ -94,10 +97,10 @@ class TrainCapsule(nn.Module):
                     "lr_mult": lr_mult,
                     "lr": lr_mult * base_lr,
                     "initial_lr": lr_mult * base_lr,
+                    'tag' : i.tag,
                 },]
             self.all_params += param_info
-            
-
+        
         # init optimer base on type and args
         optimer_kwargs.pop("lr_mult", None)
         print(self.all_params)

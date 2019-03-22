@@ -15,6 +15,7 @@ from mdata.transfrom import get_transfrom
 
 param = get_params()
 
+
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
     return np.float(
         2.0 * (high - low) / (1.0 + np.exp(-alpha * iter_num / max_iter))
@@ -34,20 +35,25 @@ class OpensetDA(DAModule):
     def __init__(self):
         super(OpensetDA, self).__init__(param)
 
+        source_class = set(ORDERED_OFFICE_CLASS[0:20])
+        target_class = set(ORDERED_OFFICE_CLASS[0:10])
+
+        class_num = len(source_class) + (
+            0 if source_class.issuperset(target_class) else 1
+        )
+
+        self.class_num = class_num
+        self.source_class = source_class
+        self.target_class = target_class
+
         self._all_ready()
 
     def _prepare_data(self):
 
-        source = ORDERED_OFFICE_CLASS[0:10]
-        target = ORDERED_OFFICE_CLASS[0:10]
-
-        print(source)
-        print(target)
-
         back_bone = "alexnet"
         source_ld, target_ld, valid_ld = require_openset_dataloader(
-            source_class=source,
-            target_class=target,
+            source_class=self.source_class,
+            target_class=self.target_class,
             train_transforms=get_transfrom(back_bone, is_train=True),
             valid_transform=get_transfrom(back_bone, is_train=False),
             params=self.params,
@@ -69,7 +75,7 @@ class OpensetDA(DAModule):
             from .networks.alex import AlexNetFc, AlexClassifer
 
             F = AlexNetFc()
-            C = AlexClassifer(class_num=10)
+            C = AlexClassifer(class_num=self.class_num)
 
         D = DomainClassifier(
             input_dim=256,
