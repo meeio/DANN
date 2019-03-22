@@ -103,7 +103,6 @@ class TrainCapsule(nn.Module):
         
         # init optimer base on type and args
         optimer_kwargs.pop("lr_mult", None)
-        print(self.all_params)
         self.optimer = optimer_type(self.all_params, **optimer_kwargs)
 
         # init optimer decay option

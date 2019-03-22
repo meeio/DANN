@@ -264,13 +264,13 @@ def require_openset_dataloader(
 
     source = set(source_class)
     target = set(target_class)
+    unknow_idx = len(source)
 
     source_cls_idx = {sorted(source)[i]: i for i in range(len(source))}
-
-    unkonw_idx = len(source)
-    target_cls_dix = dict.fromkeys(target, unkonw_idx)
-    target_cls_dix.update(source_cls_idx)
-
+    target_cls_dix = {
+        k: source_cls_idx.get(k, unknow_idx) for k in sorted(target) 
+    }
+    
     source = PartialImageFolder(
         root="./_PUBLIC_DATASET_/" + "Office" + "/" + "A",
         class_to_idx=source_cls_idx,
@@ -289,6 +289,7 @@ def require_openset_dataloader(
         transform=valid_transform,
     )
 
+
     source = torch.utils.data.DataLoader(
         source, batch_size=params.batch_size, drop_last=True, shuffle=True
     )
@@ -303,6 +304,7 @@ def require_openset_dataloader(
         drop_last=True,
         shuffle=True,
     )
+
 
     return source, target, valid
 

@@ -35,8 +35,10 @@ class OpensetDA(DAModule):
     def __init__(self):
         super(OpensetDA, self).__init__(param)
 
-        source_class = set(ORDERED_OFFICE_CLASS[0:20])
+        source_class = set(ORDERED_OFFICE_CLASS[0:10])
         target_class = set(ORDERED_OFFICE_CLASS[0:10])
+        assert len(source_class) == 10
+
 
         class_num = len(source_class) + (
             0 if source_class.issuperset(target_class) else 1
