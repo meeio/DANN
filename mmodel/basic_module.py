@@ -150,6 +150,7 @@ class TrainableModule(ABC):
 
         self.relr_everytime = False
         self.eval_once = False
+        self.eval_after = -1
 
         self.total_steps = self.params.steps
         self.current_step = 0.0
@@ -341,7 +342,7 @@ class TrainableModule(ABC):
 
             # making log
             if self.current_step % self.log_step == (self.log_step - 1):
-                
+
                 logger.log(
                     HINTS,
                     "Steps %3d ends. Remain %3d steps to go. Fished %.2f%%"
@@ -368,7 +369,10 @@ class TrainableModule(ABC):
                 tabulate_log_losses(losses, trace="dalosses", mode="train")
 
             # begain eval
-            if self.current_step % self.eval_step == (self.eval_step - 1):
+            if (
+                self.current_step % self.eval_step == (self.eval_step - 1)
+                and self.current_step > self.eval_after
+            ):
                 self.eval_module(**kwargs)
                 # set all networks to train mode
                 for _, i in self.networks.items():
@@ -400,9 +404,7 @@ class TrainableModule(ABC):
             (k, v.log_current_avg_loss(self.current_step + 1))
             for k, v in self.valid_loggers.items()
         ]
-        tabulate_log_losses(
-            losses, trace="validloss", mode="valid"
-        )
+        tabulate_log_losses(losses, trace="validloss", mode="valid")
 
     def _update_loss(self, loss_name, value, retain_graph=True):
         self.losses[loss_name].value = value
@@ -578,8 +580,6 @@ class DAModule(TrainableModule):
             self.best_accurace = max((self.best_accurace, accu))
             self.total = 0
             self.corret = 0
-
-
 
     def __batch_domain_label(self, batch_size):
         # Generate all Source and Domain label.

@@ -36,6 +36,9 @@ def get_param_parser():
     parser.add_argument(
         "--ckt_path", type=str, default=None, help="Check point save path."
     )
+    parser.add_argument(
+        "--make_record", type=bool, default=False, help="Check point save path."
+    )
 
     parser.add_argument(
         "--lr", type=float, default=0.01

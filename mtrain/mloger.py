@@ -5,6 +5,9 @@ import os
 from mtrain.train_capsule import LossBuket
 import re
 import colorlog
+from mmodel.basic_params import get_param_parser
+
+param = get_param_parser().parse_args()
 
 BUILD = 50
 TRAIN = 51
@@ -66,7 +69,7 @@ def setup_log_folder_name(
 
     global LOG_DIR
     LOG_DIR = path_helper(
-        base_folder_name=base_folder_name, tag_name=tag_name
+        base_folder_name=base_folder_name, tag_name=param.tag
     )
 
 
@@ -134,7 +137,7 @@ class LogCapsule(object):
         self.tag = name
         logger = logging.getLogger(name)
 
-        if False:
+        if param.make_record:
             FILE_FORMATTER = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
             if LOG_DIR is "":
                 logger.log(WARMN, "Current <LOG_DIR is not set>")
