@@ -2,26 +2,27 @@
 def get_module(name):
     name = name.upper()
     if name == 'MSDA':
-        from .MSDA import params, MSDA
+        from .msda import params, MSDA
         return params.get_params(), MSDA.Network()
     elif name == 'TADA':
-        from .TADA import params, TADA
+        from .tada import params, TADA
         return params.get_params(), TADA.TADA()
     elif name == 'DANN':
-        from .DANN import params, model
+        from .dann import params, model
         return params.get_params(), model.DANN()
-    elif name == 'MNIST':
-        from .MNIST import mnist
-        return None, mnist.MNIST()
     elif name == 'FINETUNE':
-        from .Finetune import model
+        from .fine_tune import model
         return None, model.Finetune()
     elif name == 'BY':
-        from .Bayes import model
+        from .bayes import model
         return None, model.BayesModel()
     elif name == 'OPEN':
-        from .OpenSet import model
+        from .openset import model
         return None, model.OpensetDA()
+    elif name == 'OPENBB':
+        from .openset_by_backprop import model
+        return None, model.OpensetBackprop()
+
 
 def get_params():
     from .basic_params import get_param_parser

@@ -223,7 +223,7 @@ def find_classes(dir):
     return class_to_idx
 
 
-ORDERED_OFFICE_CLASS = [
+OFFICE_CLASS = [
     "back_pack",
     "bike",
     "bike_helmet",
@@ -259,7 +259,7 @@ ORDERED_OFFICE_CLASS = [
 
 
 def require_openset_dataloader(
-    source_class, target_class, train_transforms, valid_transform, params
+    source_class, target_class, train_transforms, valid_transform,params
 ):
 
     source = set(source_class)
@@ -317,6 +317,9 @@ if __name__ == "__main__":
         root="./_PUBLIC_DATASET_/" + "Office" + "/" + "A"
     )
 
-    source = OFFICE_KEY_TO_INDEX[0:10] + OFFICE_KEY_TO_INDEX[11:20]
-    target = OFFICE_KEY_TO_INDEX[0:10] + OFFICE_KEY_TO_INDEX[21:31]
+    source = OFFICE_CLASS[0:10] + OFFICE_CLASS[11:20]
+    target = OFFICE_CLASS[0:10] + OFFICE_CLASS[21:31]
 
+    print(OFFICE_CLASS[0:20])
+    print(OFFICE_CLASS[20:31])
+    # print(target)

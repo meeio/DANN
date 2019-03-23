@@ -554,7 +554,6 @@ class DAModule(TrainableModule):
 
             _, predic_class = torch.max(predict, 1)
 
-
             corrent_count = (
                 (torch.squeeze(predic_class) == label).sum().float()
             )

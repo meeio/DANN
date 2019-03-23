@@ -31,10 +31,11 @@ def get_lr_scaler(
     return lr_scaler
 
 
-class OpensetDA(DAModule):
+class OpensetBackprop(DAModule):
     def __init__(self):
-        super(OpensetDA, self).__init__(param)
+        super().__init__(param)
 
+        ## NOTE classes setting adapt from <opensetDa by backprop>
         source_class = set(OFFICE_CLASS[0:10])
         target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
         assert len(source_class.intersection(target_class)) == 10
@@ -47,6 +48,9 @@ class OpensetDA(DAModule):
         self.class_num = class_num
         self.source_class = source_class
         self.target_class = target_class
+
+        self.nill_loss = torch.nn.NLLLoss()
+        self.DECISION_BOUNDARY = self.TARGET.fill_(0.5)
 
         self._all_ready()
 
@@ -77,70 +81,49 @@ class OpensetDA(DAModule):
             from .networks.alex import AlexNetFc, AlexClassifer
 
             F = AlexNetFc()
-            C = AlexClassifer(class_num=self.class_num)
+            C = AlexClassifer(
+                class_num=self.class_num,
+                reversed_coeff=lambda: get_lambda(
+                    self.current_step, self.total_steps
+                ),
+            )
 
-        D = DomainClassifier(
-            input_dim=256,
-            reversed_coeff=lambda: get_lambda(
-                self.current_step, self.total_steps
-            ),
-        )
-
-        return {"F": F, "C": C, "D": D}
+        return {"F": F, "C": C}
 
     def _regist_losses(self):
 
         optimer = {
             "type": torch.optim.SGD,
-            "lr": self.params.lr,
+            "lr": 0.001,
             "momentum": 0.9,
             "weight_decay": 0.001,
-            "nesterov": True,
-            "lr_mult": {"F": 0.1},
+            # "nesterov": True,
+            # "lr_mult": {"F": 0.1},
         }
 
-        lr_scheduler = {
-            "type": torch.optim.lr_scheduler.LambdaLR,
-            "lr_lambda": lambda steps: get_lr_scaler(
-                steps, self.total_steps
-            ),
-            "last_epoch": 0,
-        }
-
-        self.define_loss(
-            "global_looss",
-            networks=["F", "C", "D"],
-            optimer=optimer,
-            decay_op=lr_scheduler,
-        )
+        self.define_loss("global_looss", networks=["C"], optimer=optimer)
 
         self.define_log("valid_loss", "valid_accu", group="valid")
-        self.define_log("classify", "discrim", group="train")
+        self.define_log("classify", "adv", group="train")
 
     def _train_step(self, s_img, s_label, t_img):
 
         g_source_feature = self.F(s_img)
         g_target_feature = self.F(t_img)
 
-        source_feature, predcition = self.C(g_source_feature)
-        target_feature, _ = self.C(g_target_feature)
+        class_prediction, _ = self.C(g_source_feature, adapt=False)
+        _, unkonw_prediction = self.C(g_target_feature, adapt=True)
 
-        loss_classify = self.ce(predcition, s_label)
+        loss_classify = self.ce(class_prediction, s_label)
 
-        pred_domain = self.D(
-            torch.cat([source_feature, target_feature], dim=0)
-        )
+        loss_adv = self.bce(unkonw_prediction, self.DECISION_BOUNDARY)
 
-        loss_dis = self.bce(
-            pred_domain, torch.cat([self.SOURCE, self.TARGET], dim=0)
-        )
+        self._update_logs({"classify": loss_classify, "adv": loss_adv})
+        self._update_loss("global_looss", loss_classify + loss_adv)
 
-        self._update_logs({"classify": loss_classify, "discrim": loss_dis})
-        self._update_loss("global_looss", loss_classify + loss_dis)
-
-        del loss_classify, loss_dis
+        del loss_classify, loss_adv
 
     def _valid_step(self, img):
         feature = self.F(img)
-        _, prediction = self.C(feature)
+        prediction, _ = self.C(feature)
         return prediction

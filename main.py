@@ -7,9 +7,7 @@ if __name__ == "__main__":
 
     torch.backends.cudnn.benchmark = True
     # name = input('model name:')
-    name = "open"
+    name = "OPENBB"
     _, A = get_module(name)
     A.train_module()
-
-
 
