@@ -62,9 +62,18 @@ class OpensetDrop(DAModule):
         self.class_num = len(self.source_class) + 1
 
         self.element_bce = torch.nn.BCELoss(reduction="none")
+        self.element_ce = torch.nn.CrossEntropyLoss(reduction="none")
         self.DECISION_BOUNDARY = self.TARGET.fill_(1)
 
         self._all_ready()
+
+    @property
+    def dynamic_offset(self):
+        high = 0.1
+        low = 0.065
+        return get_lambda(
+            self.current_step, self.total_steps, high=high, low=low
+        )
 
     def _prepare_data(self):
 
@@ -118,13 +127,14 @@ class OpensetDrop(DAModule):
         self.define_loss(
             "domain_prediction", networks=["C"], optimer=optimer
         )
-        self.define_loss("domain_adv", networks=["G","C"], optimer=optimer)
+        self.define_loss(
+            "domain_adv", networks=["G", "C"], optimer=optimer
+        )
 
         self.define_log("valid_loss", "valid_accu", group="valid")
         self.define_log(
             "classify", "adv", "dis", "drop_prop", group="train"
         )
-        
 
     def _train_step(self, s_img, s_label, t_img):
 
@@ -134,14 +144,16 @@ class OpensetDrop(DAModule):
         s_predcition, _ = self.C(g_source_feature, adapt=False)
         t_prediction, t_domain = self.C(g_target_feature, adapt=True)
 
-        loss_classify = self.ce(s_predcition, s_label)
-
         threshold = (
             norm_entropy(s_predcition, reduction="mean") + self.offset
         )
-        target_entropy = norm_entropy(s_predcition, reduction="none")
+
+        loss_classify = self.ce(s_predcition, s_label)
+        # source_entropy = norm_entropy()
+        # allowed_idx = (target)
+
+        target_entropy = norm_entropy(t_prediction, reduction="none")
         allowed_idx = (target_entropy < threshold).unsqueeze(1).float()
-        # allowed_idx = allowed_idx.fill_(1)
         keep_prop = torch.sum(allowed_idx) / self.params.batch_size
         drop_prop = 1 - keep_prop
 

@@ -27,7 +27,6 @@ def norm_entropy(p, reduction="None"):
         ne = torch.mean(ne)
     return ne
 
-
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
     return np.float(
         2.0 * (high - low) / (1.0 + np.exp(-alpha * iter_num / max_iter))
