@@ -163,4 +163,3 @@ class AlexClassifer(WeightedModule):
         unkonw_prediction = self.softmax(prediction_with_unkonw)[:, -1].unsqueeze(1)
 
         return prediction_with_unkonw, unkonw_prediction
-

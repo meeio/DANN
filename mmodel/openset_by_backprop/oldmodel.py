@@ -12,16 +12,8 @@ from .params import get_params
 from mdata.partial.partial_dataset import require_openset_dataloader
 from mdata.partial.partial_dataset import OFFICE_CLASS
 from mdata.transfrom import get_transfrom
-import numpy as np
+
 param = get_params()
-
-
-def entropy(p):
-    n = p.size()[1]
-    p = torch.nn.Softmax(dim=1)(p)
-    e = p * torch.log((p)) / np.log(n)
-    ne = - torch.sum(e, dim=1)
-    return ne.detach()
 
 
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
@@ -43,20 +35,21 @@ class OpensetBackprop(DAModule):
     def __init__(self):
         super().__init__(param)
 
-        # self.eval_after = int(0.15 * self.total_steps)
-
+        ## NOTE classes setting adapt from <opensetDa by backprop>
         source_class = set(OFFICE_CLASS[0:10])
         target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
         assert len(source_class.intersection(target_class)) == 10
         assert len(source_class) == 10 and len(target_class) == 21
 
-        class_num = len(source_class) + 1
+        class_num = len(source_class) + (
+            0 if source_class.issuperset(target_class) else 1
+        )
 
         self.class_num = class_num
         self.source_class = source_class
         self.target_class = target_class
 
-        self.element_bce = torch.nn.BCELoss(reduction="none")
+        self.nill_loss = torch.nn.NLLLoss()
         self.DECISION_BOUNDARY = self.TARGET.fill_(0.5)
 
         self._all_ready()
@@ -118,13 +111,12 @@ class OpensetBackprop(DAModule):
         g_source_feature = self.F(s_img)
         g_target_feature = self.F(t_img)
 
-        class_unnkonw_prediction, _ = self.C(g_source_feature, adapt=False)
+        class_prediction, _ = self.C(g_source_feature, adapt=False)
         _, unkonw_prediction = self.C(g_target_feature, adapt=True)
 
-        loss_classify = self.ce(class_unnkonw_prediction, s_label)
+        loss_classify = self.ce(class_prediction, s_label)
 
-        loss_adv = self.element_bce(unkonw_prediction, self.DECISION_BOUNDARY)
-        loss_adv = torch.mean(loss_adv)
+        loss_adv = self.bce(unkonw_prediction, self.DECISION_BOUNDARY)
 
         self._update_logs({"classify": loss_classify, "adv": loss_adv})
         self._update_loss("global_looss", loss_classify + loss_adv)
