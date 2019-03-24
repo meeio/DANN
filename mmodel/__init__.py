@@ -20,8 +20,11 @@ def get_module(name):
         from .openset import model
         return None, model.OpensetDA()
     elif name == 'OPENBB':
-        from .openset_by_backprop import model
-        return None, model.OpensetBackprop()
+        from .openset_by_backprop import oldmodel
+        return None, oldmodel.OpensetBackprop()
+    elif name == 'OPENDP':
+        from .openset_drop import model
+        return None, model.OpensetDrop()
 
 
 def get_params():

@@ -119,8 +119,8 @@ class TrainCapsule(nn.Module):
         map(__one_networkd_call, self.optim_network)
 
     def train_step(self, retain_graph=True):
-        # self.optimer.zero_grad()
-        self.optim_loss.value.backward()
+        self.optimer.zero_grad()
+        self.optim_loss.value.backward(retain_graph=True)
         self.optimer.step()
 
     def make_zero_grad(self):

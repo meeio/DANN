@@ -19,7 +19,8 @@ param = get_params()
 
 def norm_entropy(p, reduction="None"):
     p = p.detach()
-    n = p.size()[1]
+    n = p.size()[1] - 1
+    p = torch.split(p, n, dim=1)[0]
     p = torch.nn.Softmax(dim=1)(p)
     e = p * torch.log((p)) / np.log(n)
     ne = -torch.sum(e, dim=1)
@@ -43,24 +44,25 @@ def get_lr_scaler(
     return lr_scaler
 
 
-class OpensetBackprop(DAModule):
+class OpensetDrop(DAModule):
     def __init__(self):
         super().__init__(param)
 
         # self.eval_after = int(0.15 * self.total_steps)
+        self.offset = 0.08
 
-        source_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[10:20])
+        source_class = set(OFFICE_CLASS[0:10])
         target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
 
         assert len(source_class.intersection(target_class)) == 10
-        assert len(source_class) == 20 and len(target_class) == 21
+        assert len(source_class) == 10 and len(target_class) == 21
 
         self.source_class = source_class
         self.target_class = target_class
         self.class_num = len(self.source_class) + 1
 
-        self.element_ce = torch.nn.CrossEntropyLoss(reduction="none")
-        self.DECISION_BOUNDARY = self.TARGET.fill_(0.5)
+        self.element_bce = torch.nn.BCELoss(reduction="none")
+        self.DECISION_BOUNDARY = self.TARGET.fill_(1)
 
         self._all_ready()
 
@@ -88,9 +90,10 @@ class OpensetBackprop(DAModule):
     def _regist_networks(self):
 
         if True:
-            from .networks.alex import AlexNetFc, AlexClassifer
+            from .networks.alex import AlexNetFc, AlexGFC, AlexClassifer
 
             F = AlexNetFc()
+            G = AlexGFC()
             C = AlexClassifer(
                 class_num=self.class_num,
                 reversed_coeff=lambda: get_lambda(
@@ -98,7 +101,7 @@ class OpensetBackprop(DAModule):
                 ),
             )
 
-        return {"F": F, "C": C}
+        return {"F": F, "G": G, "C": C}
 
     def _regist_losses(self):
 
@@ -107,60 +110,65 @@ class OpensetBackprop(DAModule):
             "lr": 0.001,
             "momentum": 0.9,
             "weight_decay": 0.001,
-            # "nesterov": True,
-            # "lr_mult": {"F": 0.1},
         }
 
-        self.define_loss("global_looss", networks=["C"], optimer=optimer)
+        self.define_loss(
+            "class_prediction", networks=["G", "C"], optimer=optimer
+        )
+        self.define_loss(
+            "domain_prediction", networks=["C"], optimer=optimer
+        )
+        self.define_loss("domain_adv", networks=["G","C"], optimer=optimer)
 
         self.define_log("valid_loss", "valid_accu", group="valid")
         self.define_log(
-            "classify",
-            "adv",
-            "s_mean_entropy",
-            "t_mean_entropy",
-            group="train",
+            "classify", "adv", "dis", "drop_prop", group="train"
         )
+        
 
     def _train_step(self, s_img, s_label, t_img):
 
-        g_source_feature = self.F(s_img)
-        g_target_feature = self.F(t_img)
+        g_source_feature = self.G(self.F(s_img))
+        g_target_feature = self.G(self.F(t_img))
 
-        s_class_prediction, _ = self.C(g_source_feature, adapt=False)
-        t_class_prediction, unkonw_prediction = self.C(g_target_feature, adapt=True)
+        s_predcition, _ = self.C(g_source_feature, adapt=False)
+        t_prediction, t_domain = self.C(g_target_feature, adapt=True)
 
-        loss_classify = self.ce(s_class_prediction, s_label)
+        loss_classify = self.ce(s_predcition, s_label)
 
-        s_entropy = norm_entropy(
-            torch.split(
-                s_class_prediction, self.class_num - 1, dim=1
-            )[0],
-            reduction="mean",
+        threshold = (
+            norm_entropy(s_predcition, reduction="mean") + self.offset
         )
+        target_entropy = norm_entropy(s_predcition, reduction="none")
+        allowed_idx = (target_entropy < threshold).unsqueeze(1).float()
+        # allowed_idx = allowed_idx.fill_(1)
+        keep_prop = torch.sum(allowed_idx) / self.params.batch_size
+        drop_prop = 1 - keep_prop
 
-        t_entropy = norm_entropy(
-            torch.split(
-                t_class_prediction, self.class_num - 1, dim=1
-            )[0],
-            reduction="mean",
-        )
-
-        loss_adv = self.bce(unkonw_prediction, self.DECISION_BOUNDARY)
+        ew_dis_loss = self.element_bce(t_domain, self.DECISION_BOUNDARY)
+        dis_loss = torch.mean(ew_dis_loss * (1 - allowed_idx)) * drop_prop
+        adv_loss = torch.mean(ew_dis_loss * allowed_idx) * keep_prop
 
         self._update_logs(
             {
                 "classify": loss_classify,
-                "adv": loss_adv,
-                "s_mean_entropy": s_entropy,
-                "t_mean_entropy": t_entropy,
+                "dis": dis_loss,
+                "adv": adv_loss,
+                "drop_prop": drop_prop,
             }
         )
-        self._update_loss("global_looss", loss_classify + loss_adv)
 
-        del loss_classify, loss_adv
+        self._update_losses(
+            {
+                "class_prediction": loss_classify,
+                "domain_prediction": dis_loss,
+                "domain_adv": adv_loss / keep_prop,
+            }
+        )
+
+        del loss_classify, adv_loss
 
     def _valid_step(self, img):
-        feature = self.F(img)
-        prediction, _ = self.C(feature)
+        feature = self.G(self.F(img))
+        prediction, _ = self.C(feature, adapt=False)
         return prediction
