@@ -174,7 +174,7 @@ class OpensetDrop(DAModule):
             {
                 "class_prediction": loss_classify,
                 "domain_prediction": dis_loss,
-                "domain_adv": adv_loss / keep_prop,
+                "domain_adv": adv_loss ,
             }
         )
 
