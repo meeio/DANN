@@ -1,49 +1,89 @@
-from mground.plot_utils import plot_all
-from mtrain.mloger import read_step_and_loss
+import matplotlib.pyplot as plt
 import numpy as np
-from mtrain.watcher import parse_losses_record, parse_watcher_dict
+import pandas as pd
+from scipy import interpolate
 
-if __name__ == "__main__":
+from matplotlib.font_manager import FontProperties
 
-    d = parse_watcher_dict(r'C:\Code\MSDA\RECORDS\OPENDP_0325_1153.json')
-    losses = parse_losses_record(d)
-
-    print(losses)
+font = FontProperties(fname=r"C:\Windows\Fonts\simhei.ttf", size=14)
 
 
-    # record_dat = read_step_and_loss(
-    #     # train_loss = r'G:\VS Code\DANN\_MLOGS\deepCoral\lambda_10\predict.log',
-    #     BP=r"C:\Users\meeio\Desktop\19-03-24-11-46\valid_accu.log",
-    #     ThresholdBP=r"C:\Users\meeio\Desktop\19-03-24-11-05\valid_accu.log",
-    #     Drop_props=r"C:\Users\meeio\Desktop\19-03-24-11-05\drop_prop.log"
-    # )
+from watcher import parse_losses_record, parse_watcher_dict
 
 
-    # x = record_dat['Drop_props'][0]
-    # y = record_dat['Drop_props'][1]
-    # y = [i*100 for i in y]
-    # record_dat['Drop_props'] = (x, y)
+# ================    ===============================
+# character           description
+# ================    ===============================
+#    -                solid line style
+#    --               dashed line style
+#    -.               dash-dot line style
+#    :                dotted line style
+#    .                point marker
+#    ,                pixel marker
+#    o                circle marker
+#    v                triangle_down marker
+#    ^                triangle_up marker
+#    <                triangle_left marker
+#    >                triangle_right marker
+#    1                tri_down marker
+#    2                tri_up marker
+#    3                tri_left marker
+#    4                tri_right marker
+#    s                square marker
+#    p                pentagon marker
+#    *                star marker
+#    h                hexagon1 marker
+#    H                hexagon2 marker
+#    +                plus marker
+#    x                x marker
+#    D                diamond marker
+#    d                thin_diamond marker
+#    |                vline marker
+#    _                hline marker
+# ================    ===============================
 
-    # print(y)
-    # # record_dat['Drop_props'][1] = y10
 
-    # # x = record_dat['t10'][0]
-    # # y_t = record_dat['t10'][1]
-    # # y_s = record_dat['s10'][1]
+def curve_graph(smooth_ration=2000, **kwargs):
 
-    # # x10 = record_dat["t10"][0]
-    # # bias10 = [
-    # #     record_dat["t10"][1][i] - record_dat["s10"][1][i]
-    # #     for i in range(len(x10))
-    # # ]
 
-    # # x20 = record_dat["t20"][0]
-    # # bias20 = [
-    # #     record_dat["t20"][1][i] - record_dat["s20"][1][i]
-    # #     for i in range(len(x20))
-    # # ]
+        for name, records in kwargs.items():
 
-    # # a = {"bias10": (x10, bias10), "bias20": (x20, bias20)}
+                y = records[1]
+                x = [records[0] * i for i in range(len(y))]
+                data_count = len(y)
 
-    # plot_all(record_dat, tagname="lambda 8")
+
+                x_smooth = np.linspace(min(x), max(x), data_count * smooth_ration)
+                y_smooth = interpolate.spline(x, y, x_smooth)
+
+                # tck = interpolate.spline(x, y)
+                plt.plot(
+                x_smooth, y_smooth, ":.", label=name, markevery=smooth_ration
+                )
+
+
+        plt.legend(loc="best")
+        plt.title("A10 to W10+10")
+        plt.show()
+
+
+openbb_dict = parse_watcher_dict(r"OPENBB_0325_1328.json")
+opendp_dict = parse_watcher_dict(r"OPENDP_0325_1153.json")
+
+losses = parse_losses_record(openbb_dict)
+
+
+def for_accu(file):
+    record_dic = parse_watcher_dict(file)
+    losses = parse_losses_record(record_dic)
+    return losses["valid_accu"]
+
+
+accu = {
+    "Back Prop": for_accu(r"OPENBB_0325_1328.json"),
+    "Thredhold Back Prop": for_accu(r"OPENDP_0325_1153.json"),
+}
+
+
+curve_graph(**accu)
 
