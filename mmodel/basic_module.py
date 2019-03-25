@@ -309,8 +309,9 @@ class TrainableModule(ABC):
     def define_log(self, *loss_name, group="train"):
         def log_name(name):
             self.losses[name]
+            step = self.params.log_per_step if group =='train' else self.params.eval_per_step
             l = LogCapsule(
-                self.losses[name], name, to_file=self.params.log
+                self.losses[name], name, to_file=self.params.make_record, step=step
             )
             if group == "train":
                 self.train_loggers[name] = l

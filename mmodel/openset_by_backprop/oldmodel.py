@@ -36,20 +36,17 @@ class OpensetBackprop(DAModule):
         super().__init__(param)
 
         ## NOTE classes setting adapt from <opensetDa by backprop>
-        source_class = set(OFFICE_CLASS[0:10])
+        source_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[10:20])
         target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
         assert len(source_class.intersection(target_class)) == 10
-        assert len(source_class) == 10 and len(target_class) == 21
+        assert len(source_class) == 20 and len(target_class) == 21
 
-        class_num = len(source_class) + (
-            0 if source_class.issuperset(target_class) else 1
-        )
+        class_num = len(source_class) + 1
 
         self.class_num = class_num
         self.source_class = source_class
         self.target_class = target_class
 
-        self.nill_loss = torch.nn.NLLLoss()
         self.DECISION_BOUNDARY = self.TARGET.fill_(0.5)
 
         self._all_ready()

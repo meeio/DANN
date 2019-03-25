@@ -308,18 +308,3 @@ def require_openset_dataloader(
 
     return source, target, valid
 
-
-if __name__ == "__main__":
-
-    from torchvision import datasets
-
-    dataset = datasets.ImageFolder(
-        root="./_PUBLIC_DATASET_/" + "Office" + "/" + "A"
-    )
-
-    source = OFFICE_CLASS[0:10] + OFFICE_CLASS[11:20]
-    target = OFFICE_CLASS[0:10] + OFFICE_CLASS[21:31]
-
-    print(OFFICE_CLASS[0:20])
-    print(OFFICE_CLASS[20:31])
-    # print(target)

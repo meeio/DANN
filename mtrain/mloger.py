@@ -5,9 +5,9 @@ import os
 from mtrain.train_capsule import LossBuket
 import re
 import colorlog
-from mmodel.basic_params import get_param_parser
+# from mmodel.basic_params import get_param_parser
+from mtrain.watcher import watcher
 
-param = get_param_parser().parse_args()
 
 BUILD = 50
 TRAIN = 51
@@ -122,33 +122,27 @@ def get_colored_logger(name):
 
     return logger
 
+from collections import OrderedDict
 
 class LogCapsule(object):
     def __init__(
         self,
         loss_bucker: LossBuket,
         name,
-        level=logging.INFO,
-        to_file=False,
-        mode = TRAIN
+        step=1,
+        to_file=False
     ):
 
-        self.mode = mode
         self.tag = name
         logger = logging.getLogger(name)
 
-        if param.make_record:
-            FILE_FORMATTER = logging.Formatter("%(asctime)s %(levelname)s %(message)s")
-            if LOG_DIR is "":
-                logger.log(WARMN, "Current <LOG_DIR is not set>")
-                setup_log_folder_name(GLOBAL._TAG_)
-                logger.log(WARMN, "Auto set <LOG_DIR> to <%s>" % LOG_DIR)
-            log_file = LOG_DIR + name + ".log"
-
-            file_handler = logging.FileHandler(log_file)
-            file_handler.setFormatter(FILE_FORMATTER)
-            logger.addHandler(file_handler)
-            logger.setLevel(logging.INFO)
+        self.loss_record = None
+        if to_file:
+            self.note = watcher.loss_note(self.tag)
+            self.note['step'] = step
+            self.note['record'] = list()
+            self.loss_record = self.note['record']
+        
 
         self.LOSS_FORMAT = ">%-12s< at step [%6d] -> [%.3f]."
         self.PRT_FORMAT = "At >%-12s< stage, loss is [%.3f]."
@@ -176,11 +170,23 @@ class LogCapsule(object):
         self.range_step += 1
 
     def log_current_avg_loss(self, step=None):
-        loss = self.avg_record()
-        self.__loss__(step, loss)
+
+        try:
+            result = self.range_loss / self.range_step
+        except:
+            result = 0.0
+        self.range_loss = None
+        self.range_step = 0.0
+
+        loss = result.item()
+
+        if self.loss_record is not None:
+            self.loss_record.append(loss)
+
         return loss
 
     def avg_record(self):
+        assert False
         try:
             result = self.range_loss / self.range_step
         except:
@@ -188,25 +194,6 @@ class LogCapsule(object):
         self.range_loss = None
         self.range_step = 0.0
         return result.item()
-
-    def __loss__(self, steps, values):
-        """record loss to log file
-        
-        Arguments:
-            steps {current step} -- steps os current loss
-            values {[type]} -- values of current loss
-        """
-
-        if steps is None:
-            i = self.PRT_FORMAT % (self.logger.name.upper(), values)
-        else:
-            i = self.LOSS_FORMAT % (
-                self.logger.name.upper(),
-                steps,
-                values,
-            )
-
-        self.logger.info(i)
 
     def _log_to_same_loger(self, s):
         self.logger.log(self.mode, s)

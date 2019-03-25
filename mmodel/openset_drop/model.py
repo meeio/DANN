@@ -51,11 +51,11 @@ class OpensetDrop(DAModule):
         # self.eval_after = int(0.15 * self.total_steps)
         self.offset = 0.08
 
-        source_class = set(OFFICE_CLASS[0:10])
+        source_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[10:20])
         target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
 
         assert len(source_class.intersection(target_class)) == 10
-        assert len(source_class) == 10 and len(target_class) == 21
+        assert len(source_class) == 20 and len(target_class) == 21
 
         self.source_class = source_class
         self.target_class = target_class
@@ -149,8 +149,7 @@ class OpensetDrop(DAModule):
         )
 
         loss_classify = self.ce(s_predcition, s_label)
-        # source_entropy = norm_entropy()
-        # allowed_idx = (target)
+
 
         target_entropy = norm_entropy(t_prediction, reduction="none")
         allowed_idx = (target_entropy < threshold).unsqueeze(1).float()
@@ -159,7 +158,7 @@ class OpensetDrop(DAModule):
 
         ew_dis_loss = self.element_bce(t_domain, self.DECISION_BOUNDARY)
         dis_loss = torch.mean(ew_dis_loss * (1 - allowed_idx)) * drop_prop
-        adv_loss = torch.mean(ew_dis_loss * allowed_idx) * keep_prop
+        adv_loss = torch.mean(ew_dis_loss * allowed_idx)
 
         self._update_logs(
             {
@@ -174,7 +173,7 @@ class OpensetDrop(DAModule):
             {
                 "class_prediction": loss_classify,
                 "domain_prediction": dis_loss,
-                "domain_adv": adv_loss ,
+                "domain_adv": adv_loss,
             }
         )
 

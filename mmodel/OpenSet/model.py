@@ -16,6 +16,17 @@ from mdata.transfrom import get_transfrom
 param = get_params()
 
 
+def norm_entropy(p, reduction="None"):
+    p = p.detach()
+    n = p.size()[1]
+    p = torch.nn.Softmax(dim=1)(p)
+    e = p * torch.log((p)) / np.log(n)
+    ne = -torch.sum(e, dim=1)
+    if reduction == "mean":
+        ne = torch.mean(ne)
+    return ne
+
+
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
     return np.float(
         2.0 * (high - low) / (1.0 + np.exp(-alpha * iter_num / max_iter))
@@ -36,9 +47,7 @@ class OpensetDA(DAModule):
         super(OpensetDA, self).__init__(param)
 
         source_class = set(OFFICE_CLASS[0:10])
-        target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
-        assert len(source_class.intersection(target_class)) == 10
-        assert len(source_class) == 10 and len(target_class) == 21
+        target_class = set(OFFICE_CLASS[0:10])
 
         class_num = len(source_class) + (
             0 if source_class.issuperset(target_class) else 1
@@ -115,7 +124,9 @@ class OpensetDA(DAModule):
         )
 
         self.define_log("valid_loss", "valid_accu", group="valid")
-        self.define_log("classify", "discrim", group="train")
+        self.define_log(
+            "classify", "discrim", group="train"
+        )
 
     def _train_step(self, s_img, s_label, t_img):
 
@@ -123,7 +134,7 @@ class OpensetDA(DAModule):
         g_target_feature = self.F(t_img)
 
         source_feature, predcition = self.C(g_source_feature)
-        target_feature, _ = self.C(g_target_feature)
+        target_feature, t_predciton = self.C(g_target_feature)
 
         loss_classify = self.ce(predcition, s_label)
 
@@ -135,7 +146,13 @@ class OpensetDA(DAModule):
             pred_domain, torch.cat([self.SOURCE, self.TARGET], dim=0)
         )
 
-        self._update_logs({"classify": loss_classify, "discrim": loss_dis})
+
+        self._update_logs(
+            {
+                "classify": loss_classify,
+                "discrim": loss_dis,
+            }
+        )
         self._update_loss("global_looss", loss_classify + loss_dis)
 
         del loss_classify, loss_dis
