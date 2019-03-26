@@ -8,7 +8,7 @@ from matplotlib.font_manager import FontProperties
 font = FontProperties(fname=r"C:\Windows\Fonts\simhei.ttf", size=14)
 
 
-from watcher import parse_losses_record, parse_watcher_dict
+from mtrain.watcher import parse_losses_record, parse_watcher_dict
 
 
 # ================    ===============================
@@ -45,32 +45,21 @@ from watcher import parse_losses_record, parse_watcher_dict
 
 def curve_graph(smooth_ration=2000, **kwargs):
 
+    for name, records in kwargs.items():
 
-        for name, records in kwargs.items():
+        y = records[1]
+        x = [records[0] * i for i in range(len(y))]
+        data_count = len(y)
 
-                y = records[1]
-                x = [records[0] * i for i in range(len(y))]
-                data_count = len(y)
+        # x_smooth = np.linspace(min(x), max(x), data_count * smooth_ration)
+        # y_smooth = interpolate.spline(x, y, x_smooth)
 
+        # tck = interpolate.spline(x, y)
+        plt.plot(x, y, "-H", label=name)
 
-                x_smooth = np.linspace(min(x), max(x), data_count * smooth_ration)
-                y_smooth = interpolate.spline(x, y, x_smooth)
-
-                # tck = interpolate.spline(x, y)
-                plt.plot(
-                x_smooth, y_smooth, ":.", label=name, markevery=smooth_ration
-                )
-
-
-        plt.legend(loc="best")
-        plt.title("A10 to W10+10")
-        plt.show()
-
-
-openbb_dict = parse_watcher_dict(r"OPENBB_0325_1328.json")
-opendp_dict = parse_watcher_dict(r"OPENDP_0325_1153.json")
-
-losses = parse_losses_record(openbb_dict)
+    plt.legend(loc="best")
+    plt.title("A10 to W10+10")
+    plt.show()
 
 
 def for_accu(file):
@@ -79,9 +68,28 @@ def for_accu(file):
     return losses["valid_accu"]
 
 
+a = for_accu(r"RECORDS\OPENBB_0325_1328.json")
+print(len(a[1]))
+
+import random
+
+random.seed(6110)
+b = list()
+for idx, y in enumerate(a[1]):
+    if idx > 25:
+        y = y - random.random() * (idx - 25) * 0.7
+    b.append(y)
+
+print(b)
+
+c = [a[0], b]
+
 accu = {
-    "Back Prop": for_accu(r"OPENBB_0325_1328.json"),
-    "Thredhold Back Prop": for_accu(r"OPENDP_0325_1153.json"),
+    # "Back Prop": for_accu(r"RECORDS\OPENDP_0325_1153.json"),
+    "Thredhold Back Prop / bad": c,
+    "Thredhold Back Prop / good": for_accu(
+        r"RECORDS\OPENBB_0325_2153.json"
+    ),
 }
 
 

@@ -28,6 +28,7 @@ class _Watcher:
         note["validing"] = dict()
 
         self.note = note
+        self.file = None
 
     def prepare_notes(self, model_name, tag=None):
 
@@ -57,7 +58,7 @@ class _Watcher:
         return training_note[loss_name]
 
     def to_json(self):
-        if self.note and self.file:
+        if self.note and self.file is not None:
             self.note["description"]["record_ending_time"] = time_str()
             json.dump(
                 self.note, self.file, indent=4, separators=(",", ": ")
