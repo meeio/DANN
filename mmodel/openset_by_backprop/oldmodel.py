@@ -17,11 +17,12 @@ param = get_params()
 
 
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
-    return np.float(
-        2.0 * (high - low) / (1.0 + np.exp(-alpha * iter_num / max_iter))
-        - (high - low)
-        + low
-    )
+    # return np.float(
+    #     2.0 * (high - low) / (1.0 + np.exp(-alpha * iter_num / max_iter))
+    #     - (high - low)
+    #     + low
+    # )
+    return 1
 
 
 def get_lr_scaler(
@@ -93,7 +94,7 @@ class OpensetBackprop(DAModule):
             "type": torch.optim.SGD,
             "lr": 0.001,
             "momentum": 0.9,
-            "weight_decay": 0.001,
+            # "weight_decay": 0.001,
             # "nesterov": True,
             # "lr_mult": {"F": 0.1},
         }
