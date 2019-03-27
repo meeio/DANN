@@ -39,7 +39,7 @@ class OpensetBackprop(DAModule):
         source_class = set(OFFICE_CLASS[0:10])
         target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
         assert len(source_class.intersection(target_class)) == 10
-        assert len(source_class) == 20 and len(target_class) == 21
+        assert len(source_class) == 10 and len(target_class) == 21
 
         class_num = len(source_class) + 1
 
