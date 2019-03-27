@@ -81,7 +81,7 @@ def curve_graph(smooth_ration=10, **kwargs):
         plt.plot(x_smooth, y_smooth, "-", label=name, markevery=20)
 
     plt.legend(loc="best")
-    plt.title("A10 to W10+10")
+    plt.title("Bias of Norm Entropy on Closed DA Setting")
     plt.show()
 
 
