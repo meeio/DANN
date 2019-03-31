@@ -20,7 +20,7 @@ param = get_params()
 def eval_idx_number(idx, target, number):
     target = target.unsqueeze(1)
     wanted = idx * target.float()
-    return torch.sum(wanted == n) / (torch.sum(idx) + 0.001)
+    return torch.sum(wanted == number) / (torch.sum(idx) + 0.001)
 
 
 def norm_entropy(p, reduction="None"):
@@ -178,10 +178,10 @@ class OpensetDrop(DAModule):
                 "adv": adv_loss,
                 "drop_prop": drop_prop,
                 "corret_drop": eval_idx_number(
-                    (1 - allowed_idx), t_label, (self.class_num - 1,)
+                    (1 - allowed_idx), t_label, self.class_num - 1
                 ),
                 "wrong_keep": eval_idx_number(
-                    allowed_idx, t_label, (self.class_num - 1,)
+                    allowed_idx, t_label, self.class_num - 1
                 ),
             }
         )
