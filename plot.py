@@ -95,15 +95,9 @@ def for_bias(file):
     losses = parse_losses_record(record_dic)
     return losses["bias"]
 
-import random
-a = for_accu(r"RECORDS\OPENBB_0327_0317.normal.json")
-b = [a[1][i]-3 for i in range(len(a[1]))]
-
 
 accu = {
-    "Threshold Back Prop": for_accu(r"RECORDS\OPENDP_0325_1153.json"),
-    "Back Prop": for_accu(r"RECORDS\OPENBB_0325_2153.json"),
-    "Revgrad": (a[0],b),
+    "Upper": for_accu(r"RECORDS\OPENBB_0331_0426.upper_A10_W10.json"),
 }
 
 
