@@ -22,9 +22,9 @@ def get_module(name):
     elif name == 'OPENBB':
         from .openset_by_backprop import oldmodel
         return None, oldmodel.OpensetBackprop()
-    elif name == 'OPENBBTEST':
-        from .openset_by_backprop import model
-        return None, model.OpensetBackprop()
+    # elif name == 'OPENBBTEST':
+    #     from .openset_by_backprop import model
+    #     return None, model.OpensetBackprop()
     elif name == 'OPENDP':
         from .openset_drop import model
         return None, model.OpensetDrop()

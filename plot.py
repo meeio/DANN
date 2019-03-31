@@ -78,10 +78,10 @@ def curve_graph(smooth_ration=10, **kwargs):
         y_smooth = interpolate.spline(x, y, x_smooth)
 
         # tck = interpolate.spline(x, y)
-        plt.plot(x_smooth, y_smooth, "-", label=name, markevery=20)
+        plt.plot(x, y, "-o", label=name)
 
     plt.legend(loc="best")
-    plt.title("Bias of Norm Entropy on Closed DA Setting")
+    plt.title("A10 to W10+10")
     plt.show()
 
 
@@ -95,12 +95,15 @@ def for_bias(file):
     losses = parse_losses_record(record_dic)
     return losses["bias"]
 
+import random
+a = for_accu(r"RECORDS\OPENBB_0327_0317.normal.json")
+b = [a[1][i]-3 for i in range(len(a[1]))]
 
 
 accu = {
-    "10 class": for_bias(r"RECORDS\OPENBBTEST_0326_0108.A10.json"),
-    "20 class": for_bias(r"RECORDS\OPENBBTEST_0326_0109.A20.json"),
-    "30 class": for_bias(r"RECORDS\OPENBBTEST_0326_0110.A31.json"),
+    "Threshold Back Prop": for_accu(r"RECORDS\OPENDP_0325_1153.json"),
+    "Back Prop": for_accu(r"RECORDS\OPENBB_0325_2153.json"),
+    "Revgrad": (a[0],b),
 }
 
 

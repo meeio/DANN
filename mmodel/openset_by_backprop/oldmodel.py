@@ -17,12 +17,12 @@ param = get_params()
 
 
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
-    # return np.float(
-    #     2.0 * (high - low) / (1.0 + np.exp(-alpha * iter_num / max_iter))
-    #     - (high - low)
-    #     + low
-    # )
-    return 1
+    return np.float(
+        2.0 * (high - low) / (1.0 + np.exp(-alpha * iter_num / max_iter))
+        - (high - low)
+        + low
+    )
+    # return 1
 
 
 def get_lr_scaler(
@@ -38,9 +38,9 @@ class OpensetBackprop(DAModule):
 
         ## NOTE classes setting adapt from <opensetDa by backprop>
         source_class = set(OFFICE_CLASS[0:10])
-        target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
+        target_class = set(OFFICE_CLASS[0:10])
         assert len(source_class.intersection(target_class)) == 10
-        assert len(source_class) == 10 and len(target_class) == 21
+        assert len(source_class) == 10 and len(target_class) == 10
 
         class_num = len(source_class) + 1
 
@@ -99,6 +99,7 @@ class OpensetBackprop(DAModule):
             # "lr_mult": {"F": 0.1},
         }
 
+
         self.define_loss("global_looss", networks=["C"], optimer=optimer)
 
         self.define_log("valid_loss", "valid_accu", group="valid")
@@ -123,5 +124,5 @@ class OpensetBackprop(DAModule):
 
     def _valid_step(self, img):
         feature = self.F(img)
-        prediction, _ = self.C(feature)
-        return prediction
+        prediction, _ = self.C(feature)      
+        return torch.split(prediction, self.class_num-1, dim=1)[0]
