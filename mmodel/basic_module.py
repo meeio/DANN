@@ -453,7 +453,7 @@ class DAModule(TrainableModule):
         )
 
     @abstractclassmethod
-    def _train_step(self, s_img, s_label, t_img):
+    def _train_step(self, s_img, s_label, t_img, t_label):
         pass
 
     @abstractclassmethod
@@ -521,17 +521,17 @@ class DAModule(TrainableModule):
         its = self.iters[mode]
         if mode == "train":
             s_img, s_label = its["S"].next()
-            t_img, _ = its["T"].next()
-            return s_img, s_label, t_img
+            t_img, t_label = its["T"].next()
+            return s_img, s_label, t_img, t_label
         else:
             return its.next(need_end=True)
 
     def _train_process(self, datas):
 
-        s_img, s_label, t_img = datas
+        s_img, s_label, t_img, t_label = datas
 
         # begain a train step
-        self._train_step(s_img, s_label, t_img)
+        self._train_step(s_img, s_label, t_img, t_label)
 
     def _log_process(self):
 

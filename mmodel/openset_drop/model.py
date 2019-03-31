@@ -17,6 +17,12 @@ import numpy as np
 param = get_params()
 
 
+def eval_idx_number(idx, target, number):
+    target = target.unsqueeze(1)
+    wanted = idx * target.float()
+    return torch.sum(wanted == n) / (torch.sum(idx) + 0.001)
+
+
 def norm_entropy(p, reduction="None"):
     p = p.detach()
     n = p.size()[1] - 1
@@ -51,11 +57,11 @@ class OpensetDrop(DAModule):
         # self.eval_after = int(0.15 * self.total_steps)
         self.offset = 0.08
 
-        source_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[10:20])
+        source_class = set(OFFICE_CLASS[0:10])
         target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
 
         assert len(source_class.intersection(target_class)) == 10
-        assert len(source_class) == 20 and len(target_class) == 21
+        assert len(source_class) == 10 and len(target_class) == 21
 
         self.source_class = source_class
         self.target_class = target_class
@@ -133,10 +139,16 @@ class OpensetDrop(DAModule):
 
         self.define_log("valid_loss", "valid_accu", group="valid")
         self.define_log(
-            "classify", "adv", "dis", "drop_prop", group="train"
+            "classify",
+            "adv",
+            "dis",
+            "drop_prop",
+            "corret_drop",
+            "wrong_keep",
+            group="train",
         )
 
-    def _train_step(self, s_img, s_label, t_img):
+    def _train_step(self, s_img, s_label, t_img, t_label):
 
         g_source_feature = self.G(self.F(s_img))
         g_target_feature = self.G(self.F(t_img))
@@ -149,7 +161,6 @@ class OpensetDrop(DAModule):
         )
 
         loss_classify = self.ce(s_predcition, s_label)
-
 
         target_entropy = norm_entropy(t_prediction, reduction="none")
         allowed_idx = (target_entropy < threshold).unsqueeze(1).float()
@@ -166,6 +177,12 @@ class OpensetDrop(DAModule):
                 "dis": dis_loss,
                 "adv": adv_loss,
                 "drop_prop": drop_prop,
+                "corret_drop": eval_idx_number(
+                    (1 - allowed_idx), t_label, (self.class_num - 1,)
+                ),
+                "wrong_keep": eval_idx_number(
+                    allowed_idx, t_label, (self.class_num - 1,)
+                ),
             }
         )
 

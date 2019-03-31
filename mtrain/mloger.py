@@ -178,7 +178,10 @@ class LogCapsule(object):
         self.range_loss = None
         self.range_step = 0.0
 
-        loss = result.item()
+        try:
+            loss = result.item()
+        except:
+            loss = result
 
         if self.loss_record is not None:
             self.loss_record.append(loss)
