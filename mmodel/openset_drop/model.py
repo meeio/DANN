@@ -76,14 +76,14 @@ class OpensetDrop(DAModule):
     @property
     def dynamic_offset(self):
         upper = 0.08
-        high = 0.075
+        high = 0.078
         low = 0.00
         return upper - get_lambda(
             self.current_step,
             self.total_steps,
             high=high,
             low=low,
-            alpha=5,
+            alpha=10,
         )
 
     def _prepare_data(self):
