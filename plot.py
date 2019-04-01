@@ -100,10 +100,12 @@ def for_bias(file):
     return losses["bias"]
 
 tag = 'drop_prop'
-filename = r"RECORDS\OPENDP_0401_0510.normloss_dybias.json"
+filename = r"RECORDS\OPENBBTEST_0401_0002.regular_entropy_record.json"
 accu = {
-    "outlier_data": for_("outlier_data", filename),
-    "valid_data": for_('valid_data', filename),
+    "e_s": for_("e_s", filename),
+    "e_t": for_("e_t", filename),
+    "e_b": for_("e_b", filename),
+    # "accu": for_accu(filename),
 }
 
 

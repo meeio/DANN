@@ -23,10 +23,11 @@ def binary_entropy(p):
     return e
 
 
-def norm_entropy(p, reduction="None"):
+def norm_entropy(p, reduction="None", all=True):
     p = p.detach()
     n = p.size()[1] - 1
-    p = torch.split(p, n, dim=1)[0]
+    if not all:
+        p = torch.split(p, n, dim=1)[0]
     p = torch.nn.Softmax(dim=1)(p)
     e = p * torch.log((p)) / np.log(n)
     ne = -torch.sum(e, dim=1)
@@ -137,9 +138,9 @@ class OpensetBackprop(DAModule):
             "e_s",
             "e_t",
             "e_b",
-            "ue_s",
-            "ue_t",
-            "ue_b",
+            "ae_s",
+            "ae_t",
+            "ae_b",
             group="train",
         )
 
@@ -163,12 +164,12 @@ class OpensetBackprop(DAModule):
             {
                 "classify": loss_classify,
                 "adv": loss_adv,
-                "e_s": norm_entropy(s_cls_p, reduction="mean"),
-                "e_t": norm_entropy(t_cls_p, reduction="mean"),
-                "e_b": norm_entropy(b_cls_p, reduction="mean"),
-                "ue_s": binary_entropy(s_un_p),
-                "ue_t": binary_entropy(t_nu_p),
-                "ue_b": binary_entropy(b_un_p),
+                "e_s": norm_entropy(s_cls_p, reduction="mean", all=False),
+                "e_t": norm_entropy(t_cls_p, reduction="mean", all=False),
+                "e_b": norm_entropy(b_cls_p, reduction="mean", all=False),
+                "ae_s": norm_entropy(s_cls_p, reduction="mean", all=True),
+                "ae_t": norm_entropy(t_cls_p, reduction="mean", all=True),
+                "ae_b": norm_entropy(b_cls_p, reduction="mean", all=True),
             }
         )
         self._update_loss("global_looss", loss_classify + loss_adv)
