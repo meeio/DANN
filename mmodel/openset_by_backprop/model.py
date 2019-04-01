@@ -141,6 +141,9 @@ class OpensetBackprop(DAModule):
             "ae_s",
             "ae_t",
             "ae_b",
+            "ue_s",
+            "ue_t",
+            "ue_b",
             group="train",
         )
 
@@ -150,15 +153,15 @@ class OpensetBackprop(DAModule):
 
         source_f = self.F(s_img)
         target_f = self.F(t_img)
-        bias_f = self.F(t_img)
+        bias_f = self.F(b_img)
 
         s_cls_p, s_un_p = self.C(source_f, adapt=False)
+        t_cls_p, t_un_p = self.C(target_f, adapt=True)
         b_cls_p, b_un_p = self.C(bias_f, adapt=False)
-        t_cls_p, t_nu_p = self.C(target_f, adapt=True)
 
         loss_classify = self.ce(s_cls_p, s_label)
 
-        loss_adv = self.bce(t_nu_p, self.DECISION_BOUNDARY)
+        loss_adv = self.bce(t_un_p, self.DECISION_BOUNDARY)
 
         self._update_logs(
             {
@@ -167,9 +170,14 @@ class OpensetBackprop(DAModule):
                 "e_s": norm_entropy(s_cls_p, reduction="mean", all=False),
                 "e_t": norm_entropy(t_cls_p, reduction="mean", all=False),
                 "e_b": norm_entropy(b_cls_p, reduction="mean", all=False),
+
                 "ae_s": norm_entropy(s_cls_p, reduction="mean", all=True),
                 "ae_t": norm_entropy(t_cls_p, reduction="mean", all=True),
                 "ae_b": norm_entropy(b_cls_p, reduction="mean", all=True),
+
+                "ue_s": binary_entropy(s_un_p),
+                "ue_t": binary_entropy(t_un_p),
+                "ue_b": binary_entropy(b_un_p),
             }
         )
         self._update_loss("global_looss", loss_classify + loss_adv)

@@ -101,10 +101,15 @@ def for_bias(file):
 
 tag = 'drop_prop'
 filename = r"RECORDS\OPENBBTEST_0401_0002.regular_entropy_record.json"
+
+target = for_("e_t", filename)[1]
+bias = for_("e_b", filename)[1]
+# diff = target[i]-bias[i]
+
 accu = {
-    "e_s": for_("e_s", filename),
-    "e_t": for_("e_t", filename),
-    "e_b": for_("e_b", filename),
+    "ue_s": for_("ue_s", filename),
+    "ue_t": for_("ue_t", filename),
+    "ue_b": for_("ue_b", filename),
     # "accu": for_accu(filename),
 }
 
