@@ -75,10 +75,15 @@ class OpensetDrop(DAModule):
 
     @property
     def dynamic_offset(self):
-        high = 0.1
-        low = 0.065
-        return get_lambda(
-            self.current_step, self.total_steps, high=high, low=low
+        upper = 0.08
+        high = 0.075
+        low = 0.00
+        return upper - get_lambda(
+            self.current_step,
+            self.total_steps,
+            high=high,
+            low=low,
+            alpha=5,
         )
 
     def _prepare_data(self):
@@ -127,14 +132,31 @@ class OpensetDrop(DAModule):
             "weight_decay": 0.001,
         }
 
+        lr_scheduler = {
+            "type": torch.optim.lr_scheduler.LambdaLR,
+            "lr_lambda": lambda steps: get_lr_scaler(
+                steps, self.total_steps
+            ),
+            "last_epoch": 0,
+        }
+
         self.define_loss(
-            "class_prediction", networks=["G", "C"], optimer=optimer
+            "class_prediction",
+            networks=["G", "C"],
+            optimer=optimer,
+            decay_op=lr_scheduler,
         )
         self.define_loss(
-            "domain_prediction", networks=["C"], optimer=optimer
+            "domain_prediction",
+            networks=["C"],
+            optimer=optimer,
+            decay_op=lr_scheduler,
         )
         self.define_loss(
-            "domain_adv", networks=["G", "C"], optimer=optimer
+            "domain_adv",
+            networks=["G", "C"],
+            optimer=optimer,
+            decay_op=lr_scheduler,
         )
 
         self.define_log("valid_loss", "valid_accu", group="valid")
@@ -145,6 +167,7 @@ class OpensetDrop(DAModule):
             "drop_prop",
             "corret_drop",
             "wrong_keep",
+            "tolorate_bias",
             group="train",
         )
 
@@ -157,7 +180,8 @@ class OpensetDrop(DAModule):
         t_prediction, t_domain = self.C(g_target_feature, adapt=True)
 
         threshold = (
-            norm_entropy(s_predcition, reduction="mean") + self.offset
+            norm_entropy(s_predcition, reduction="mean")
+            + self.dynamic_offset
         )
 
         loss_classify = self.ce(s_predcition, s_label)
@@ -183,6 +207,7 @@ class OpensetDrop(DAModule):
                 "wrong_keep": eval_idx_number(
                     allowed_idx, t_label, self.class_num - 1
                 ),
+                "tolorate_bias": self.dynamic_offset,
             }
         )
 
