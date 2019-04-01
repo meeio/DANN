@@ -12,6 +12,7 @@ from .params import get_params
 from mdata.partial.partial_dataset import require_openset_dataloader
 from mdata.partial.partial_dataset import OFFICE_CLASS
 from mdata.transfrom import get_transfrom
+from mground.gpu_utils import anpai
 
 param = get_params()
 
@@ -150,6 +151,7 @@ class OpensetBackprop(DAModule):
     def _train_step(self, s_img, s_label, t_img, t_label):
 
         b_img, _ = self.iters["train"]["B"].next()
+        b_img = anpai(b_img, use_gpu=True, need_logging=False)
 
         source_f = self.F(s_img)
         target_f = self.F(t_img)
