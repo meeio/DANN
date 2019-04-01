@@ -16,6 +16,13 @@ from mdata.transfrom import get_transfrom
 param = get_params()
 
 
+def binary_entropy(p):
+    p = p.detach()
+    e = p * torch.log((p)) + (1 - p) * torch.log((1 - p))
+    e = torch.mean(e) * -1
+    return e
+
+
 def norm_entropy(p, reduction="None"):
     p = p.detach()
     n = p.size()[1] - 1
@@ -48,16 +55,18 @@ class OpensetBackprop(DAModule):
         super().__init__(param)
 
         ## NOTE classes setting adapt from <opensetDa by backprop>
-        source_class = set(OFFICE_CLASS[0:param.to])
-        target_class = set(OFFICE_CLASS[0:param.to])
-        assert len(source_class.intersection(target_class)) == param.to
-        assert len(source_class) == param.to and len(target_class) == param.to
+        source_class = set(OFFICE_CLASS[0:10])
+        target_class = set(OFFICE_CLASS[0:10])
+        bias_class = set(OFFICE_CLASS[20:31])
+        assert len(source_class.intersection(target_class)) == 10
+        assert len(source_class) == 10 and len(target_class) == 10
 
         class_num = len(source_class) + 1
 
         self.class_num = class_num
         self.source_class = source_class
         self.target_class = target_class
+        self.bias_class = bias_class
 
         self.DECISION_BOUNDARY = self.TARGET.fill_(1)
 
@@ -74,10 +83,19 @@ class OpensetBackprop(DAModule):
             params=self.params,
         )
 
+        _, bias_ld, _ = require_openset_dataloader(
+            source_class=self.source_class,
+            target_class=self.bias_class,
+            train_transforms=get_transfrom(back_bone, is_train=True),
+            valid_transform=get_transfrom(back_bone, is_train=False),
+            params=self.params,
+        )
+
         iters = {
             "train": {
                 "S": ELoaderIter(source_ld),
                 "T": ELoaderIter(target_ld),
+                "B": ELoaderIter(bias_ld),
             },
             "valid": ELoaderIter(valid_ld),
         }
@@ -113,28 +131,44 @@ class OpensetBackprop(DAModule):
         self.define_loss("global_looss", networks=["C"], optimer=optimer)
 
         self.define_log("valid_loss", "valid_accu", group="valid")
-        self.define_log("classify", "adv", "bias", group="train")
-
-    def _train_step(self, s_img, s_label, t_img):
-
-        g_source_feature = self.F(s_img)
-        g_target_feature = self.F(t_img)
-
-        class_prediction, _ = self.C(g_source_feature, adapt=False)
-        tclass_prediction, unkonw_prediction = self.C(
-            g_target_feature, adapt=True
+        self.define_log(
+            "classify",
+            "adv",
+            "e_s",
+            "e_t",
+            "e_b",
+            "ue_s",
+            "ue_t",
+            "ue_b",
+            group="train",
         )
 
-        loss_classify = self.ce(class_prediction, s_label)
+    def _train_step(self, s_img, s_label, t_img, t_label):
 
-        loss_adv = self.bce(unkonw_prediction, self.DECISION_BOUNDARY)
+        b_img, _ = self.iters["train"]["B"].next()
+
+        source_f = self.F(s_img)
+        target_f = self.F(t_img)
+        bias_f = self.F(t_img)
+
+        s_cls_p, s_un_p = self.C(source_f, adapt=False)
+        b_cls_p, b_un_p = self.C(bias_f, adapt=False)
+        t_cls_p, t_nu_p = self.C(target_f, adapt=True)
+
+        loss_classify = self.ce(s_cls_p, s_label)
+
+        loss_adv = self.bce(t_nu_p, self.DECISION_BOUNDARY)
 
         self._update_logs(
             {
                 "classify": loss_classify,
                 "adv": loss_adv,
-                "bias": norm_entropy(tclass_prediction, reduction="mean")
-                - norm_entropy(class_prediction, reduction="mean"),
+                "e_s": norm_entropy(s_cls_p, reduction="mean"),
+                "e_t": norm_entropy(t_cls_p, reduction="mean"),
+                "e_b": norm_entropy(b_cls_p, reduction="mean"),
+                "ue_s": binary_entropy(s_un_p),
+                "ue_t": binary_entropy(t_nu_p),
+                "ue_b": binary_entropy(b_un_p),
             }
         )
         self._update_loss("global_looss", loss_classify + loss_adv)
@@ -144,4 +178,4 @@ class OpensetBackprop(DAModule):
     def _valid_step(self, img):
         feature = self.F(img)
         prediction, _ = self.C(feature)
-        return torch.split(prediction, self.class_num-1, dim=1)[0]
+        return torch.split(prediction, self.class_num - 1, dim=1)[0]
