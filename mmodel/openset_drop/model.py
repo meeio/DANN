@@ -144,19 +144,19 @@ class OpensetDrop(DAModule):
             "class_prediction",
             networks=["G", "C"],
             optimer=optimer,
-            decay_op=lr_scheduler,
+            # decay_op=lr_scheduler,
         )
         self.define_loss(
             "domain_prediction",
             networks=["C"],
             optimer=optimer,
-            decay_op=lr_scheduler,
+            # decay_op=lr_scheduler,
         )
         self.define_loss(
             "domain_adv",
             networks=["G", "C"],
             optimer=optimer,
-            decay_op=lr_scheduler,
+            # decay_op=lr_scheduler,
         )
 
         self.define_log("valid_loss", "valid_accu", group="valid")
