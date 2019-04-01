@@ -167,7 +167,7 @@ class LogCapsule(object):
         else:
             self.range_loss += closs
         
-        self.range_step += 1
+        self.range_step += 1.0
 
     def log_current_avg_loss(self, step=None):
 
@@ -191,7 +191,7 @@ class LogCapsule(object):
     def avg_record(self):
         assert False
         try:
-            result = self.range_loss / self.range_step
+            result = self.range_loss / (self.range_step * 1.0)
         except:
             result = 0.0
         self.range_loss = None

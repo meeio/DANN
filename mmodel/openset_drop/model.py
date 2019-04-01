@@ -36,6 +36,14 @@ def norm_entropy(p, reduction="None"):
 
 
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
+    
+    zero_step = 300
+    if iter_num < zero_step:
+        return 0
+
+    iter_num -= zero_step
+    max_iter -= zero_step
+
     return np.float(
         2.0 * (high - low) / (1.0 + np.exp(-alpha * iter_num / max_iter))
         - (high - low)
@@ -76,9 +84,10 @@ class OpensetDrop(DAModule):
     @property
     def dynamic_offset(self):
         upper = 0.08
-        high = 0.078
+        high = 0.06
         low = 0.00
-        return upper - get_lambda(
+
+        return get_lambda(
             self.current_step,
             self.total_steps,
             high=high,
@@ -132,31 +141,31 @@ class OpensetDrop(DAModule):
             "weight_decay": 0.001,
         }
 
+        # torch.optim.lr_scheduler.StepLR(gamma=0.5, step_size=self.total_steps/3)
         lr_scheduler = {
-            "type": torch.optim.lr_scheduler.LambdaLR,
-            "lr_lambda": lambda steps: get_lr_scaler(
-                steps, self.total_steps
-            ),
-            "last_epoch": 0,
+            "type": torch.optim.lr_scheduler.StepLR,
+            "gamma": 0.2,
+            "step_size": self.total_steps/3
+            # "last_epoch": 0,
         }
 
         self.define_loss(
             "class_prediction",
             networks=["G", "C"],
             optimer=optimer,
-            # decay_op=lr_scheduler,
+            decay_op=lr_scheduler,
         )
         self.define_loss(
             "domain_prediction",
             networks=["C"],
             optimer=optimer,
-            # decay_op=lr_scheduler,
+            decay_op=lr_scheduler,
         )
         self.define_loss(
             "domain_adv",
             networks=["G"],
             optimer=optimer,
-            # decay_op=lr_scheduler,
+            decay_op=lr_scheduler,
         )
 
         self.define_log("valid_loss", "valid_accu", group="valid")
@@ -167,6 +176,7 @@ class OpensetDrop(DAModule):
             "valid_data",
             "outlier_data",
             "drop",
+            "tolorate",
             group="train",
         )
 
@@ -178,23 +188,24 @@ class OpensetDrop(DAModule):
         s_predcition, _ = self.C(g_source_feature, adapt=False)
         t_prediction, t_domain = self.C(g_target_feature, adapt=True)
 
-        threshold = (
-            norm_entropy(s_predcition, reduction="mean")
-            + self.dynamic_offset
-        )
-
         loss_classify = self.ce(s_predcition, s_label)
         ew_dis_loss = self.element_bce(t_domain, self.DECISION_BOUNDARY)
 
         target_entropy = norm_entropy(t_prediction, reduction="none")
-        allowed_idx = (target_entropy < threshold)
+        if self.current_step > 200:
+            allowed_idx = (
+                target_entropy - norm_entropy(s_predcition, reduction="mean")
+                < self.dynamic_offset
+            )
+        else:
+            allowed_idx = (
+                torch.abs(target_entropy - norm_entropy(s_predcition, reduction="mean"))
+                < self.dynamic_offset
+            )
 
-
-        allowed_data_label = torch.masked_select(t_label, mask=allowed_idx)     
+        allowed_data_label = torch.masked_select(t_label, mask=allowed_idx)
         valid = torch.sum(allowed_data_label != self.class_num - 1)
-        outlier = torch.sum(
-            allowed_data_label == self.class_num - 1
-        )
+        outlier = torch.sum(allowed_data_label == self.class_num - 1)
         drop = self.params.batch_size - valid - outlier
 
         allowed_idx = allowed_idx.float().unsqueeze(1)
@@ -208,19 +219,23 @@ class OpensetDrop(DAModule):
                 "classify": loss_classify,
                 "dis": dis_loss,
                 "adv": adv_loss,
-                "valid_data": valid,
-                "outlier_data": outlier,
-                "drop": drop,
+                "valid_data": valid.float(),
+                "outlier_data": outlier.float(),
+                "drop": drop.float(),
+                "tolorate": self.dynamic_offset,
             }
         )
 
-        self._update_losses(
-            {
-                "class_prediction": loss_classify,
-                "domain_prediction": dis_loss + adv_loss,
-                "domain_adv": adv_loss / keep_prop,
-            }
-        )
+        if keep_prop != 0:
+            self._update_losses(
+                {
+                    "class_prediction": loss_classify,
+                    "domain_prediction": dis_loss + adv_loss,
+                    "domain_adv": adv_loss / keep_prop,
+                }
+            )
+        else:
+            self._update_losses({"class_prediction": loss_classify})
 
         del loss_classify, adv_loss
 
