@@ -154,7 +154,7 @@ class OpensetDrop(DAModule):
         )
         self.define_loss(
             "domain_adv",
-            networks=["G", "C"],
+            networks=["G"],
             optimer=optimer,
             # decay_op=lr_scheduler,
         )
@@ -164,10 +164,9 @@ class OpensetDrop(DAModule):
             "classify",
             "adv",
             "dis",
-            "drop_prop",
-            "corret_drop",
-            "wrong_keep",
-            "tolorate_bias",
+            "valid_data",
+            "outlier_data",
+            "drop",
             group="train",
         )
 
@@ -185,37 +184,41 @@ class OpensetDrop(DAModule):
         )
 
         loss_classify = self.ce(s_predcition, s_label)
+        ew_dis_loss = self.element_bce(t_domain, self.DECISION_BOUNDARY)
 
         target_entropy = norm_entropy(t_prediction, reduction="none")
-        allowed_idx = (target_entropy < threshold).unsqueeze(1).float()
+        allowed_idx = (target_entropy < threshold)
+
+
+        allowed_data_label = torch.masked_select(t_label, mask=allowed_idx)     
+        valid = torch.sum(allowed_data_label != self.class_num - 1)
+        outlier = torch.sum(
+            allowed_data_label == self.class_num - 1
+        )
+        drop = self.params.batch_size - valid - outlier
+
+        allowed_idx = allowed_idx.float().unsqueeze(1)
         keep_prop = torch.sum(allowed_idx) / self.params.batch_size
         drop_prop = 1 - keep_prop
-
-        ew_dis_loss = self.element_bce(t_domain, self.DECISION_BOUNDARY)
         dis_loss = torch.mean(ew_dis_loss * (1 - allowed_idx)) * drop_prop
-        adv_loss = torch.mean(ew_dis_loss * allowed_idx)
+        adv_loss = torch.mean(ew_dis_loss * allowed_idx) * keep_prop
 
         self._update_logs(
             {
                 "classify": loss_classify,
                 "dis": dis_loss,
                 "adv": adv_loss,
-                "drop_prop": drop_prop,
-                "corret_drop": eval_idx_number(
-                    (1 - allowed_idx), t_label, self.class_num - 1
-                ),
-                "wrong_keep": eval_idx_number(
-                    allowed_idx, t_label, self.class_num - 1
-                ),
-                "tolorate_bias": self.dynamic_offset,
+                "valid_data": valid,
+                "outlier_data": outlier,
+                "drop": drop,
             }
         )
 
         self._update_losses(
             {
                 "class_prediction": loss_classify,
-                "domain_prediction": dis_loss,
-                "domain_adv": adv_loss,
+                "domain_prediction": dis_loss + adv_loss,
+                "domain_adv": adv_loss / keep_prop,
             }
         )
 

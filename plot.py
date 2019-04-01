@@ -78,12 +78,16 @@ def curve_graph(smooth_ration=10, **kwargs):
         y_smooth = interpolate.spline(x, y, x_smooth)
 
         # tck = interpolate.spline(x, y)
-        plt.plot(x, y, "-o", label=name)
+        plt.plot(x, y, "-", label=name)
 
     plt.legend(loc="best")
     plt.title("A10 to W10+10")
     plt.show()
 
+def for_(name, file):
+    record_dic = parse_watcher_dict(file)
+    losses = parse_losses_record(record_dic)
+    return losses[name]
 
 def for_accu(file):
     record_dic = parse_watcher_dict(file)
@@ -95,9 +99,10 @@ def for_bias(file):
     losses = parse_losses_record(record_dic)
     return losses["bias"]
 
-
+tag = 'drop_prop'
 accu = {
-    "Upper": for_accu(r"RECORDS\OPENBB_0331_0426.upper_A10_W10.json"),
+    "dylr drop_prop": for_(tag, r"RECORDS\OPENDP_0331_2259.dybias.json"),
+    "keeplr drop_prop": for_(tag, r"RECORDS\OPENDP_0331_2314.dybias_keeplr.json"),
 }
 
 
