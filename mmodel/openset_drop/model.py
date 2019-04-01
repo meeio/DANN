@@ -37,7 +37,7 @@ def norm_entropy(p, reduction="None"):
 
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
     
-    zero_step = 300
+    zero_step = 400
     if iter_num < zero_step:
         return 0
 
@@ -63,7 +63,7 @@ class OpensetDrop(DAModule):
         super().__init__(param)
 
         # self.eval_after = int(0.15 * self.total_steps)
-        self.offset = 0.08
+        # self.offset = 0.08
 
         source_class = set(OFFICE_CLASS[0:10])
         target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
@@ -153,19 +153,19 @@ class OpensetDrop(DAModule):
             "class_prediction",
             networks=["G", "C"],
             optimer=optimer,
-            decay_op=lr_scheduler,
+            # decay_op=lr_scheduler,
         )
         self.define_loss(
             "domain_prediction",
             networks=["C"],
             optimer=optimer,
-            decay_op=lr_scheduler,
+            # decay_op=lr_scheduler,
         )
         self.define_loss(
             "domain_adv",
             networks=["G"],
             optimer=optimer,
-            decay_op=lr_scheduler,
+            # decay_op=lr_scheduler,
         )
 
         self.define_log("valid_loss", "valid_accu", group="valid")
