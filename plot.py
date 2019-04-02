@@ -78,7 +78,10 @@ def curve_graph(smooth_ration=10, **kwargs):
         y_smooth = interpolate.spline(x, y, x_smooth)
 
         # tck = interpolate.spline(x, y)
-        plt.plot(x, y, "-", label=name)
+        plt.plot(x, y, "-", label=name, linewidth=2.5)
+        plt.minorticks_on()
+        plt.grid(which='major', color='gray', linestyle='-', linewidth=1)
+        plt.grid(which='minor', color='gray', linestyle=':', linewidth=0.5)
 
     plt.legend(loc="best")
     plt.title("A10 to W10+10")
