@@ -349,28 +349,27 @@ class TrainableModule(ABC):
                     for k, v in self.train_loggers.items()
                 ]
 
-                if self.params.disable_std:
-                    break
+                if not self.params.disable_std:
 
-                logger.log(
-                    HINTS,
-                    self.params.tag + " - " + "Steps %3d ends. Remain %3d steps to go. Fished %.2f%%"
-                    % (
-                        self.current_step + 1,
-                        self.params.steps - self.current_step - 1,
-                        (self.current_step + 1)
-                        / (self.params.steps + 1)
-                        * 100,
-                    ),
-                )
+                    logger.log(
+                        HINTS,
+                        self.params.tag + " - " + "Steps %3d ends. Remain %3d steps to go. Fished %.2f%%"
+                        % (
+                            self.current_step + 1,
+                            self.params.steps - self.current_step - 1,
+                            (self.current_step + 1)
+                            / (self.params.steps + 1)
+                            * 100,
+                        ),
+                    )
 
-                logger.log(
-                    HINTS,
-                    "Current best accurace is %3.3f%%."
-                    % (self.best_accurace * 100),
-                )
+                    logger.log(
+                        HINTS,
+                        "Current best accurace is %3.3f%%."
+                        % (self.best_accurace * 100),
+                    )
 
-                tabulate_log_losses(losses, trace="dalosses", mode="train")
+                    tabulate_log_losses(losses, trace="dalosses", mode="train")
 
             # begain eval
             if (
@@ -408,6 +407,7 @@ class TrainableModule(ABC):
             (k, v.log_current_avg_loss(self.current_step + 1))
             for k, v in self.valid_loggers.items()
         ]
+
         tabulate_log_losses(losses, trace="validloss", mode="valid")
 
     def _update_loss(self, loss_name, value, retain_graph=True):
