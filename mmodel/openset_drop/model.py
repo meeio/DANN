@@ -145,7 +145,7 @@ class OpensetDrop(DAModule):
         lr_scheduler = {
             "type": torch.optim.lr_scheduler.StepLR,
             "gamma": 0.2,
-            "step_size": self.total_steps / 3
+            "step_size": self.total_steps / 2
         }
 
         self.define_loss(
