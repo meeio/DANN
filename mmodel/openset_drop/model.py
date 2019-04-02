@@ -65,7 +65,7 @@ class OpensetDrop(DAModule):
 
         # self.eval_after = int(0.15 * self.total_steps)
 
-        self.eary_stop = -1
+        self.early_stop = self.total_steps / 2
 
         source_class = set(OFFICE_CLASS[0:10])
         target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
@@ -182,6 +182,9 @@ class OpensetDrop(DAModule):
         )
 
     def _train_step(self, s_img, s_label, t_img, t_label):
+
+        if self.current_step == self.early_stop:
+            raise Exception("early stop")
 
         g_source_feature = self.G(self.F(s_img))
         g_target_feature = self.G(self.F(t_img))
