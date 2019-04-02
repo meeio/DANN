@@ -100,14 +100,13 @@ def for_bias(file):
     return losses["bias"]
 
 tag = 'drop_prop'
-filename = r"RECORDS\OPENDP_0401_2119.444444444444444"
+filename = r"RECORDS\OPENDP_0401_2144.recurent.json"
 
-target = for_("e_t", filename)[1]
-bias = for_("e_b", filename)[1]
-# diff = target[i]-bias[i]
+
 
 accu = {
-    "a": for_accu("accr", filename),
+    "r": for_accu(r"RECORDS\OPENDP_0401_2144.recurent.json"),
+    "4": for_accu(r"RECORDS\OPENDP_0401_2144.recurent.json"),
     # "accu": for_accu(filename),
 }
 

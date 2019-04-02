@@ -346,7 +346,7 @@ class TrainableModule(ABC):
 
                 logger.log(
                     HINTS,
-                    "Steps %3d ends. Remain %3d steps to go. Fished %.2f%%"
+                    self.params.tag + " - " + "Steps %3d ends. Remain %3d steps to go. Fished %.2f%%"
                     % (
                         self.current_step + 1,
                         self.params.steps - self.current_step - 1,

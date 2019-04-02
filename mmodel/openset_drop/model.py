@@ -17,12 +17,6 @@ import numpy as np
 param = get_params()
 
 
-def eval_idx_number(idx, target, number):
-    target = target.unsqueeze(1)
-    wanted = idx * target.float()
-    return torch.sum(wanted == number) / (torch.sum(idx) + 0.001)
-
-
 def norm_entropy(p, reduction="None"):
     p = p.detach()
     n = p.size()[1] - 1
@@ -70,7 +64,6 @@ class OpensetDrop(DAModule):
         super().__init__(param)
 
         # self.eval_after = int(0.15 * self.total_steps)
-        # self.offset = 0.08
 
         source_class = set(OFFICE_CLASS[0:10])
         target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
@@ -149,39 +142,29 @@ class OpensetDrop(DAModule):
             "nesterov": True,
         }
 
-        # torch.optim.lr_scheduler.StepLR(gamma=0.5, step_size=self.total_steps/3)
         lr_scheduler = {
             "type": torch.optim.lr_scheduler.StepLR,
-            "gamma": 0.4,
-            "step_size": self.total_steps / 3
-            # "last_epoch": 0,
+            "gamma": 0.1,
+            "step_size": self.total_steps / 2
         }
-
-        # lr_scheduler = {
-        #     "type": torch.optim.lr_scheduler.LambdaLR,
-        #     "lr_lambda": lambda steps: get_lr_scaler(
-        #         steps, self.total_steps
-        #     ),
-        #     "last_epoch": 0,
-        # }
 
         self.define_loss(
             "class_prediction",
             networks=["G", "C"],
             optimer=optimer,
-            decay_op=lr_scheduler,
+            # decay_op=lr_scheduler,
         )
         self.define_loss(
             "domain_prediction",
             networks=["C"],
             optimer=optimer,
-            decay_op=lr_scheduler,
+            # decay_op=lr_scheduler,
         )
         self.define_loss(
             "domain_adv",
             networks=["G"],
             optimer=optimer,
-            decay_op=lr_scheduler,
+            # decay_op=lr_scheduler,
         )
 
         self.define_log("valid_loss", "valid_accu", group="valid")
