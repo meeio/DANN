@@ -139,32 +139,32 @@ class OpensetDrop(DAModule):
             "lr": 0.001,
             "momentum": 0.9,
             "weight_decay": 0.001,
-            "nesterov": True,
+            # "nesterov": True,
         }
 
         lr_scheduler = {
             "type": torch.optim.lr_scheduler.StepLR,
-            "gamma": 0.1,
-            "step_size": self.total_steps / 2
+            "gamma": 0.2,
+            "step_size": self.total_steps / 3
         }
 
         self.define_loss(
             "class_prediction",
             networks=["G", "C"],
             optimer=optimer,
-            # decay_op=lr_scheduler,
+            decay_op=lr_scheduler,
         )
         self.define_loss(
             "domain_prediction",
             networks=["C"],
             optimer=optimer,
-            # decay_op=lr_scheduler,
+            decay_op=lr_scheduler,
         )
         self.define_loss(
             "domain_adv",
             networks=["G"],
             optimer=optimer,
-            # decay_op=lr_scheduler,
+            decay_op=lr_scheduler,
         )
 
         self.define_log("valid_loss", "valid_accu", group="valid")
