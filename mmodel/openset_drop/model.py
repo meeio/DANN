@@ -109,14 +109,13 @@ class OpensetDrop(DAModule):
     def dynamic_offset(self):
         upper = 0.08
         high = param.dylr_high
-        low = param.dylr_low
 
         return get_bias(
             self.current_step,
             self.total_steps,
             high=high,
             alpha=param.dylr_alpht,
-            center=dylr_center,
+            center=param.dylr_center,
         )
 
     def _prepare_data(self):
