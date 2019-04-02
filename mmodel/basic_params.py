@@ -18,6 +18,10 @@ parser.add_argument(
 )
 
 parser.add_argument(
+    "-s", action="store_true", dest="disable_std", help="Check point save path."
+)
+
+parser.add_argument(
     "--batch_size", type=int, default=50, help="Size for Mini-Batch Optimization"
 )
 

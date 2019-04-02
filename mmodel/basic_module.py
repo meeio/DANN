@@ -344,6 +344,14 @@ class TrainableModule(ABC):
             # making log
             if self.current_step % self.log_step == (self.log_step - 1):
 
+                losses = [
+                    (k, v.log_current_avg_loss(self.current_step + 1))
+                    for k, v in self.train_loggers.items()
+                ]
+
+                if self.params.disable_std:
+                    break
+
                 logger.log(
                     HINTS,
                     self.params.tag + " - " + "Steps %3d ends. Remain %3d steps to go. Fished %.2f%%"
@@ -361,11 +369,6 @@ class TrainableModule(ABC):
                     "Current best accurace is %3.3f%%."
                     % (self.best_accurace * 100),
                 )
-
-                losses = [
-                    (k, v.log_current_avg_loss(self.current_step + 1))
-                    for k, v in self.train_loggers.items()
-                ]
 
                 tabulate_log_losses(losses, trace="dalosses", mode="train")
 
