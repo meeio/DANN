@@ -36,8 +36,8 @@ def norm_entropy(p, reduction="None"):
 
 
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
-    
-    zero_step = 300
+
+    zero_step = param.task_ajust_step + param.pre_adapt_step
     if iter_num < zero_step:
         return 0
 
@@ -54,6 +54,13 @@ def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
 def get_lr_scaler(
     iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75
 ):
+
+    if iter_num < param.task_ajust_step:
+        return 1
+    
+    iter_num -= param.task_ajust_step
+    max_iter -= param.task_ajust_step
+
     lr_scaler = np.float((1 + alpha * (iter_num / max_iter)) ** (-power))
     return lr_scaler
 
@@ -84,15 +91,15 @@ class OpensetDrop(DAModule):
     @property
     def dynamic_offset(self):
         upper = 0.08
-        high = 0.06
-        low = 0.00
+        high = param.dylr_high
+        low = param.dylr_low
 
         return get_lambda(
             self.current_step,
             self.total_steps,
             high=high,
             low=low,
-            alpha=10,
+            alpha=param.dylr_alpht,
         )
 
     def _prepare_data(self):
@@ -139,15 +146,24 @@ class OpensetDrop(DAModule):
             "lr": 0.001,
             "momentum": 0.9,
             "weight_decay": 0.001,
+            "nestorve": True,
         }
 
         # torch.optim.lr_scheduler.StepLR(gamma=0.5, step_size=self.total_steps/3)
         lr_scheduler = {
             "type": torch.optim.lr_scheduler.StepLR,
-            "gamma": 0.2,
-            "step_size": self.total_steps/3
+            "gamma": 0.4,
+            "step_size": self.total_steps / 3
             # "last_epoch": 0,
         }
+
+        # lr_scheduler = {
+        #     "type": torch.optim.lr_scheduler.LambdaLR,
+        #     "lr_lambda": lambda steps: get_lr_scaler(
+        #         steps, self.total_steps
+        #     ),
+        #     "last_epoch": 0,
+        # }
 
         self.define_loss(
             "class_prediction",
@@ -192,14 +208,18 @@ class OpensetDrop(DAModule):
         ew_dis_loss = self.element_bce(t_domain, self.DECISION_BOUNDARY)
 
         target_entropy = norm_entropy(t_prediction, reduction="none")
-        if self.current_step > 200:
+        if self.current_step > param.task_ajust_step:
             allowed_idx = (
-                target_entropy - norm_entropy(s_predcition, reduction="mean")
+                target_entropy
+                - norm_entropy(s_predcition, reduction="mean")
                 < self.dynamic_offset
             )
         else:
             allowed_idx = (
-                torch.abs(target_entropy - norm_entropy(s_predcition, reduction="mean"))
+                torch.abs(
+                    target_entropy
+                    - norm_entropy(s_predcition, reduction="mean")
+                )
                 < self.dynamic_offset
             )
 

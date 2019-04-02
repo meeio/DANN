@@ -100,19 +100,18 @@ def for_bias(file):
     return losses["bias"]
 
 tag = 'drop_prop'
-filename = r"RECORDS\OPENBBTEST_0401_0002.regular_entropy_record.json"
+filename = r"RECORDS\OPENDP_0401_2119.444444444444444"
 
 target = for_("e_t", filename)[1]
 bias = for_("e_b", filename)[1]
 # diff = target[i]-bias[i]
 
 accu = {
-    "ue_s": for_("ue_s", filename),
-    "ue_t": for_("ue_t", filename),
-    "ue_b": for_("ue_b", filename),
+    "a": for_accu("accr", filename),
     # "accu": for_accu(filename),
 }
 
 
 curve_graph(**accu)
+
 
