@@ -28,7 +28,8 @@ def norm_entropy(p, reduction="None"):
         ne = torch.mean(ne)
     return ne
 
-def get_bias(iter_num, max_iter, high, alpha=30):
+
+def get_bias(iter_num, max_iter, high, alpha=30, center=0.1):
     zero_step = param.task_ajust_step + param.pre_adapt_step
     if iter_num < zero_step:
         return 0
@@ -38,7 +39,16 @@ def get_bias(iter_num, max_iter, high, alpha=30):
 
     p = iter_num / max_iter
 
-    return high / (1+np.exp(-alpha * (p-0.15)))
+    z = (
+        (
+            1 / (1 + np.exp(-alpha * (p - center)))
+            - 1 / (1 + np.exp(-alpha * (-center)))
+        )
+        * ((1 + np.exp(alpha * center)) / np.exp(alpha * center))
+        * high
+    )
+
+    return z
 
 
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
@@ -63,7 +73,7 @@ def get_lr_scaler(
 
     if iter_num < param.task_ajust_step:
         return 1
-    
+
     iter_num -= param.task_ajust_step
     max_iter -= param.task_ajust_step
 
@@ -105,6 +115,8 @@ class OpensetDrop(DAModule):
             self.current_step,
             self.total_steps,
             high=high,
+            alpha=param.dylr_alpht,
+            center=dylr_center,
         )
 
     def _prepare_data(self):
@@ -157,7 +169,7 @@ class OpensetDrop(DAModule):
         lr_scheduler = {
             "type": torch.optim.lr_scheduler.StepLR,
             "gamma": 0.2,
-            "step_size": self.total_steps / 3
+            "step_size": self.total_steps / 3,
         }
 
         self.define_loss(

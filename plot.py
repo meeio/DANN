@@ -102,16 +102,36 @@ def for_bias(file):
     losses = parse_losses_record(record_dic)
     return losses["bias"]
 
-tag = 'drop_prop'
-filename = r"RECORDS\OPENDP_0401_2144.recurent.json"
+
+# def bias(p, alpha=30, center=0.15, high=0.07):
+
+#     z = (
+#         (
+#             1 / (1 + np.exp(-alpha * (p - center)))
+#             - 1 / (1 + np.exp(-alpha * (-center)))
+#         )
+#         * ((1 + np.exp(alpha * center)) / np.exp(alpha * center))
+#         * high
+#     )
+
+#     return z
 
 
+# x = [i/10000 for i in range(10000)]
+# y = [bias(xi) for xi in x]
+
+# plt.plot(x, y, "-", linewidth=2.5)
+# plt.show()
+
+# assert False
 
 accu = {
-    "r": for_accu(r"RECORDS\OPENDP_0401_2144.recurent.json"),
-    "4": for_accu(r"RECORDS\OPENDP_0401_2144.recurent.json"),
+    "a10": for_accu(r"keeps\OPENDP.alphat10_upper006.json"),
+    "a20": for_accu(r"keeps\OPENDP.alphat20_upper006.json"),
+    "sigmoid": for_accu(r"keeps\OPENDP.sigmoid_dylr_alpha30_center01.json"),
     # "accu": for_accu(filename),
 }
+
 
 
 curve_graph(**accu)
