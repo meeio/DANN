@@ -38,7 +38,7 @@ def get_bias(iter_num, max_iter, high, alpha=30):
 
     p = iter_num / max_iter
 
-    return high / (1+np.exp(-alpha * (p-0.1)))
+    return high / (1+np.exp(-alpha * (p-0.15)))
 
 
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
