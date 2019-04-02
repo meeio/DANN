@@ -65,6 +65,8 @@ class OpensetDrop(DAModule):
 
         # self.eval_after = int(0.15 * self.total_steps)
 
+        self.eary_stop = -1
+
         source_class = set(OFFICE_CLASS[0:10])
         target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
 
