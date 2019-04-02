@@ -6,6 +6,6 @@ def get_params():
     parser.add_argument("--dylr_alpht", type=float, default=20)
     parser.add_argument("--dylr_low", type=float, default=0.00)
     parser.add_argument("--dylr_high", type=float, default=0.06)
-    parser.add_argument("--task_ajust_step", type=int, default=250)
+    parser.add_argument("--task_ajust_step", type=int, default=300)
     parser.add_argument("--pre_adapt_step", type=int, default=250)
     return parser.parse_args()

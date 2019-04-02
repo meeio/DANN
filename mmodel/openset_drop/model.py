@@ -28,6 +28,18 @@ def norm_entropy(p, reduction="None"):
         ne = torch.mean(ne)
     return ne
 
+def get_bias(iter_num, max_iter, high, alpha=30):
+    zero_step = param.task_ajust_step + param.pre_adapt_step
+    if iter_num < zero_step:
+        return 0
+
+    iter_num -= zero_step
+    max_iter -= zero_step
+
+    p = iter_num / max_iter
+
+    return high / (1+np.exp(-alpha * (p-0.1)))
+
 
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
 
@@ -89,12 +101,10 @@ class OpensetDrop(DAModule):
         high = param.dylr_high
         low = param.dylr_low
 
-        return get_lambda(
+        return get_bias(
             self.current_step,
             self.total_steps,
             high=high,
-            low=low,
-            alpha=param.dylr_alpht,
         )
 
     def _prepare_data(self):
