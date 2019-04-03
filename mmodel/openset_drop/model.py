@@ -108,6 +108,7 @@ class OpensetDrop(DAModule):
     @property
     def dynamic_offset(self):
         high = param.dylr_high
+
         return get_bias(
             self.current_step,
             self.total_steps,
@@ -183,7 +184,7 @@ class OpensetDrop(DAModule):
         )
         self.define_loss(
             "domain_adv",
-            networks=["G", "C"],
+            networks=["G"],
             optimer=optimer,
             decay_op=lr_scheduler,
         )
@@ -257,7 +258,7 @@ class OpensetDrop(DAModule):
             self._update_losses(
                 {
                     "class_prediction": loss_classify,
-                    "domain_prediction": dis_loss,
+                    "domain_prediction": dis_loss + adv_loss,
                     "domain_adv": adv_loss / keep_prop,
                 }
             )

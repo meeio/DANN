@@ -278,13 +278,13 @@ def require_openset_dataloader(
     )
 
     target = PartialImageFolder(
-        root="./_PUBLIC_DATASET_/" + "Office" + "/" + "W",
+        root="./_PUBLIC_DATASET_/" + "Office" + "/" + "D",
         class_to_idx=target_cls_dix,
         transform=train_transforms,
     )
 
     valid = PartialImageFolder(
-        root="./_PUBLIC_DATASET_/" + "Office" + "/" + "W",
+        root="./_PUBLIC_DATASET_/" + "Office" + "/" + "D",
         class_to_idx=target_cls_dix,
         transform=valid_transform,
     )
