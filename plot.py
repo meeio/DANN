@@ -7,24 +7,45 @@ from matplotlib.font_manager import FontProperties
 
 font = FontProperties(fname=r"C:\Windows\Fonts\simhei.ttf", size=14)
 
+
 def fit_example():
     import matplotlib.pyplot as plt
     import numpy as np
 
     x = np.arange(1, 17, 1)
-    y = np.array([4.00, 6.40, 8.00, 8.80, 9.22, 9.50, 9.70, 9.86, 10.00, 10.20, 10.32, 10.42, 10.50, 10.55, 10.58, 10.60])
-    z1 = np.polyfit(x, y, 3) # 用3次多项式拟合
+    y = np.array(
+        [
+            4.00,
+            6.40,
+            8.00,
+            8.80,
+            9.22,
+            9.50,
+            9.70,
+            9.86,
+            10.00,
+            10.20,
+            10.32,
+            10.42,
+            10.50,
+            10.55,
+            10.58,
+            10.60,
+        ]
+    )
+    z1 = np.polyfit(x, y, 3)  # 用3次多项式拟合
     p1 = np.poly1d(z1)
 
-    yvals=p1(x) # 也可以使用yvals=np.polyval(z1,x)
-    plot1=plt.plot(x, y, '*',label='original values')
-    plot2=plt.plot(x, yvals, 'r',label='polyfit values')
-    plt.xlabel('x axis')
-    plt.ylabel('y axis')
-    plt.legend(loc=4) # 指定legend的位置,读者可以自己help它的用法
-    plt.title('polyfitting')
+    yvals = p1(x)  # 也可以使用yvals=np.polyval(z1,x)
+    plot1 = plt.plot(x, y, "*", label="original values")
+    plot2 = plt.plot(x, yvals, "r", label="polyfit values")
+    plt.xlabel("x axis")
+    plt.ylabel("y axis")
+    plt.legend(loc=4)  # 指定legend的位置,读者可以自己help它的用法
+    plt.title("polyfitting")
     plt.show()
-    plt.savefig('p1.png')
+    plt.savefig("p1.png")
+
 
 from mtrain.watcher import parse_losses_record, parse_watcher_dict
 
@@ -72,7 +93,7 @@ def curve_graph(smooth_ration=10, **kwargs):
         # z1 = np.polyfit(x, y, 10) # 用3次多项式拟合
         # p1 = np.poly1d(z1)
 
-        # yvals=p1(x) 
+        # yvals=p1(x)
         # 也可以使用yvals=np.polyval(z1,x)
         x_smooth = np.linspace(min(x), max(x), data_count * smooth_ration)
         y_smooth = interpolate.spline(x, y, x_smooth)
@@ -80,22 +101,25 @@ def curve_graph(smooth_ration=10, **kwargs):
         # tck = interpolate.spline(x, y)
         plt.plot(x, y, "-", label=name, linewidth=2.5)
         plt.minorticks_on()
-        plt.grid(which='major', color='gray', linestyle='-', linewidth=1)
-        plt.grid(which='minor', color='gray', linestyle=':', linewidth=0.5)
+        plt.grid(which="major", color="gray", linestyle="-", linewidth=1)
+        plt.grid(which="minor", color="gray", linestyle=":", linewidth=0.5)
 
     plt.legend(loc="best")
     plt.title("A10 to W10+10")
     plt.show()
+
 
 def for_(name, file):
     record_dic = parse_watcher_dict(file)
     losses = parse_losses_record(record_dic)
     return losses[name]
 
+
 def for_accu(file):
     record_dic = parse_watcher_dict(file)
     losses = parse_losses_record(record_dic)
     return losses["valid_accu"]
+
 
 def for_bias(file):
     record_dic = parse_watcher_dict(file)
@@ -126,14 +150,16 @@ def for_bias(file):
 # assert False
 
 accu = {
-    "a10": for_accu(r"keeps\OPENDP.alphat10_upper006.json"),
-    "a20": for_accu(r"keeps\OPENDP.alphat20_upper006.json"),
-    "sigmoid": for_accu(r"keeps\OPENDP.sigmoid_dylr_alpha30_center01.json"),
+    "a10": for_accu(
+        r"RECORDS\OPENDP_0402_1135.alphat20_center015_high006.json"
+    ),
+    "a20": for_accu(
+        r"RECORDS\OPENDP_0402_1220.alphat20_center015_high006.json"
+    ),
+
     # "accu": for_accu(filename),
 }
 
 
-
 curve_graph(**accu)
-
 
