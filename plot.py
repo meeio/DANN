@@ -127,7 +127,7 @@ def for_bias(file):
     return losses["bias"]
 
 
-# def bias(p, alpha=30, center=0.15, high=0.07):
+# def bias(p, alpha=10, center=0.35, high=0.07):
 
 #     z = (
 #         (
@@ -144,6 +144,7 @@ def for_bias(file):
 # x = [i/10000 for i in range(10000)]
 # y = [bias(xi) for xi in x]
 
+
 # plt.plot(x, y, "-", linewidth=2.5)
 # plt.show()
 
@@ -152,8 +153,9 @@ def for_bias(file):
 file_name = r'keeps\sigmoid_changing\alpha20_center015_high007\ajust300_alpha20_center015_upper007({}).json'
 
 accu = {
-    "1": for_accu(file_name.format(1)),
-    "2": for_accu(file_name.format(2)),
+    "1": for_('tolorate', r'keeps\sigmoid_changing\alpha20_center015_high007\ajust300_alpha20_center015_upper007(1).json'),
+    "2": for_('tolorate', r'keeps\sigmoid_changing\alpha10_center005_high007\ajust300_alpha10_center005_upper007(1).json'),
+    # "2": for_accu(file_name.format(2)),
     # "3": for_accu(file_name.format(3)),
     # "4": for_accu(file_name.format(4)),
 
