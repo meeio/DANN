@@ -149,13 +149,14 @@ def for_bias(file):
 
 # assert False
 
+file_name = r'keeps\sigmoid_changing\alpha20_center015_high007\ajust300_alpha20_center015_upper007({}).json'
+
 accu = {
-    "a10": for_accu(
-        r"RECORDS\OPENDP_0402_1135.alphat20_center015_high006.json"
-    ),
-    "a20": for_accu(
-        r"RECORDS\OPENDP_0402_1220.alphat20_center015_high006.json"
-    ),
+    "1": for_accu(file_name.format(1)),
+    "2": for_accu(file_name.format(2)),
+    # "3": for_accu(file_name.format(3)),
+    # "4": for_accu(file_name.format(4)),
+
 
     # "accu": for_accu(filename),
 }
