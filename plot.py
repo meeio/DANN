@@ -159,7 +159,6 @@ accu = {
     "4": for_('valid_accu', file_name.format(4)),
     "5": for_('valid_accu', file_name.format(5)),
 
-
     # "accu": for_accu(filename),
 }
 
