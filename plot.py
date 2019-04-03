@@ -127,34 +127,34 @@ def for_bias(file):
     return losses["bias"]
 
 
-# def bias(p, alpha=10, center=0.35, high=0.07):
+def bias(p, alpha=20, center=0.15, high=0.07):
 
-#     z = (
-#         (
-#             1 / (1 + np.exp(-alpha * (p - center)))
-#             - 1 / (1 + np.exp(-alpha * (-center)))
-#         )
-#         * ((1 + np.exp(alpha * center)) / np.exp(alpha * center))
-#         * high
-#     )
+    z = (
+        (
+            1 / (1 + np.exp(-alpha * (p - center)))
+            - 1 / (1 + np.exp(-alpha * (-center)))
+        )
+        * ((1 + np.exp(alpha * center)) / np.exp(alpha * center))
+        * high
+    )
 
-#     return z
-
-
-# x = [i/10000 for i in range(10000)]
-# y = [bias(xi) for xi in x]
+    return z
 
 
-# plt.plot(x, y, "-", linewidth=2.5)
-# plt.show()
+x = [i/10000 for i in range(10000)]
+y = [bias(xi) for xi in x]
 
-# assert False
+
+plt.plot(x, y, "-", linewidth=2.5)
+plt.show()
+
+assert False
 
 file_name = r'keeps\sigmoid_changing\alpha20_center015_high007\ajust300_alpha20_center015_upper007({}).json'
 
 accu = {
-    "1": for_('tolorate', r'keeps\sigmoid_changing\alpha20_center015_high007\ajust300_alpha20_center015_upper007(1).json'),
-    "2": for_('tolorate', r'keeps\sigmoid_changing\alpha10_center005_high007\ajust300_alpha10_center005_upper007(1).json'),
+    # "10": for_('valid_accu', r'RECORDS\OPENDP_0403_0034.alpha10_center015_upper02_1.json'),
+    "20": for_('tolorate', r'RECORDS\OPENDP_0403_0032.alpha20_center015_upper007_2.json'),
     # "2": for_accu(file_name.format(2)),
     # "3": for_accu(file_name.format(3)),
     # "4": for_accu(file_name.format(4)),
