@@ -173,9 +173,9 @@ class OpensetDrop(DAModule):
 
         lr_scheduler = {
             "type": torch.optim.lr_scheduler.MultiStepLR,
-            "gamma": 0.5,
+            "gamma": 0.1,
             "milestones": [
-                param.task_ajust_step,
+                # param.task_ajust_step,
                 # param.task_ajust_step + param.pre_adapt_step,
                 (
                     self.total_step
