@@ -155,16 +155,16 @@ file_name = r'keeps\sigmoid_changing\(abandom)dy_back_coffe\alpha20_center015_hi
 file2_name = r'RECORDS\alpha20_center015_upper006_coeff_{}.json'
 
 accu = {
-    # "1": for_('valid_accu', file_name.format(1)),
-    # "2": for_('valid_accu', file_name.format(2)),
-    # "3": for_('valid_accu', file_name.format(3)),
-    # "4": for_('valid_accu', file_name.format(4)),
+    "1": for_('valid_accu', file_name.format(1)),
+    "2": for_('valid_accu', file_name.format(2)),
+    "3": for_('valid_accu', file_name.format(3)),
+    "4": for_('valid_accu', file_name.format(4)),
 
-    "11": for_('valid_data', file2_name.format(1)),
-    "21": for_('valid_data', file2_name.format(2)),
-    "31": for_('valid_data', file2_name.format(3)),
-    "41": for_('valid_data', file2_name.format(4)),
-    "51": for_('valid_data', file2_name.format(5)),
+    "11": for_('valid_accu', file2_name.format(1)),
+    "21": for_('valid_accu', file2_name.format(2)),
+    "31": for_('valid_accu', file2_name.format(3)),
+    "41": for_('valid_accu', file2_name.format(4)),
+    "51": for_('valid_accu', file2_name.format(5)),
 
     # "accu": for_accu(filename),
 }

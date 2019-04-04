@@ -53,12 +53,13 @@ def get_bias(iter_num, max_iter, high, alpha=30, center=0.1):
 
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
 
-    zero_step = param.task_ajust_step + param.pre_adapt_step
+    zero_step = param.task_ajust_step
     if iter_num < zero_step:
         return 0
 
     iter_num -= zero_step
     max_iter -= zero_step
+    max_iter = max_iter / 2
 
     return np.float(
         2.0 * (high - low) / (1.0 + np.exp(-alpha * iter_num / max_iter))
@@ -147,9 +148,9 @@ class OpensetDrop(DAModule):
             G = AlexGFC()
             C = AlexClassifer(
                 class_num=self.class_num,
-                # reversed_coeff=lambda: get_lambda(
-                #     self.current_step, self.total_steps
-                # ),
+                reversed_coeff=lambda: get_lambda(
+                    self.current_step, self.total_steps
+                ),
                 reversed_coeff=lambda: 1,
             )
 
