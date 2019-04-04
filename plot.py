@@ -152,7 +152,7 @@ def for_bias(file):
 
 file_name = r'keeps\sigmoid_changing\(abandom)dy_back_coffe\alpha20_center015_high006\ajust300_alpha20_center015_high006({}).json'
 
-file2_name = r'keeps\sigmoid_changing\fixed_back_coffe\atow\alpha20_center015_upper006_coeff_{}.json'
+file2_name = r'RECORDS\alpha20_center015_upper006_coeff_{}.json'
 
 accu = {
     # "1": for_('valid_accu', file_name.format(1)),
@@ -160,11 +160,11 @@ accu = {
     # "3": for_('valid_accu', file_name.format(3)),
     # "4": for_('valid_accu', file_name.format(4)),
 
-    "11": for_('valid_accu', file2_name.format(1)),
-    "21": for_('valid_accu', file2_name.format(2)),
-    "31": for_('valid_accu', file2_name.format(3)),
-    "41": for_('valid_accu', file2_name.format(4)),
-    "51": for_('valid_accu', file2_name.format(5)),
+    "11": for_('valid_data', file2_name.format(1)),
+    "21": for_('valid_data', file2_name.format(2)),
+    "31": for_('valid_data', file2_name.format(3)),
+    "41": for_('valid_data', file2_name.format(4)),
+    "51": for_('valid_data', file2_name.format(5)),
 
     # "accu": for_accu(filename),
 }

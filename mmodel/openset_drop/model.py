@@ -159,7 +159,7 @@ class OpensetDrop(DAModule):
 
         optimer = {
             "type": torch.optim.SGD,
-            "lr": 0.001,
+            "lr": 0.0002,
             "momentum": 0.9,
             "weight_decay": 0.001,
             # "nesterov": True,
