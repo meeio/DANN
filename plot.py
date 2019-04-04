@@ -150,16 +150,18 @@ def for_bias(file):
 
 # assert False
 
-file_name = r"keeps\sigmoid_changing\fixed_back_coffe\alpha20_center015_upper006_coeff_{}.json"
+file_name = r"RECORDS\alpha20_center015_upper006_coeff_{}.json"
 
-file2_name = r"RECORDS\alpha20_center015_upper006_coeff_{}.json"
+file2_name = r"keeps\sigmoid_changing\fixed_back_coffe\alpha20_center015_upper006_coeff_{}.json"
 
 accu = {
     # "1": for_('valid_accu', file_name.format(1)),
     # "2": for_('valid_accu', file_name.format(2)),
     # "3": for_('valid_accu', file_name.format(3)),
     # "4": for_('valid_accu', file_name.format(4)),
-    "11": for_("tolorate", file_name.format(1)),
+    "11": for_("valid_accu", file_name.format(2)),
+    "12": for_("valid_accu", file_name.format(3)),
+    "31": for_("valid_accu", file2_name.format(1)),
     # "12": for_("outlier_data", file_name.format(1)),
     # "21": for_("valid_accu", file_name.format(2)),
     # "31": for_("valid_accu", file_name.format(3)),
