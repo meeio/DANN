@@ -150,7 +150,7 @@ def for_bias(file):
 
 # assert False
 
-file_name = r'keeps\sigmoid_changing\(abandom)dy_back_coffe\alpha20_center015_high006\ajust300_alpha20_center015_high006({}).json'
+file_name = r'keeps\sigmoid_changing\fixed_back_coffe\alpha20_center015_upper006_coeff_{}.json'
 
 file2_name = r'RECORDS\alpha20_center015_upper006_coeff_{}.json'
 

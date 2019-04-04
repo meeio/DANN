@@ -57,15 +57,20 @@ def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
     if iter_num < zero_step:
         return 0
 
-    iter_num -= zero_step
-    max_iter -= zero_step
-    max_iter = max_iter / 2
+    if iter_num < param.task_ajust_step + param.pre_adapt_step:
 
-    return np.float(
-        2.0 * (high - low) / (1.0 + np.exp(-alpha * iter_num / max_iter))
-        - (high - low)
-        + low
-    )
+        iter_num -= zero_step
+        max_iter = param.task_ajust_step + param.pre_adapt_step
+
+        return np.float(
+            2.0
+            * (high - low)
+            / (1.0 + np.exp(-alpha * iter_num / max_iter))
+            - (high - low)
+            + low
+        )
+
+    return 1
 
 
 def get_lr_scaler(
@@ -148,10 +153,10 @@ class OpensetDrop(DAModule):
             G = AlexGFC()
             C = AlexClassifer(
                 class_num=self.class_num,
-                reversed_coeff=lambda: get_lambda(
-                    self.current_step, self.total_steps
-                ),
-                # reversed_coeff=lambda: 1,
+                # reversed_coeff=lambda: get_lambda(
+                #     self.current_step, self.total_steps
+                # ),
+                reversed_coeff=lambda: 1,
             )
 
         return {"F": F, "G": G, "C": C}
@@ -166,14 +171,19 @@ class OpensetDrop(DAModule):
             # "nesterov": True,
         }
 
-        pre_steps = param.task_ajust_step + param.pre_adapt_step
         lr_scheduler = {
             "type": torch.optim.lr_scheduler.MultiStepLR,
             "gamma": 0.5,
             "milestones": [
                 param.task_ajust_step,
-                pre_steps,
-                (self.total_step - pre_steps) / 3 ],
+                # param.task_ajust_step + param.pre_adapt_step,
+                (
+                    self.total_step
+                    - param.task_ajust_step
+                    + param.pre_adapt_step
+                )
+                / 3,
+            ],
         }
 
         self.define_loss(
