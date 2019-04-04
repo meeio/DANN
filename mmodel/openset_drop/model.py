@@ -159,16 +159,20 @@ class OpensetDrop(DAModule):
 
         optimer = {
             "type": torch.optim.SGD,
-            "lr": 0.0002,
+            "lr": 0.001,
             "momentum": 0.9,
             "weight_decay": 0.001,
             # "nesterov": True,
         }
 
+        pre_steps = param.task_ajust_step + param.pre_adapt_step
         lr_scheduler = {
-            "type": torch.optim.lr_scheduler.StepLR,
-            "gamma": 0.1,
-            "step_size": self.total_steps / 3,
+            "type": torch.optim.lr_scheduler.MultiStepLR,
+            "gamma": 0.5,
+            "milestones": [
+                param.task_ajust_step,
+                pre_steps,
+                (self.total_step - pre_steps) / 3 ],
         }
 
         self.define_loss(
