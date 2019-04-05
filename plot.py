@@ -159,11 +159,20 @@ accu = {
     # "2": for_('valid_accu', file_name.format(2)),
     # "3": for_('valid_accu', file_name.format(3)),
     # "4": for_('valid_accu', file_name.format(4)),
+<<<<<<< HEAD
     # "12": for_("outlier_data", file_name.format(2)),
     "11": for_("valid_accu", file_name.format(1)),
     "13": for_("valid_accu", file_name.format(3)),
     "14": for_("valid_accu", file_name.format(4)),
     "31": for_("valid_accu", file2_name.format(1)),
+=======
+    "11": for_("valid_accu", file_name.format(1)),
+    "12": for_("valid_accu", file_name.format(2)),
+    "13": for_("valid_accu", file_name.format(3)),
+    "14": for_("valid_accu", file_name.format(4)),
+    # "14": for_("outlier_data", file_name.format(5)),
+    # "31": for_("outlier_data", file2_name.format(2)),
+>>>>>>> 96437d76bf416dd0f917f5111aa05c9d780f23a8
     # "15": for_("valid_accu", file_name.format(5)),
     # "12": for_("outlier_data", file_name.format(1)),
     # "21": for_("valid_accu", file_name.format(2)),

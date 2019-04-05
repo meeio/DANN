@@ -159,7 +159,7 @@ class OpensetBackprop(DAModule):
 
         s_cls_p, s_un_p = self.C(source_f, adapt=False)
         t_cls_p, t_un_p = self.C(target_f, adapt=True)
-        b_cls_p, b_un_p = self.C(bias_f, adapt=False)
+        b_cls_p, b_un_p = self.C(bias_f, adapt=True)
 
         loss_classify = self.ce(s_cls_p, s_label)
 
