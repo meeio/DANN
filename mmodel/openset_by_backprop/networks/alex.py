@@ -130,15 +130,13 @@ class AlexClassifer(WeightedModule):
     def __init__(self, class_num, reversed_coeff):
         super(AlexClassifer, self).__init__()
 
-        self.feature = nn.Sequential(
-            nn.Linear(1000, 100),
-            nn.BatchNorm1d(100),
-            nn.LeakyReLU(),
-        )
 
-        self.classifer = nn.Sequential(
-            nn.Linear(100, class_num),
-        )
+        self.feature = nn.Linear(1000,100)
+        self.i_norm = nn.InstanceNorm1d(100)
+        self.b_norm = nn.BatchNorm1d(100)
+        self.act = nn.LeakyReLU()
+
+        self.classifer = nn.Linear(100, class_num)
 
         weights_init_helper(self)
 
@@ -153,11 +151,16 @@ class AlexClassifer(WeightedModule):
     def forward(self, inputs, adapt=False):
 
         feature = self.feature(inputs)
-
+        
         if adapt:
+            feature = self.b_norm(feature)
+            feature = self.act(feature)
             feature.register_hook(self.revgrad_hook)
-            
-
+        else:
+            feature = self.i_norm(feature)
+            feature = self.act(feature)
+                
+        
         prediction_with_unkonw = self.classifer(feature)
 
         unkonw_prediction = self.softmax(prediction_with_unkonw)[:, -1].unsqueeze(1)
