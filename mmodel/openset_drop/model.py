@@ -40,10 +40,7 @@ def get_bias(iter_num, max_iter, high, alpha=30, center=0.1):
     p = iter_num / max_iter
 
     z = (
-        (
-            1 / (1 + np.exp(-alpha * (p - center)))
-            - 1 / (1 + np.exp(-alpha * (-center)))
-        )
+        (1 / (1 + np.exp(-alpha * (p - center))) - 1 / (1 + np.exp(-alpha * (-center))))
         * ((1 + np.exp(alpha * center)) / np.exp(alpha * center))
         * high
     )
@@ -63,9 +60,7 @@ def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
         max_iter = param.task_ajust_step + param.pre_adapt_step
 
         return np.float(
-            2.0
-            * (high - low)
-            / (1.0 + np.exp(-alpha * iter_num / max_iter))
+            2.0 * (high - low) / (1.0 + np.exp(-alpha * iter_num / max_iter))
             - (high - low)
             + low
         )
@@ -73,9 +68,7 @@ def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
     return 1
 
 
-def get_lr_scaler(
-    iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75
-):
+def get_lr_scaler(iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75):
 
     if iter_num < param.task_ajust_step:
         return 1
@@ -135,10 +128,7 @@ class OpensetDrop(DAModule):
         )
 
         iters = {
-            "train": {
-                "S": ELoaderIter(source_ld),
-                "T": ELoaderIter(target_ld),
-            },
+            "train": {"S": ELoaderIter(source_ld), "T": ELoaderIter(target_ld)},
             "valid": ELoaderIter(valid_ld),
         }
 
@@ -165,7 +155,7 @@ class OpensetDrop(DAModule):
 
         optimer = {
             "type": torch.optim.SGD,
-            "lr": 0.001,
+            "lr": 0.01,
             "momentum": 0.9,
             "weight_decay": 0.001,
             # "nesterov": True,
@@ -177,12 +167,7 @@ class OpensetDrop(DAModule):
             "milestones": [
                 # param.task_ajust_step,
                 # param.task_ajust_step + param.pre_adapt_step,
-                (
-                    self.total_step
-                    - param.task_ajust_step
-                    + param.pre_adapt_step
-                )
-                / 3,
+                ((self.total_step / 3) + param.task_ajust_step + param.pre_adapt_step)
             ],
         }
 
@@ -193,16 +178,10 @@ class OpensetDrop(DAModule):
             decay_op=lr_scheduler,
         )
         self.define_loss(
-            "domain_prediction",
-            networks=["C"],
-            optimer=optimer,
-            decay_op=lr_scheduler,
+            "domain_prediction", networks=["C"], optimer=optimer, decay_op=lr_scheduler
         )
         self.define_loss(
-            "domain_adv",
-            networks=["G"],
-            optimer=optimer,
-            decay_op=lr_scheduler,
+            "domain_adv", networks=["G"], optimer=optimer, decay_op=lr_scheduler
         )
 
         self.define_log("valid_loss", "valid_accu", group="valid")
@@ -234,16 +213,12 @@ class OpensetDrop(DAModule):
         target_entropy = norm_entropy(t_prediction, reduction="none")
         if self.current_step > param.task_ajust_step:
             allowed_idx = (
-                target_entropy
-                - norm_entropy(s_predcition, reduction="mean")
+                target_entropy - norm_entropy(s_predcition, reduction="mean")
                 < self.dynamic_offset
             )
         else:
             allowed_idx = (
-                torch.abs(
-                    target_entropy
-                    - norm_entropy(s_predcition, reduction="mean")
-                )
+                torch.abs(target_entropy - norm_entropy(s_predcition, reduction="mean"))
                 < self.dynamic_offset
             )
 
