@@ -130,12 +130,12 @@ class AlexGFC(WeightedModule):
         super(AlexGFC, self).__init__()
         self.feature = nn.Sequential(
             nn.Linear(1000, 100),
-            nn.BatchNorm1d(100),
+            # nn.BatchNorm1d(100),
             nn.LeakyReLU(),
             # nn.Dropout(),
 
             nn.Linear(100, 100),
-            nn.BatchNorm1d(100),
+            # nn.BatchNorm1d(100),
             nn.LeakyReLU(),
             # nn.Dropout(),
         )
