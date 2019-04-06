@@ -106,7 +106,7 @@ class OpensetBackprop(DAModule):
         self.define_log("valid_loss", "valid_accu", group="valid")
         self.define_log("classify", "adv", group="train")
 
-    def _train_step(self, s_img, s_label, t_img):
+    def _train_step(self, s_img, s_label, t_img, t_label):
 
         g_source_feature = self.F(s_img)
         g_target_feature = self.F(t_img)
