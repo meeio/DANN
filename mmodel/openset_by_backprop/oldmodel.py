@@ -126,4 +126,4 @@ class OpensetBackprop(DAModule):
     def _valid_step(self, img):
         feature = self.F(img)
         prediction, _ = self.C(feature)      
-        return torch.split(prediction, self.class_num, dim=1)
+        return prediction
