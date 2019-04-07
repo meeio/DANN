@@ -21,9 +21,9 @@ def get_transfrom(back_bone, is_train):
 
         trans = (
             [
-                transforms.Resize(227),
+                transforms.Resize(256),
                 transforms.RandomHorizontalFlip(),
-                # transforms.RandomCrop(227),
+                transforms.RandomCrop(227),
             ]
             + trans
             if is_train

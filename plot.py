@@ -151,7 +151,7 @@ def for_bias(file):
 # assert False
 
 file_name = (
-    r"RECORDS\alpha20_center015_high006_{}.json"
+    r"RECORDS\d2w.json"
 )
 
 file2_name = (
@@ -163,19 +163,9 @@ accu = {
     # "2": for_('valid_accu', file_name.format(2)),
     # "3": for_('valid_accu', file_name.format(3)),
     # "4": for_('valid_accu', file_name.format(4)),
-    "11": for_("valid_accu", file_name.format(1)),
-    "12": for_("valid_accu", file_name.format(2)),
-    "13": for_("valid_accu", file_name.format(3)),
-    "14": for_("valid_accu", file2_name.format(4)),
-    # "14": for_("outlier_data", file_name.format(5)),
-    # "31": for_("outlier_data", file2_name.format(2)),
-    # "15": for_("valid_accu", file_name.format(5)),
-    # "12": for_("outlier_data", file_name.format(1)),
-    # "21": for_("valid_accu", file_name.format(2)),
-    # "31": for_("valid_accu", file_name.format(3)),
-    # "41": for_("valid_accu", file_name.format(4)),
-    # "51": for_("valid_accu", file_name.format(5)),
-    # "accu": for_accu(filename),
+    "11": for_("valid_accu", file_name),
+    # "12": for_("valid_accu", file_name.format(2)),
+    
 }
 
 
