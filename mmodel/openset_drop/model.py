@@ -167,7 +167,7 @@ class OpensetDrop(DAModule):
             "milestones": [
                 # param.task_ajust_step,
                 # param.task_ajust_step + param.pre_adapt_step,
-                ((self.total_step / 4) + param.task_ajust_step + param.pre_adapt_step)
+                ((self.total_step / 3) + param.task_ajust_step + param.pre_adapt_step)
             ],
         }
 
