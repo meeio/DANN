@@ -163,7 +163,7 @@ accu = {
     # "2": for_('valid_accu', file_name.format(2)),
     # "3": for_('valid_accu', file_name.format(3)),
     # "4": for_('valid_accu', file_name.format(4)),
-    "11": for_("valid_accu", file_name),
+    "11": for_("outlier_data", file_name),
     # "12": for_("valid_accu", file_name.format(2)),
     
 }
