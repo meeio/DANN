@@ -10,7 +10,7 @@ from .params import get_params
 
 
 from mdata.partial.partial_dataset import require_openset_dataloader
-from mdata.partial.partial_dataset import OFFICE_CLASS
+from mdata.partial.partial_dataset import OFFICE_HOME_CLASS
 from mdata.transfrom import get_transfrom
 import numpy as np
 
@@ -26,6 +26,9 @@ def norm_entropy(p, reduction="None"):
     ne = -torch.sum(e, dim=1)
     if reduction == "mean":
         ne = torch.mean(ne)
+    elif reduction == "top5":
+        ne, _ = torch.topk(ne, 5, dim=0, largest=False)
+        ne = torch.mean(ne)
     return ne
 
 
@@ -40,7 +43,10 @@ def get_bias(iter_num, max_iter, high, alpha=30, center=0.1):
     p = iter_num / max_iter
 
     z = (
-        (1 / (1 + np.exp(-alpha * (p - center))) - 1 / (1 + np.exp(-alpha * (-center))))
+        (
+            1 / (1 + np.exp(-alpha * (p - center)))
+            - 1 / (1 + np.exp(-alpha * (-center)))
+        )
         * ((1 + np.exp(alpha * center)) / np.exp(alpha * center))
         * high
     )
@@ -60,7 +66,9 @@ def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
         max_iter = param.task_ajust_step + param.pre_adapt_step
 
         return np.float(
-            2.0 * (high - low) / (1.0 + np.exp(-alpha * iter_num / max_iter))
+            2.0
+            * (high - low)
+            / (1.0 + np.exp(-alpha * iter_num / max_iter))
             - (high - low)
             + low
         )
@@ -68,7 +76,9 @@ def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
     return 1
 
 
-def get_lr_scaler(iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75):
+def get_lr_scaler(
+    iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75
+):
 
     if iter_num < param.task_ajust_step:
         return 1
@@ -89,7 +99,9 @@ class OpensetDrop(DAModule):
         self.early_stop = self.total_steps
 
         source_class = set(OFFICE_HOME_CLASS[0:20])
-        target_class = set(OFFICE_HOME_CLASS[0:20] + OFFICE_HOME_CLASS[40:65])
+        target_class = set(
+            OFFICE_HOME_CLASS[0:20] + OFFICE_HOME_CLASS[40:65]
+        )
 
         assert len(source_class.intersection(target_class)) == 20
         assert len(source_class) == 20 and len(target_class) == 45
@@ -128,7 +140,10 @@ class OpensetDrop(DAModule):
         )
 
         iters = {
-            "train": {"S": ELoaderIter(source_ld), "T": ELoaderIter(target_ld)},
+            "train": {
+                "S": ELoaderIter(source_ld),
+                "T": ELoaderIter(target_ld),
+            },
             "valid": ELoaderIter(valid_ld),
         }
 
@@ -167,7 +182,11 @@ class OpensetDrop(DAModule):
             "milestones": [
                 # param.task_ajust_step,
                 # param.task_ajust_step + param.pre_adapt_step,
-                ((self.total_step / 3) + param.task_ajust_step + param.pre_adapt_step)
+                (
+                    (self.total_step / 3)
+                    + param.task_ajust_step
+                    + param.pre_adapt_step
+                )
             ],
         }
 
@@ -178,10 +197,16 @@ class OpensetDrop(DAModule):
             decay_op=lr_scheduler,
         )
         self.define_loss(
-            "domain_prediction", networks=["C"], optimer=optimer, decay_op=lr_scheduler
+            "domain_prediction",
+            networks=["C"],
+            optimer=optimer,
+            decay_op=lr_scheduler,
         )
         self.define_loss(
-            "domain_adv", networks=["G"], optimer=optimer, decay_op=lr_scheduler
+            "domain_adv",
+            networks=["G"],
+            optimer=optimer,
+            decay_op=lr_scheduler,
         )
 
         self.define_log("valid_loss", "valid_accu", group="valid")
@@ -213,12 +238,20 @@ class OpensetDrop(DAModule):
         target_entropy = norm_entropy(t_prediction, reduction="none")
         if self.current_step > param.task_ajust_step:
             allowed_idx = (
-                target_entropy - norm_entropy(s_predcition, reduction="mean")
+                target_entropy
+                - norm_entropy(
+                    s_predcition, reduction=param.base_entropy_mode
+                )
                 < self.dynamic_offset
             )
         else:
             allowed_idx = (
-                torch.abs(target_entropy - norm_entropy(s_predcition, reduction="mean"))
+                torch.abs(
+                    target_entropy
+                    - norm_entropy(
+                        s_predcition, reduction=param.base_entropy_mode
+                    )
+                )
                 < self.dynamic_offset
             )
 
