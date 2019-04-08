@@ -85,7 +85,7 @@ class OpensetBackprop(DAModule):
 
         _, bias_ld, _ = require_openset_dataloader(
             source_class=self.source_class,
-            target_class=self.bias_class,
+            target_class=self.target_class,
             train_transforms=get_transfrom(back_bone, is_train=True),
             valid_transform=get_transfrom(back_bone, is_train=False),
             params=self.params,
