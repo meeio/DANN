@@ -45,9 +45,7 @@ def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
     )
 
 
-def get_lr_scaler(
-    iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75
-):
+def get_lr_scaler(iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75):
     lr_scaler = np.float((1 + alpha * (iter_num / max_iter)) ** (-power))
     return lr_scaler
 
@@ -57,13 +55,12 @@ class OpensetBackprop(DAModule):
         super().__init__(param)
 
         ## NOTE classes setting adapt from <opensetDa by backprop>
-        print(len(OFFICE_HOME_CLASS))
-        assert False
-        source_class = set(OFFICE_HOME_CLASS[0:10])
-        target_class = set(OFFICE_HOME_CLASS[0:10])
-        bias_class = set(OFFICE_HOME_CLASS[20:31])
-        assert len(source_class.intersection(target_class)) == 10
-        assert len(source_class) == 10 and len(target_class) == 10
+
+        source_class = set(OFFICE_HOME_CLASS[0:20])
+        target_class = set(OFFICE_HOME_CLASS[0:20])
+
+        assert len(source_class.intersection(target_class)) == 20
+        assert len(source_class) == 20 and len(target_class) == 20
 
         class_num = len(source_class) + 1
 
@@ -114,9 +111,7 @@ class OpensetBackprop(DAModule):
             F = AlexNetFc()
             C = AlexClassifer(
                 class_num=self.class_num,
-                reversed_coeff=lambda: get_lambda(
-                    self.current_step, self.total_steps
-                ),
+                reversed_coeff=lambda: 1,
             )
 
         return {"F": F, "C": C}
@@ -125,7 +120,7 @@ class OpensetBackprop(DAModule):
 
         optimer = {
             "type": torch.optim.SGD,
-            "lr": 0.001,
+            "lr": 0.01,
             "momentum": 0.9,
             "weight_decay": 0.001,
             # "nesterov": True,
