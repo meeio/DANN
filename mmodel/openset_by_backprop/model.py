@@ -83,20 +83,8 @@ class OpensetBackprop(DAModule):
             params=self.params,
         )
 
-        _, bias_ld, _ = require_openset_dataloader(
-            source_class=self.source_class,
-            target_class=self.target_class,
-            train_transforms=get_transfrom(back_bone, is_train=True),
-            valid_transform=get_transfrom(back_bone, is_train=False),
-            params=self.params,
-        )
-
         iters = {
-            "train": {
-                "S": ELoaderIter(source_ld),
-                "T": ELoaderIter(target_ld),
-                "B": ELoaderIter(bias_ld),
-            },
+            "train": {"S": ELoaderIter(source_ld), "T": ELoaderIter(target_ld)},
             "valid": ELoaderIter(valid_ld),
         }
 
@@ -110,7 +98,7 @@ class OpensetBackprop(DAModule):
             F = AlexNetFc()
             C = AlexClassifer(
                 class_num=self.class_num,
-                reversed_coeff=lambda: 1,
+                reversed_coeff=lambda: get_lambda(self.current_step, self.total_steps),
             )
 
         return {"F": F, "C": C}
@@ -129,53 +117,21 @@ class OpensetBackprop(DAModule):
         self.define_loss("global_looss", networks=["C"], optimer=optimer)
 
         self.define_log("valid_loss", "valid_accu", group="valid")
-        self.define_log(
-            "classify",
-            "adv",
-            "e_s",
-            "e_t",
-            "e_b",
-            "ae_s",
-            "ae_t",
-            "ae_b",
-            "ue_s",
-            "ue_t",
-            "ue_b",
-            group="train",
-        )
+        self.define_log("classify", "adv", group="train")
 
     def _train_step(self, s_img, s_label, t_img, t_label):
 
-        b_img, _ = self.iters["train"]["B"].next()
-        b_img = anpai(b_img, use_gpu=True, need_logging=False)
-
         source_f = self.F(s_img)
         target_f = self.F(t_img)
-        bias_f = self.F(b_img)
 
         s_cls_p, s_un_p = self.C(source_f, adapt=False)
         t_cls_p, t_un_p = self.C(target_f, adapt=True)
-        b_cls_p, b_un_p = self.C(bias_f, adapt=True)
 
         loss_classify = self.ce(s_cls_p, s_label)
 
         loss_adv = self.bce(t_un_p, self.DECISION_BOUNDARY)
 
-        self._update_logs(
-            {
-                "classify": loss_classify,
-                "adv": loss_adv,
-                "e_s": norm_entropy(s_cls_p, reduction="mean", all=False),
-                "e_t": norm_entropy(t_cls_p, reduction="mean", all=False),
-                "e_b": norm_entropy(b_cls_p, reduction="mean", all=False),
-                "ae_s": norm_entropy(s_cls_p, reduction="mean", all=True),
-                "ae_t": norm_entropy(t_cls_p, reduction="mean", all=True),
-                "ae_b": norm_entropy(b_cls_p, reduction="mean", all=True),
-                "ue_s": binary_entropy(s_un_p),
-                "ue_t": binary_entropy(t_un_p),
-                "ue_b": binary_entropy(b_un_p),
-            }
-        )
+        self._update_logs({"classify": loss_classify, "adv": loss_adv})
         self._update_loss("global_looss", loss_classify + loss_adv)
 
         del loss_classify, loss_adv
