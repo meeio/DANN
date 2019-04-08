@@ -137,13 +137,13 @@ class AlexClassifer(WeightedModule):
         # self.act = nn.LeakyReLU()
 
         self.feature = nn.Sequential(
-            nn.Linear(1000, 100),
-            nn.BatchNorm1d(100),
+            nn.Linear(1000, 512),
+            nn.BatchNorm1d(512),
             nn.LeakyReLU(),
             # nn.Dropout(),
 
-            nn.Linear(100, 100),
-            nn.BatchNorm1d(100),
+            nn.Linear(512, 512),
+            nn.BatchNorm1d(512),
             nn.LeakyReLU(),
             # nn.Dropout(),
         )
