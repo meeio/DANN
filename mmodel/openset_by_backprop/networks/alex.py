@@ -148,7 +148,7 @@ class AlexClassifer(WeightedModule):
             # nn.Dropout(),
         )
 
-        self.classifer = nn.Linear(100, class_num)
+        self.classifer = nn.Linear(512, class_num)
 
         weights_init_helper(self)
 
