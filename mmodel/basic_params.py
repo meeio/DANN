@@ -43,19 +43,19 @@ parser.add_argument("--eval_per_step", type=int, default=100, help="Epochs of tr
 parser.add_argument("--tag", type=str, default='NO TAG', help="tag for this train.")
 
 parser.add_argument(
-    "--lr", type=float, default=0.0002
+    "--lr", type=float, default=0.001
 )
 
 parser.add_argument(
-    "--dataset", type=str, default="Office", help="data base we will use"
+    "--dataset", type=str, default="OfficeHome", help="data base we will use"
 )
 
 parser.add_argument(
-    "--source", type=str, default="A", help="data base we will use"
+    "--source", type=str, default="Ar", help="data base we will use"
 )
 
 parser.add_argument(
-    "--target", type=str, default="W", help="data base we will use"
+    "--target", type=str, default="Cl", help="data base we will use"
 )
 
 

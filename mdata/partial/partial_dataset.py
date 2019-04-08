@@ -223,6 +223,74 @@ def find_classes(dir):
     return class_to_idx
 
 
+OFFICE_HOME_CLASS = [
+    "Alarm_Clock",
+    "Backpack",
+    "Batteries",
+    "Bed",
+    "Bike",
+    "Bottle",
+    "Bucket",
+    "Calculator",
+    "Calendar",
+    "Candles",
+    "Chair",
+    "Clipboards",
+    "Computer",
+    "Couch",
+    "Curtains",
+    "Desk_Lamp",
+    "Drill",
+    "Eraser",
+    "Exit_Sign",
+    "Fan",
+    "File_Cabinet",
+    "Flipflops",
+    "Flowers",
+    "Folder",
+    "Fork",
+    "Glasses",
+    "Hammer",
+    "Helmet",
+    "Kettle",
+    "Keyboard",
+    "Knives",
+    "Lamp_Shade",
+    "Laptop",
+    "Marker",
+    "Monitor",
+    "Mop",
+    "Mouse",
+    "Mug",
+    "Notebook",
+    "Oven",
+    "Pan",
+    "Paper_Clip",
+    "Pen",
+    "Pencil",
+    "Postit_Notes",
+    "Printer",
+    "Push_Pin",
+    "Radio",
+    "Refrigerator",
+    "Ruler",
+    "Scissors",
+    "Screwdriver",
+    "Shelf",
+    "Sink",
+    "Sneakers",
+    "Soda",
+    "Speaker",
+    "Spoon",
+    "TV",
+    "Table",
+    "Telephone",
+    "ToothBrush",
+    "Toys",
+    "Trash_Can",
+    "Webcam",
+]
+
 OFFICE_CLASS = [
     "back_pack",
     "bike",
@@ -259,7 +327,7 @@ OFFICE_CLASS = [
 
 
 def require_openset_dataloader(
-    source_class, target_class, train_transforms, valid_transform,params
+    source_class, target_class, train_transforms, valid_transform, params
 ):
 
     source = set(source_class)
@@ -268,27 +336,31 @@ def require_openset_dataloader(
 
     source_cls_idx = {sorted(source)[i]: i for i in range(len(source))}
     target_cls_dix = {
-        k: source_cls_idx.get(k, unknow_idx) for k in sorted(target) 
+        k: source_cls_idx.get(k, unknow_idx) for k in sorted(target)
     }
-    
+
+    dataset = params.dataset
+    sourceset = params.source
+    targetset = params.target
+
+
     source = PartialImageFolder(
-        root="./_PUBLIC_DATASET_/" + "Office" + "/" + "D",
+        root="./_PUBLIC_DATASET_/" + dataset + "/" + sourceset + "/",
         class_to_idx=source_cls_idx,
         transform=train_transforms,
     )
 
     target = PartialImageFolder(
-        root="./_PUBLIC_DATASET_/" + "Office" + "/" + "W",
+        root="./_PUBLIC_DATASET_/" + dataset + "/" + targetset,
         class_to_idx=target_cls_dix,
         transform=train_transforms,
     )
 
     valid = PartialImageFolder(
-        root="./_PUBLIC_DATASET_/" + "Office" + "/" + "W",
+        root="./_PUBLIC_DATASET_/" + dataset + "/" + targetset,
         class_to_idx=target_cls_dix,
         transform=valid_transform,
     )
-
 
     source = torch.utils.data.DataLoader(
         source, batch_size=params.batch_size, drop_last=True, shuffle=True
@@ -304,7 +376,6 @@ def require_openset_dataloader(
         drop_last=True,
         shuffle=True,
     )
-
 
     return source, target, valid
 

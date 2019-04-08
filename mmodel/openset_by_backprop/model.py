@@ -10,7 +10,7 @@ from .params import get_params
 
 
 from mdata.partial.partial_dataset import require_openset_dataloader
-from mdata.partial.partial_dataset import OFFICE_CLASS
+from mdata.partial.partial_dataset import OFFICE_HOME_CLASS
 from mdata.transfrom import get_transfrom
 from mground.gpu_utils import anpai
 
@@ -57,9 +57,11 @@ class OpensetBackprop(DAModule):
         super().__init__(param)
 
         ## NOTE classes setting adapt from <opensetDa by backprop>
-        source_class = set(OFFICE_CLASS[0:10])
-        target_class = set(OFFICE_CLASS[0:10])
-        bias_class = set(OFFICE_CLASS[20:31])
+        print(len(OFFICE_HOME_CLASS))
+        assert False
+        source_class = set(OFFICE_HOME_CLASS[0:10])
+        target_class = set(OFFICE_HOME_CLASS[0:10])
+        bias_class = set(OFFICE_HOME_CLASS[20:31])
         assert len(source_class.intersection(target_class)) == 10
         assert len(source_class) == 10 and len(target_class) == 10
 
@@ -172,11 +174,9 @@ class OpensetBackprop(DAModule):
                 "e_s": norm_entropy(s_cls_p, reduction="mean", all=False),
                 "e_t": norm_entropy(t_cls_p, reduction="mean", all=False),
                 "e_b": norm_entropy(b_cls_p, reduction="mean", all=False),
-
                 "ae_s": norm_entropy(s_cls_p, reduction="mean", all=True),
                 "ae_t": norm_entropy(t_cls_p, reduction="mean", all=True),
                 "ae_b": norm_entropy(b_cls_p, reduction="mean", all=True),
-
                 "ue_s": binary_entropy(s_un_p),
                 "ue_t": binary_entropy(t_un_p),
                 "ue_b": binary_entropy(b_un_p),

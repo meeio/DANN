@@ -10,7 +10,7 @@ from .params import get_params
 
 
 from mdata.partial.partial_dataset import require_openset_dataloader
-from mdata.partial.partial_dataset import OFFICE_CLASS
+from mdata.partial.partial_dataset import OFFICE_HOME_CLASS
 from mdata.transfrom import get_transfrom
 
 param = get_params()
@@ -36,12 +36,13 @@ class OpensetBackprop(DAModule):
     def __init__(self):
         super().__init__(param)
 
-        ## NOTE classes setting adapt from <opensetDa by backprop>
-        source_class = set(OFFICE_CLASS[0:10])
-        target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
 
-        assert len(source_class.intersection(target_class)) == 10
-        assert len(source_class) == 10 and len(target_class) == 21
+        ## NOTE classes setting adapt from <opensetDa by backprop>
+        source_class = set(OFFICE_HOME_CLASS[0:20])
+        target_class = set(OFFICE_HOME_CLASS[0:20] + OFFICE_HOME_CLASS[40:65])
+
+        assert len(source_class.intersection(target_class)) == 20
+        assert len(source_class) == 20 and len(target_class) == 45
 
         class_num = len(source_class) + 1
 
@@ -82,9 +83,7 @@ class OpensetBackprop(DAModule):
             F = AlexNetFc()
             C = AlexClassifer(
                 class_num=self.class_num,
-                reversed_coeff=lambda: get_lambda(
-                    self.current_step, self.total_steps
-                ),
+                reversed_coeff=lambda: 1,
             )
 
         return {"F": F, "C": C}
