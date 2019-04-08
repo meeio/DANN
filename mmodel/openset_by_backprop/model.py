@@ -67,7 +67,6 @@ class OpensetBackprop(DAModule):
         self.class_num = class_num
         self.source_class = source_class
         self.target_class = target_class
-        self.bias_class = bias_class
 
         self.DECISION_BOUNDARY = self.TARGET.fill_(1)
 
