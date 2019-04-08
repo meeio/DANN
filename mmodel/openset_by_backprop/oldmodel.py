@@ -37,7 +37,6 @@ class OpensetBackprop(DAModule):
         super().__init__(param)
 
 
-        ## NOTE classes setting adapt from <opensetDa by backprop>
         source_class = set(OFFICE_HOME_CLASS[0:20])
         target_class = set(OFFICE_HOME_CLASS[0:20] + OFFICE_HOME_CLASS[40:65])
 
@@ -94,7 +93,7 @@ class OpensetBackprop(DAModule):
             "type": torch.optim.SGD,
             "lr": param.lr,
             "momentum": 0.9,
-            # "weight_decay": 0.001,
+            "weight_decay": 0.001,
             # "nesterov": True,
             # "lr_mult": {"F": 0.1},
         }

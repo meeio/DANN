@@ -88,11 +88,11 @@ class OpensetDrop(DAModule):
 
         self.early_stop = self.total_steps
 
-        source_class = set(OFFICE_CLASS[0:10])
-        target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
+        source_class = set(OFFICE_HOME_CLASS[0:20])
+        target_class = set(OFFICE_HOME_CLASS[0:20] + OFFICE_HOME_CLASS[40:65])
 
-        assert len(source_class.intersection(target_class)) == 10
-        assert len(source_class) == 10 and len(target_class) == 21
+        assert len(source_class.intersection(target_class)) == 20
+        assert len(source_class) == 20 and len(target_class) == 45
 
         self.source_class = source_class
         self.target_class = target_class
@@ -155,7 +155,7 @@ class OpensetDrop(DAModule):
 
         optimer = {
             "type": torch.optim.SGD,
-            "lr": 0.001,
+            "lr": param.lr,
             "momentum": 0.9,
             "weight_decay": 0.001,
             # "nesterov": True,
