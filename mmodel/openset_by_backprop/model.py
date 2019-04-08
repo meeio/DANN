@@ -132,7 +132,8 @@ class OpensetBackprop(DAModule):
         loss_adv = self.bce(t_un_p, self.DECISION_BOUNDARY)
 
         self._update_logs({"classify": loss_classify, "adv": loss_adv})
-        self._update_loss("global_looss", loss_classify + loss_adv)
+        self._update_loss("global_looss", loss_classify )
+        # self._update_loss("global_looss", loss_classify + loss_adv)
 
         del loss_classify, loss_adv
 
