@@ -16,7 +16,7 @@ import numpy as np
 
 param = get_params()
 
-
+old_ne = 0
 def norm_entropy(p, reduction="None"):
     p = p.detach()
     n = p.size()[1] - 1
@@ -29,6 +29,15 @@ def norm_entropy(p, reduction="None"):
     elif reduction == "top5":
         ne, _ = torch.topk(ne, 5, dim=0, largest=False)
         ne = torch.mean(ne)
+    elif reduction == "top5_m":
+        global old_ne
+        ne, _ = torch.topk(ne, 5, dim=0, largest=False)
+        ne = torch.mean(ne)
+        if old_ne == 0:
+            old_ne = ne
+        else:
+            old_ne = 0.1*old_ne + 0.9*ne
+        return old_ne
     return ne
 
 
@@ -96,7 +105,7 @@ class OpensetDrop(DAModule):
 
         # self.eval_after = int(0.15 * self.total_steps)
 
-        self.early_stop = self.total_steps
+        self.early_stop = self.total_steps / 2
 
         source_class = set(OFFICE_HOME_CLASS[0:20])
         target_class = set(
