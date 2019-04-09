@@ -55,7 +55,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--target", type=str, default="Pr", help="data base we will use"
+    "--target", type=str, default="Cl", help="data base we will use"
 )
 
 
