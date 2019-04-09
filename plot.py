@@ -84,6 +84,9 @@ from mtrain.watcher import parse_losses_record, parse_watcher_dict
 
 def curve_graph(smooth_ration=10, **kwargs):
 
+    color = ['green', 'red']
+    idx = 0
+
     for name, records in kwargs.items():
 
         y = records[1]
@@ -99,10 +102,15 @@ def curve_graph(smooth_ration=10, **kwargs):
         y_smooth = interpolate.spline(x, y, x_smooth)
 
         # tck = interpolate.spline(x, y)
-        plt.plot(x, y, "-", label=name, linewidth=2.5)
+        plt.plot(x, y, "-", label=name, linewidth=2.5, color = color[idx])
         plt.minorticks_on()
         plt.grid(which="major", color="gray", linestyle="-", linewidth=1)
         plt.grid(which="minor", color="gray", linestyle=":", linewidth=0.5)
+        plt.axvline(x=280, ymin=0, ymax=1, linestyle='--', linewidth=2)
+        plt.axvline(x=380, ymin=0, ymax=1, linestyle='--',linewidth=2)
+        plt.axvline(x=2000, ymin=0, ymax=1, linestyle='--',linewidth=2)
+        # plt.axvline(x=2.20589566)
+        idx += 1
 
     plt.legend(loc="best")
     plt.title("A10 to W10+10")
@@ -151,7 +159,7 @@ def for_bias(file):
 # assert False
 
 file_name = (
-    r"RECORDS\ar2cl_{}.json"
+    r"keeps\sigmoid_changing\fixed_back_coffe\alpha20_center015_upper006_coeff_{}.json"
 )
 
 file2_name = (
@@ -159,8 +167,9 @@ file2_name = (
 )
 
 accu = {
-    "1": for_('valid_accu', file_name.format(1)),
-    "2": for_('valid_accu', file_name.format(2)),
+    # "1": for_('tolorate', file_name.format(1)),
+    "valid ": for_('tolorate', file_name.format(3)),
+    # "outlier": for_('outlier_data', file_name.format(3)),
     # "3": for_('valid_accu', file_name.format(3)),
     # "4": for_('valid_accu', file_name.format(4)),
     # "11": for_("outlier_data", file_name),
