@@ -82,7 +82,7 @@ class OpensetBackprop(DAModule):
             F = AlexNetFc()
             C = AlexClassifer(
                 class_num=self.class_num,
-                reversed_coeff=lambda: get_lambda(self.current_step, self.total_steps),
+                reversed_coeff=lambda: 0.1,
             )
 
         return {"F": F, "C": C}
