@@ -343,7 +343,6 @@ def require_openset_dataloader(
     sourceset = params.source
     targetset = params.target
 
-
     source = PartialImageFolder(
         root="./_PUBLIC_DATASET_/" + dataset + "/" + sourceset + "/",
         class_to_idx=source_cls_idx,
@@ -363,11 +362,19 @@ def require_openset_dataloader(
     )
 
     source = torch.utils.data.DataLoader(
-        source, batch_size=params.batch_size, drop_last=True, shuffle=True
+        source,
+        batch_size=params.batch_size,
+        drop_last=True,
+        shuffle=True,
+        num_workers=4,
     )
 
     target = torch.utils.data.DataLoader(
-        target, batch_size=params.batch_size, drop_last=True, shuffle=True
+        target,
+        batch_size=params.batch_size,
+        drop_last=True,
+        shuffle=True,
+        num_workers=4,
     )
 
     valid = torch.utils.data.DataLoader(
@@ -375,6 +382,7 @@ def require_openset_dataloader(
         batch_size=params.eval_batch_size,
         drop_last=True,
         shuffle=True,
+        num_workers=4,
     )
 
     return source, target, valid
