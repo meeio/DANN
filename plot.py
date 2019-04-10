@@ -84,7 +84,7 @@ from mtrain.watcher import parse_losses_record, parse_watcher_dict
 
 def curve_graph(smooth_ration=10, **kwargs):
 
-    color = ['green', 'red']
+    color = ['red', 'green', 'red']
     idx = 0
 
     for name, records in kwargs.items():
@@ -106,9 +106,9 @@ def curve_graph(smooth_ration=10, **kwargs):
         plt.minorticks_on()
         plt.grid(which="major", color="gray", linestyle="-", linewidth=1)
         plt.grid(which="minor", color="gray", linestyle=":", linewidth=0.5)
-        plt.axvline(x=280, ymin=0, ymax=1, linestyle='--', linewidth=2)
-        plt.axvline(x=380, ymin=0, ymax=1, linestyle='--',linewidth=2)
-        plt.axvline(x=2000, ymin=0, ymax=1, linestyle='--',linewidth=2)
+        plt.axvline(x=200, ymin=0, ymax=1, linestyle='--', linewidth=2)
+        plt.axvline(x=300, ymin=0, ymax=1, linestyle='--',linewidth=2)
+        plt.axvline(x=2000, ymin=0, ymax=1, linestyle='--',linewidth=2, color='gray')
         # plt.axvline(x=2.20589566)
         idx += 1
 
@@ -168,7 +168,9 @@ file2_name = (
 
 accu = {
     # "1": for_('tolorate', file_name.format(1)),
-    "valid ": for_('tolorate', file_name.format(3)),
+    "accu ": for_('valid_accu', file_name.format(2
+    )),
+    # "valid ": for_('valid_data', file_name.format(3)),
     # "outlier": for_('outlier_data', file_name.format(3)),
     # "3": for_('valid_accu', file_name.format(3)),
     # "4": for_('valid_accu', file_name.format(4)),
