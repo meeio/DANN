@@ -8,8 +8,8 @@ import sys
 if __name__ == "__main__":
 
     torch.backends.cudnn.benchmark = True
-    # name = input('model name:')
-    name = "OPENBB"
+    name = input('model name:')
+    # name = "OPENBB"
     try:
         _, A = get_module(name)
         from mmodel.basic_params import basic_params, parser
