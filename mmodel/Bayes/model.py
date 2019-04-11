@@ -10,7 +10,7 @@ from .networks.bayes_network import BayesianNetwork
 import mdata.dataloader as mdl
 
 param = get_params()
-param.batch_size = 128
+param.batch_size = 128`
 
 class BayesModel(TrainableModule):
     
@@ -84,7 +84,7 @@ class BayesModel(TrainableModule):
             # decay_op=lr_scheduler,
         )
 
-        self.define_log("losses", group="train")
+        self.define_log("losses", "a1","a2", group="train")
         self.define_log("valid_loss", "valid_accu", group="valid")
 
     def _train_process(self, datas):
@@ -94,7 +94,14 @@ class BayesModel(TrainableModule):
         loss, _, _, _ = self.BN.sample_elbo(img, label)
 
         self._update_loss("loss", loss)
-        self._update_log("losses", loss)
+
+        self._update_logs(
+            {
+                "losses": loss,
+                "a1": loss/2 ,
+                "a2": loss/100,
+            }
+        )
 
     def _eval_process(self, datas):
 
@@ -121,7 +128,6 @@ class BayesModel(TrainableModule):
 
             self._update_logs(
                 {
-                    "valid_loss": self.ce(predict, label),
                     "valid_accu": corrent_count * 100 / current_size,
                 },
                 group="valid",
