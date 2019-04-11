@@ -10,15 +10,15 @@ from mtrain.mloger import GLOBAL, LogCapsule, TRAIN, VALID, BUILD, HINTS
 
 from ..basic_module import TrainableModule, ELoaderIter, logger
 from .params import get_params
-from .networks.networks import Net
+from .networks.bayes_network import BayesianNetwork
 from mground.log_utils import tabulate_log_losses
 
 
 import mdata.dataloader as mdl
 
 
-# logger = get_colored_logger("GLOBAL")
 param = get_params()
+param.batch_size = 128
 
 
 class BayesModel(TrainableModule):
@@ -27,6 +27,7 @@ class BayesModel(TrainableModule):
 
         self.best_accurace = 0.0
         self.total = self.corret = 0
+        
 
         # set usefully loss function
         self.ce = torch.nn.CrossEntropyLoss()
@@ -45,7 +46,7 @@ class BayesModel(TrainableModule):
 
         def get_loader(dataset):
             l = torch.utils.data.DataLoader(
-                dataset, batch_size=128, drop_last=True, shuffle=True
+                dataset, batch_size=param.batch_size, drop_last=True, shuffle=True
             )
             return l
 
@@ -70,51 +71,45 @@ class BayesModel(TrainableModule):
             return its.next(need_end=True)
 
     def _regist_networks(self):
-        net = Net()
-        return {"N": net}
+        net = BayesianNetwork(param)
+        return {"BN": net}
 
     def _regist_losses(self):
 
         optimer = {
             "type": torch.optim.SGD,
-            "lr": 0.01,
+            "lr": 0.0001,
             # "momentum": 0.9,
-            "weight_decay": 0.001,
+            # "weight_decay": 0.001,
             # "nesterov": True,
         }
 
-        lr_scheduler = {
-            "type": torch.optim.lr_scheduler.StepLR,
-            "step_size": self.total_steps / 3,
-        }
+        # lr_scheduler = {
+        #     "type": torch.optim.lr_scheduler.StepLR,
+        #     "step_size": self.total_steps / 3,
+        # }
 
         self.define_loss(
-            "claasify_loss",
-            networks=["N"],
+            "loss",
+            networks=["BN"],
             optimer=optimer,
-            decay_op=lr_scheduler,
+            # decay_op=lr_scheduler,
         )
 
-        self.define_log("claasify")
+        self.define_log("losses", group="train")
 
     def _train_process(self, datas):
 
         img, label = datas
 
-        predcition = self.N(img)
-        loss = self.ce(predcition, label)
+        loss, log_prior, log_variational_posterior, negative_log_likelihood = self.BN.sample_elbo(
+            img, label
+        )
 
-        self._update_loss("claasify_loss", loss)
-        self._update_log("claasify", loss)
+        self._update_loss("loss", loss)
 
-    def _log_process(self):
+        self._update_log("losses", loss)
 
-        losses = [
-            (k, v.log_current_avg_loss(self.current_step + 1))
-            for k, v in self.train_loggers.items()
-        ]
-
-        return losses
 
     def _eval_process(self, datas):
 
@@ -126,7 +121,7 @@ class BayesModel(TrainableModule):
 
             img, label = datas
             # get result from a valid_step
-            predict = self.N(img)
+            predict = self.BN(img)
 
             # calculate valid accurace and make record
             current_size = label.size()[0]
@@ -159,11 +154,4 @@ class BayesModel(TrainableModule):
             self.best_accurace = max((self.best_accurace, accu))
             self.total = 0
             self.corret = 0
-            losses = [
-                (k, v.log_current_avg_loss(self.current_step + 1))
-                for k, v in self.valid_loggers.items()
-            ]
-
-            return losses
-
 
