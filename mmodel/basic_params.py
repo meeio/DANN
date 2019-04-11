@@ -2,12 +2,17 @@ import argparse
 from mtrain.watcher import watcher
 
 
-basic_params = None
+_basic_params = None
+
+def basic_params():
+    global _basic_params
+    return _basic_params
+
 class _ParamParser(argparse.ArgumentParser):
     def parse_args(self):
         arg = super().parse_args()
         watcher.parameter_note(arg)
-        global basic_params
+        global _basic_params
         basic_params = arg
         return arg
 

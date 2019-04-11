@@ -268,6 +268,8 @@ class TrainableModule(ABC):
     def _eval_process(self, datas, **kwargs):
         """process to eval 
         """
+        end_epoch = datas is None
+
         pass
 
     def define_loss(
@@ -392,13 +394,14 @@ class TrainableModule(ABC):
             i.eval()
 
         while True:
+
             datas = self._feed_data(mode="valid")
 
             if datas is not None:
                 datas = anpai(
                     datas, self.params.use_gpu, need_logging=False
                 )
-            losses = self._eval_process(datas, **kwargs)
+            self._eval_process(datas, **kwargs)
 
             if datas is None or self.eval_once:
                 break
@@ -408,6 +411,8 @@ class TrainableModule(ABC):
             for k, v in self.valid_loggers.items()
         ]
 
+        
+        logger.log(VALID, "End a evaling step.")
         tabulate_log_losses(losses, trace="validloss", mode="valid")
 
     def _update_loss(self, loss_name, value, retain_graph=True):

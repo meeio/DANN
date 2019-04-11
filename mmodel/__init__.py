@@ -15,19 +15,19 @@ def get_module(name):
         return None, model.Finetune()
     elif name == 'BY':
         from .bayes import model
-        return None, model.BayesModel()
+        return model.param, model.BayesModel()
     elif name == 'OPEN':
         from .openset import model
-        return None, model.OpensetDA()
+        return model.param, model.OpensetDA()
     elif name == 'OPENBB':
         from .openset_by_backprop import oldmodel
-        return None, oldmodel.OpensetBackprop()
+        return model.param, oldmodel.OpensetBackprop()
     elif name == 'OPENBBTEST':
         from .openset_by_backprop import model
-        return None, model.OpensetBackprop()
+        return model.param, model.OpensetBackprop()
     elif name == 'OPENDP':
         from .openset_drop import model
-        return None, model.OpensetDrop()
+        return model.param, model.OpensetDrop()
 
 
 def get_params():

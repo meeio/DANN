@@ -3,37 +3,22 @@ import itertools
 import numpy as np
 import torch
 
-from mdata.partial_folder import MultiFolderDataHandler
-from mground.gpu_utils import current_gpu_usage
-from mground.math_utils import entropy, make_weighted_sum
-from mtrain.mloger import GLOBAL, LogCapsule, TRAIN, VALID, BUILD, HINTS
-
-from ..basic_module import TrainableModule, ELoaderIter, logger
+from ..basic_module import TrainableModule, ELoaderIter
 from .params import get_params
 from .networks.bayes_network import BayesianNetwork
-from mground.log_utils import tabulate_log_losses
-
 
 import mdata.dataloader as mdl
-
 
 param = get_params()
 param.batch_size = 128
 
-
 class BayesModel(TrainableModule):
+    
     def __init__(self):
         super(BayesModel, self).__init__(param)
 
         self.best_accurace = 0.0
         self.total = self.corret = 0
-        
-
-        # set usefully loss function
-        self.ce = torch.nn.CrossEntropyLoss()
-
-        # define valid losses
-        self.define_log("valid_loss", "valid_accu", group="valid")
 
         self._all_ready()
 
@@ -46,7 +31,10 @@ class BayesModel(TrainableModule):
 
         def get_loader(dataset):
             l = torch.utils.data.DataLoader(
-                dataset, batch_size=param.batch_size, drop_last=True, shuffle=True
+                dataset,
+                batch_size=param.batch_size,
+                drop_last=True,
+                shuffle=True,
             )
             return l
 
@@ -97,19 +85,16 @@ class BayesModel(TrainableModule):
         )
 
         self.define_log("losses", group="train")
+        self.define_log("valid_loss", "valid_accu", group="valid")
 
     def _train_process(self, datas):
 
         img, label = datas
 
-        loss, log_prior, log_variational_posterior, negative_log_likelihood = self.BN.sample_elbo(
-            img, label
-        )
+        loss, _, _, _ = self.BN.sample_elbo(img, label)
 
         self._update_loss("loss", loss)
-
         self._update_log("losses", loss)
-
 
     def _eval_process(self, datas):
 
@@ -149,7 +134,6 @@ class BayesModel(TrainableModule):
             self.total += size
             self.corret += right
         else:
-            logger.log(VALID, "End a evaling step.")
             accu = self.corret / self.total
             self.best_accurace = max((self.best_accurace, accu))
             self.total = 0

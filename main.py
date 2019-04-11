@@ -2,8 +2,6 @@ import torch
 
 from mmodel import get_module
 from mtrain.watcher import watcher
-import sys
-
 
 if __name__ == "__main__":
 
@@ -11,11 +9,10 @@ if __name__ == "__main__":
     # name = input('model name:')
     name = "BY"
     try:
-        _, A = get_module(name)
-        from mmodel.basic_params import basic_params, parser
+        param, A = get_module(name)
 
-        if basic_params.make_record:
-            watcher.prepare_notes(name, basic_params.tag)
+        if param.make_record:
+            watcher.prepare_notes(name, param.tag)
         A.train_module()
 
     finally:

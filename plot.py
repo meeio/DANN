@@ -89,7 +89,7 @@ def curve_graph(smooth_ration=10, **kwargs):
 
     for name, records in kwargs.items():
 
-        y = records[1]
+        y = [0,] + records[1]
         x = [records[0] * i for i in range(len(y))]
         data_count = len(y)
 
@@ -106,8 +106,8 @@ def curve_graph(smooth_ration=10, **kwargs):
         plt.minorticks_on()
         plt.grid(which="major", color="gray", linestyle="-", linewidth=1)
         plt.grid(which="minor", color="gray", linestyle=":", linewidth=0.5)
-        plt.axvline(x=200, ymin=0, ymax=1, linestyle="--", linewidth=2)
         plt.axvline(x=300, ymin=0, ymax=1, linestyle="--", linewidth=2)
+        plt.axvline(x=500, ymin=0, ymax=1, linestyle="--", linewidth=2)
         plt.axvline(
             x=2000,
             ymin=0,
@@ -142,37 +142,37 @@ def for_bias(file):
     return losses["bias"]
 
 
-def bias(p, alpha=20, center=0.2, high=0.06):
+# def bias(p, alpha=20, center=0.2, high=0.06):
 
-    z = (
-        (
-            1 / (1 + np.exp(-alpha * (p - center)))
-            - 1 / (1 + np.exp(-alpha * (-center)))
-        )
-        * ((1 + np.exp(alpha * center)) / np.exp(alpha * center))
-        * high
-    )
+#     z = (
+#         (
+#             1 / (1 + np.exp(-alpha * (p - center)))
+#             - 1 / (1 + np.exp(-alpha * (-center)))
+#         )
+#         * ((1 + np.exp(alpha * center)) / np.exp(alpha * center))
+#         * high
+#     )
 
-    return z
-
-
-x = [i / 10000 for i in range(10000)]
-y = [bias(xi) for xi in x]
+#     return z
 
 
-plt.plot(x, y, "-", linewidth=2.5)
-plt.show()
+# x = [i / 10000 for i in range(10000)]
+# y = [bias(xi) for xi in x]
 
-assert False
 
-file_name = r"keeps\sigmoid_changing\fixed_back_coffe\alpha20_center015_upper006_coeff_{}.json"
+# plt.plot(x, y, "-", linewidth=2.5)
+# plt.show()
+
+# assert False
+
+file_name = r"RECORDS\Pr2Cl.json"
 
 file2_name = r"keeps\sigmoid_changing\fixed_back_coffe\alpha20_center015_upper006_coeff_{}.json"
 
 accu = {
     # "1": for_('tolorate', file_name.format(1)),
-    "accu ": for_("valid_accu", file_name.format(2)),
-    # "valid ": for_('valid_data', file_name.format(3)),
+    "outlier ": for_('outlier_data', file_name.format(3)),
+    "valid ": for_("valid_data", file_name),
     # "outlier": for_('outlier_data', file_name.format(3)),
     # "3": for_('valid_accu', file_name.format(3)),
     # "4": for_('valid_accu', file_name.format(4)),
