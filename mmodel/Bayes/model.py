@@ -10,7 +10,7 @@ from .networks.bayes_network import BayesianNetwork
 import mdata.dataloader as mdl
 
 param = get_params()
-param.batch_size = 128`
+param.batch_size = 128
 
 class BayesModel(TrainableModule):
     

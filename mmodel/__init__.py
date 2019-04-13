@@ -28,6 +28,9 @@ def get_module(name):
     elif name == 'OPENDP':
         from .openset_drop import model
         return model.param, model.OpensetDrop()
+    elif name == 'PDP':
+        from .openset_drop import model_partial
+        return model_partial.param, model_partial.PartialDrop()
 
 
 def get_params():

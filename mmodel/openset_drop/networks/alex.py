@@ -72,7 +72,7 @@ def grl_hook(coeff):
 class AlexNetFc(WeightedModule):
     """ AlexNet pretrained on imagenet for Office dataset"""
 
-    def __init__(self):
+    def __init__(self, need_train=True):
         super(AlexNetFc, self).__init__()
 
         model_alexnet = alexnet(pretrained=True)
@@ -85,15 +85,19 @@ class AlexNetFc(WeightedModule):
                 "classifier" + str(i), model_alexnet.classifier[i]
             )
 
-
-
         self.has_init = True
+
+        if not need_train:
+            for i in self.parameters():
+                i.requires_grad = False
 
     def forward(self, input_data):
         feature = self.features(input_data)
         feature = feature.view(-1, 256 * 6 * 6)
         feature = self.fc(feature)
         return feature
+    
+    
 
 
 def weights_init_helper(modul, params=None):
@@ -175,4 +179,25 @@ class AlexClassifer(WeightedModule):
         unkonw_prediction = self.softmax(prediction_with_unkonw)[:, -1].unsqueeze(1)
 
         return prediction_with_unkonw, unkonw_prediction
+
+
+class PositiveClassfier(WeightedModule):
+    def __init__(self):
+        super(PositiveClassfier, self).__init__()
+
+        self.classifer = nn.Sequential(
+            nn.Linear(100, 50),
+            nn.Linear(50, 1),
+            nn.Sigmoid(),
+        )
+
+        weights_init_helper(self)
+
+        self.has_init = True
+
+    def forward(self, feature):
+
+        prediction = self.classifer(feature)
+
+        return prediction
 

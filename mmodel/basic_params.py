@@ -52,15 +52,15 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--dataset", type=str, default="OfficeHome", help="data base we will use"
+    "--dataset", type=str, default="Office", help="data base we will use"
 )
 
 parser.add_argument(
-    "--source", type=str, default="Ar", help="data base we will use"
+    "--source", type=str, default="A", help="data base we will use"
 )
 
 parser.add_argument(
-    "--target", type=str, default="Cl", help="data base we will use"
+    "--target", type=str, default="W", help="data base we will use"
 )
 
 

@@ -142,28 +142,28 @@ def for_bias(file):
     return losses["bias"]
 
 
-# def bias(p, alpha=20, center=0.2, high=0.06):
+def bias(p, alpha=20, center=0.2, high=0.06, low=0):
 
-#     z = (
-#         (
-#             1 / (1 + np.exp(-alpha * (p - center)))
-#             - 1 / (1 + np.exp(-alpha * (-center)))
-#         )
-#         * ((1 + np.exp(alpha * center)) / np.exp(alpha * center))
-#         * high
-#     )
+    z = (
+        (
+            1 / (1 + np.exp(-alpha * (p - center)))
+            - 1 / (1 + np.exp(-alpha * (-center)))
+        )
+        * ((1 + np.exp(alpha * center)) / np.exp(alpha * center))
+        * (high - low)
+    )
 
-#     return z
-
-
-# x = [i / 10000 for i in range(10000)]
-# y = [bias(xi) for xi in x]
+    return high - z
 
 
-# plt.plot(x, y, "-", linewidth=2.5)
-# plt.show()
+x = [i / 10000 for i in range(10000)]
+y = [bias(xi) for xi in x]
 
-# assert False
+
+plt.plot(x, y, "-", linewidth=2.5)
+plt.show()
+
+assert False
 
 file_name = r"C:\Code\MSDA\RECORDS\BY_0411_2113.NO TAG.json"
 

@@ -13,6 +13,7 @@ from mdata.partial.partial_dataset import require_openset_dataloader
 from mdata.partial.partial_dataset import OFFICE_CLASS
 from mdata.transfrom import get_transfrom
 import numpy as np
+import torch.nn.functional as F
 
 param = get_params()
 
@@ -33,23 +34,18 @@ def norm_entropy(p, reduction="None"):
         ne = torch.mean(ne)
     elif reduction == "top5_m":
         global old_ne
-        ne, _ = torch.topk(ne, 20, dim=0, largest=False)
+        # ne, _ = torch.topk(ne, 5, dim=0, largest=False)
+        ne, _ = torch.topk(ne, 5, dim=0, largest=True)
         ne = torch.mean(ne)
         if old_ne == 0:
             old_ne = ne
         else:
-            old_ne = 0.1 * old_ne + 0.9 * ne
+            old_ne = 0.2 * old_ne + 0.8 * ne
         return old_ne
     return ne
 
 
-def get_bias(iter_num, max_iter, high, alpha=30, center=0.1):
-    zero_step = param.task_ajust_step + param.pre_adapt_step
-    if iter_num < zero_step:
-        return 0
-
-    iter_num -= zero_step
-    max_iter -= zero_step
+def get_bias(iter_num, max_iter, high, low, alpha=30, center=0.1):
 
     p = iter_num / max_iter
 
@@ -59,32 +55,21 @@ def get_bias(iter_num, max_iter, high, alpha=30, center=0.1):
             - 1 / (1 + np.exp(-alpha * (-center)))
         )
         * ((1 + np.exp(alpha * center)) / np.exp(alpha * center))
-        * high
+        * (high-low)
     )
 
-    return z
+    return high - z
 
 
 def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
 
-    zero_step = param.task_ajust_step
-    if iter_num < zero_step:
-        return 0
-
-    if iter_num < param.task_ajust_step + param.pre_adapt_step:
-
-        iter_num -= zero_step
-        max_iter = param.task_ajust_step + param.pre_adapt_step
-
-        return np.float(
-            2.0
-            * (high - low)
-            / (1.0 + np.exp(-alpha * iter_num / max_iter))
-            - (high - low)
-            + low
-        )
-
-    return 1
+    return np.float(
+        2.0
+        * (high - low)
+        / (1.0 + np.exp(-alpha * iter_num / max_iter))
+        - (high - low)
+        + low
+    )
 
 
 def get_lr_scaler(
@@ -101,7 +86,7 @@ def get_lr_scaler(
     return lr_scaler
 
 
-class OpensetDrop(DAModule):
+class PartialDrop(DAModule):
     def __init__(self):
         super().__init__(param)
 
@@ -120,6 +105,7 @@ class OpensetDrop(DAModule):
         self.class_num = len(self.source_class) + 1
 
         self.element_bce = torch.nn.BCELoss(reduction="none")
+        self.bce = torch.nn.BCELoss()
         self.element_ce = torch.nn.CrossEntropyLoss(reduction="none")
         self.DECISION_BOUNDARY = self.TARGET.fill_(1)
 
@@ -127,14 +113,15 @@ class OpensetDrop(DAModule):
 
     @property
     def dynamic_offset(self):
-        high = param.dylr_high
+        high = 1
 
         return get_bias(
             self.current_step,
             self.total_steps,
             high=high,
-            alpha=param.dylr_alpht,
-            center=param.dylr_center,
+            low = high/2,
+            alpha=10,
+            center=0.2,
         )
 
     def _prepare_data(self):
@@ -163,14 +150,13 @@ class OpensetDrop(DAModule):
         if True:
             from .networks.alex import AlexNetFc, AlexGFC, AlexClassifer
 
-            F = AlexNetFc()
+            F = AlexNetFc(need_train=False)
             G = AlexGFC()
             C = AlexClassifer(
-                class_num=self.class_num,
-                # reversed_coeff=lambda: get_lambda(
-                #     self.current_step, self.total_steps
-                # ),
-                reversed_coeff=lambda: 1,
+                class_num=self.class_num, 
+                reversed_coeff=lambda: get_lambda(
+                    self.current_step, self.total_steps
+                ),
             )
 
         return {"F": F, "G": G, "C": C}
@@ -189,8 +175,6 @@ class OpensetDrop(DAModule):
             "type": torch.optim.lr_scheduler.MultiStepLR,
             "gamma": 0.1,
             "milestones": [
-                # param.task_ajust_step,
-                # param.task_ajust_step + param.pre_adapt_step,
                 (
                     (self.total_step / 3)
                     + param.task_ajust_step
@@ -200,44 +184,38 @@ class OpensetDrop(DAModule):
         }
 
         self.define_loss(
-            "class_prediction",
+            "losses",
             networks=["G", "C"],
-            optimer=optimer,
-            decay_op=lr_scheduler,
-        )
-        self.define_loss(
-            "domain_prediction",
-            networks=["C"],
-            optimer=optimer,
-            decay_op=lr_scheduler,
-        )
-        self.define_loss(
-            "domain_adv",
-            networks=["G"],
             optimer=optimer,
             decay_op=lr_scheduler,
         )
 
         self.define_log("valid_loss", "valid_accu", group="valid")
         self.define_log(
-            "classify",
-            "adv",
-            "dis",
-            "valid_data",
-            "outlier_data",
-            "drop",
-            "tolorate",
-            group="train",
+            "classify", "adv", "keep", "tolorate","valid","outlier","ve","oe","base", group="train"
         )
 
-    def example_selection(self, target_entropy, base_line, mode="upper"):
+    def example_select(self, target_entropy, base_line, mode="upper"):
+        assert mode == "s"
+
+        # in this case, target is source domain entropy
+        # base_line is target domain entorpy
+        # which means mean(base_line)>mean(target_entropy)
+
         if self.current_step > param.task_ajust_step:
-            allowed_idx = target_entropy - base_line < self.dynamic_offset
+            # _, top_idx = torch.topk(target_entropy, 1, dim=0, largest=True)
+            # allowed_idx = target_entropy.clone().fill_(0)        
+            # allowed_idx = allowed_idx.index_fill_(0, top_idx, 1)
+            # ne, allowed_idx = torch.topk(allowed_idx, 5, dim=0, largest=True)
+            allowed_idx = target_entropy + self.dynamic_offset > base_line
+            print(base_line)
+            print(target_entropy)
         else:
-            allowed_idx = (
-                torch.abs(target_entropy - base_line) < self.dynamic_offset
-            )
-        return allowed_idx
+            # allowed_idx = (
+            #     torch.abs(target_entropy - base_line) < self.dynamic_offset
+            # )
+            allowed_idx = target_entropy.clone().fill_(1)     
+        return allowed_idx.byte()
 
     def _train_step(self, s_img, s_label, t_img, t_label):
 
@@ -250,47 +228,64 @@ class OpensetDrop(DAModule):
         s_predcition, _ = self.C(g_source_feature, adapt=False)
         t_prediction, t_domain = self.C(g_target_feature, adapt=True)
 
-        loss_classify = self.ce(s_predcition, s_label)
-        ew_dis_loss = self.element_bce(t_domain, self.DECISION_BOUNDARY)
+        ew_loss_classify = self.element_ce(s_predcition, s_label)
+        adv_loss = self.bce(t_domain, self.DECISION_BOUNDARY)
 
-        target_entropy = norm_entropy(t_prediction, reduction="none")
-        base_line = norm_entropy(s_predcition, reduction=param.base_entropy_mode)
-
-        allowed_idx = self.example_selection(target_entropy, base_line)
         
-        allowed_data_label = torch.masked_select(t_label, mask=allowed_idx)
-        valid = torch.sum(allowed_data_label != self.class_num - 1)
-        outlier = torch.sum(allowed_data_label == self.class_num - 1)
-        drop = self.params.batch_size - valid - outlier
+        ew_target_entropy = norm_entropy(t_prediction, reduction='none')
+        a = F.softmax(t_prediction, dim=1) * ew_target_entropy.unsqueeze(1)
+        m = torch.mean(a, dim=0)
+        m = m / torch.max(m)
+
+        source_weight = torch.gather(m, 0, s_label)
+        print(source_weight)
+
+        # source_entropy = norm_entropy(s_predcition, reduction="none")
+        # base_line = norm_entropy(t_prediction, reduction="top5_m")
+
+        # allowed_idx = self.example_select(source_entropy, base_line, "s")
+
+        # allowed_data_label = torch.masked_select(t_label, mask=allowed_idx)
+        # valid = torch.sum(allowed_data_label != self.class_num - 1)
+        # outlier = torch.sum(allowed_data_label == self.class_num - 1)
+        # drop = self.params.batch_size - valid - outlier
+
+        # drop_prop = 1 - keep_prop
+        # dis_loss = torch.mean(ew_dis_loss * (1 - allowed_idx)) * drop_prop
+        # adv_loss = torch.mean(ew_dis_loss * allowed_idx) * keep_prop
+        # allowed_data_label = torch.masked_select(s_label, mask=allowed_idx)
+        # valid = torch.sum(allowed_data_label < 10)
+        # outlier = torch.sum(allowed_data_label >= 10)
+
+        # valid_idx = s_label > 10
+        # outlier_idx = s_label < 10
+        # valid_entropy = torch.mean(torch.masked_select(source_entropy, valid_idx))
+        # outlier_entropy = torch.mean(torch.masked_select(source_entropy, outlier_idx))
 
         allowed_idx = allowed_idx.float().unsqueeze(1)
         keep_prop = torch.sum(allowed_idx) / self.params.batch_size
         drop_prop = 1 - keep_prop
-        dis_loss = torch.mean(ew_dis_loss * (1 - allowed_idx)) * drop_prop
-        adv_loss = torch.mean(ew_dis_loss * allowed_idx) * keep_prop
+        loss_classify = torch.mean(ew_loss_classify * allowed_idx)
+
 
         self._update_logs(
             {
                 "classify": loss_classify,
-                "dis": dis_loss,
                 "adv": adv_loss,
-                "valid_data": valid.float(),
-                "outlier_data": outlier.float(),
-                "drop": drop.float(),
+                "keep": keep_prop.float() * param.batch_size,
+                "valid": valid.float(),
+                "outlier": outlier.float(),
                 "tolorate": self.dynamic_offset,
+                "ve":valid_entropy,
+                "oe":outlier_entropy,
+                "base":base_line,
             }
         )
 
-        if keep_prop != 0:
-            self._update_losses(
-                {
-                    "class_prediction": loss_classify,
-                    "domain_prediction": dis_loss + adv_loss,
-                    "domain_adv": adv_loss / keep_prop,
-                }
-            )
+        if self.current_step > param.task_ajust_step:
+            self._update_losses({"losses": loss_classify})
         else:
-            self._update_losses({"class_prediction": loss_classify})
+            self._update_losses({"losses": loss_classify})
 
         del loss_classify, adv_loss
 

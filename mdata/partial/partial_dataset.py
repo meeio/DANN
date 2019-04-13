@@ -332,6 +332,7 @@ def require_openset_dataloader(
 
     source = set(source_class)
     target = set(target_class)
+
     unknow_idx = len(source)
 
     source_cls_idx = {sorted(source)[i]: i for i in range(len(source))}
@@ -366,7 +367,7 @@ def require_openset_dataloader(
         batch_size=params.batch_size,
         drop_last=True,
         shuffle=True,
-        num_workers=4,
+        # num_workers=4,
     )
 
     target = torch.utils.data.DataLoader(
@@ -374,7 +375,7 @@ def require_openset_dataloader(
         batch_size=params.batch_size,
         drop_last=True,
         shuffle=True,
-        num_workers=4,
+        # num_workers=4,
     )
 
     valid = torch.utils.data.DataLoader(
@@ -382,7 +383,7 @@ def require_openset_dataloader(
         batch_size=params.eval_batch_size,
         drop_last=True,
         shuffle=True,
-        num_workers=4,
+        # num_workers=4,
     )
 
     return source, target, valid

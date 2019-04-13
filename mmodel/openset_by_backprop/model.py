@@ -10,7 +10,7 @@ from .params import get_params
 
 
 from mdata.partial.partial_dataset import require_openset_dataloader
-from mdata.partial.partial_dataset import OFFICE_HOME_CLASS
+from mdata.partial.partial_dataset import OFFICE_CLASS
 from mdata.transfrom import get_transfrom
 from mground.gpu_utils import anpai
 
@@ -45,7 +45,9 @@ def get_lambda(iter_num, max_iter, high=1.0, low=0.0, alpha=10.0):
     )
 
 
-def get_lr_scaler(iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75):
+def get_lr_scaler(
+    iter_num, max_iter, init_lr=param.lr, alpha=10, power=0.75
+):
     lr_scaler = np.float((1 + alpha * (iter_num / max_iter)) ** (-power))
     return lr_scaler
 
@@ -56,17 +58,23 @@ class OpensetBackprop(DAModule):
 
         ## NOTE classes setting adapt from <opensetDa by backprop>
 
-        source_class = set(OFFICE_HOME_CLASS[0:20])
-        target_class = set(OFFICE_HOME_CLASS[0:20])
+        source_class = set(OFFICE_CLASS[0:10])
+        bias_class = set(OFFICE_CLASS[10:31])
+        target_class = set(OFFICE_CLASS[0:10])
 
-        assert len(source_class.intersection(target_class)) == 20
-        assert len(source_class) == 20 and len(target_class) == 20
+        assert len(source_class.intersection(target_class)) == 10
+        assert (
+            len(source_class) == 10
+            and len(target_class) == 10
+            and len(bias_class) == 21
+        )
 
-        class_num = len(source_class) + 1
+        class_num = len(source_class) + 1 + len(bias_class)
 
         self.class_num = class_num
         self.source_class = source_class
         self.target_class = target_class
+        self.bias_class = bias_class
 
         self.DECISION_BOUNDARY = self.TARGET.fill_(1)
 
@@ -75,6 +83,7 @@ class OpensetBackprop(DAModule):
     def _prepare_data(self):
 
         back_bone = "alexnet"
+
         source_ld, target_ld, valid_ld = require_openset_dataloader(
             source_class=self.source_class,
             target_class=self.target_class,
@@ -83,8 +92,21 @@ class OpensetBackprop(DAModule):
             params=self.params,
         )
 
+        bias_ld, all_ld, _ = require_openset_dataloader(
+            source_class=self.bias_class,
+            target_class=self.bias_class ,
+            train_transforms=get_transfrom(back_bone, is_train=True),
+            valid_transform=get_transfrom(back_bone, is_train=False),
+            params=self.params,
+        )
+
         iters = {
-            "train": {"S": ELoaderIter(source_ld), "T": ELoaderIter(target_ld)},
+            "train": {
+                "S": ELoaderIter(source_ld),
+                "T": ELoaderIter(target_ld),
+                "B": ELoaderIter(bias_ld),
+                # "A": ELoaderIter(all_ld)
+            },
             "valid": ELoaderIter(valid_ld),
         }
 
@@ -98,7 +120,10 @@ class OpensetBackprop(DAModule):
             F = AlexNetFc()
             C = AlexClassifer(
                 class_num=self.class_num,
-                reversed_coeff=lambda: get_lambda(self.current_step, self.total_steps),
+                # reversed_coeff=lambda: get_lambda(
+                #     self.current_step, self.total_steps
+                # ),
+                reversed_coeff=lambda: 1
             )
 
         return {"F": F, "C": C}
@@ -107,7 +132,7 @@ class OpensetBackprop(DAModule):
 
         optimer = {
             "type": torch.optim.SGD,
-            "lr": 0.01,
+            "lr": param.lr,
             "momentum": 0.9,
             "weight_decay": 0.001,
             # "nesterov": True,
@@ -117,23 +142,48 @@ class OpensetBackprop(DAModule):
         self.define_loss("global_looss", networks=["C"], optimer=optimer)
 
         self.define_log("valid_loss", "valid_accu", group="valid")
-        self.define_log("classify", "adv", group="train")
+        self.define_log("classify", "adv", "se", "be", "te", group="train")
 
     def _train_step(self, s_img, s_label, t_img, t_label):
 
+        b_img, b_label = self.iters["train"]["B"].next()
+        b_img, b_label = anpai((b_img, b_label), True, False)
+
         source_f = self.F(s_img)
+        bias_f = self.F(b_img)
         target_f = self.F(t_img)
 
         s_cls_p, s_un_p = self.C(source_f, adapt=False)
+        b_cls_p, b_un_p = self.C(bias_f, adapt=False)
         t_cls_p, t_un_p = self.C(target_f, adapt=True)
 
-        loss_classify = self.ce(s_cls_p, s_label)
+        s_loss_classify = self.ce(s_cls_p, s_label)
+        b_loss_classify = self.ce(b_cls_p, b_label)
 
         loss_adv = self.bce(t_un_p, self.DECISION_BOUNDARY)
 
-        self._update_logs({"classify": loss_classify, "adv": loss_adv})
-        self._update_loss("global_looss", loss_classify + loss_adv)
-        # self._update_loss("global_looss", loss_classify + loss_adv)
+        if self.current_step < 200:
+            loss_classify = 0.2 * s_loss_classify + 0.8 * b_loss_classify
+
+        else:
+            loss_classify = s_loss_classify
+        
+        if self.current_step < 100:
+            self._update_loss("global_looss", loss_classify)
+
+        else:
+            self._update_loss("global_looss", loss_classify + loss_adv)
+
+
+        self._update_logs(
+            {
+                "classify": loss_classify,
+                "adv": loss_adv,
+                "se": norm_entropy(s_cls_p, reduction="mean"),
+                "be": norm_entropy(b_cls_p, reduction="mean"),
+                "te": norm_entropy(t_cls_p, reduction="mean"),
+            }
+        )
 
         del loss_classify, loss_adv
 

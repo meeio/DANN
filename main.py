@@ -7,7 +7,8 @@ if __name__ == "__main__":
 
     torch.backends.cudnn.benchmark = True
     # name = input('model name:')
-    name = "BY"
+    name = "pdp"
+
     try:
         param, A = get_module(name)
 
@@ -17,3 +18,4 @@ if __name__ == "__main__":
 
     finally:
         watcher.to_json()
+
