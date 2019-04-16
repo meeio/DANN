@@ -315,5 +315,5 @@ class OpensetDrop(DAModule):
     def _valid_step(self, img):
         feature = self.G(self.F(img))
         prediction, _ = self.C(feature, adapt=False)
-        return torch.split(prediction, self.class_num - 1, dim=1)[0]
+        return torch.split(prediction, self.class_num - 1, dim=1)
 
