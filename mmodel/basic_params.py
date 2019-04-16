@@ -31,7 +31,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--eval_batch_size", type=int, default=64, help="Size for Mini-Batch Optimization"
+    "--eval_batch_size", type=int, default=36, help="Size for Mini-Batch Optimization"
 )
 
 parser.add_argument(
