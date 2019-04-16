@@ -607,7 +607,7 @@ class DAModule(TrainableModule):
             self.corret += right
         else:
             logger.log(VALID, "End a evaling {}.".format(valid_target))
-            accu = self.corret / self.total
+            accu = self.corret / (self.total - 00.00000001)
             self.best_accurace = max((self.best_accurace, accu))
             self.total = 0
             self.corret = 0
