@@ -303,7 +303,7 @@ class OpensetDrop(DAModule):
             self._update_losses(
                 {
                     "class_prediction": loss_classify,
-                    "domain_prediction": dis_loss + (adv_loss / keep_prop),
+                    "domain_prediction": dis_loss + (adv_loss),
                     "domain_adv": adv_loss / keep_prop,
                 }
             )
