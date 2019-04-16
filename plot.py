@@ -165,7 +165,7 @@ def for_bias(file):
 
 # assert False
 
-file_name = r"C:\Code\MSDA\RECORDS\OPENDP_0416_0349.VisDA.json"
+file_name = r"C:\Code\MSDA\RECORDS\VisDA.json"
 
 file2_name = r"keeps\sigmoid_changing\fixed_back_coffe\alpha20_center015_upper006_coeff_{}.json"
 
