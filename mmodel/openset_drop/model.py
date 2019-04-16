@@ -33,12 +33,12 @@ def norm_entropy(p, reduction="None"):
         ne = torch.mean(ne)
     elif reduction == "top5_m":
         global old_ne
-        ne, _ = torch.topk(ne, 50, dim=0, largest=False)
+        ne, _ = torch.topk(ne, 25, dim=0, largest=False)
         ne = torch.mean(ne)
         if old_ne == 0:
             old_ne = ne
         else:
-            old_ne = 0.1 * old_ne + 0.9 * ne
+            old_ne = 0.2 * old_ne + 0.75 * ne
         return old_ne
     return ne
 
@@ -125,7 +125,7 @@ class OpensetDrop(DAModule):
 
         self.element_bce = torch.nn.BCELoss(reduction="none")
         self.element_ce = torch.nn.CrossEntropyLoss(reduction="none")
-        self.DECISION_BOUNDARY = self.TARGET.fill_(1)
+        self.DECISION_BOUNDARY = self.TARGET.fill_(0.5)
 
         self._all_ready()
 
@@ -284,8 +284,8 @@ class OpensetDrop(DAModule):
         allowed_idx = allowed_idx.float().unsqueeze(1)
         keep_prop = torch.sum(allowed_idx) / self.params.batch_size
         drop_prop = 1 - keep_prop
-        dis_loss = torch.mean(ew_dis_loss * (1 - allowed_idx))
-        adv_loss = torch.mean(ew_dis_loss * allowed_idx)
+        dis_loss = torch.mean(ew_dis_loss * (1 - allowed_idx)) * drop_prop
+        adv_loss = torch.mean(ew_dis_loss * allowed_idx) * keep_prop
 
         self._update_logs(
             {
@@ -304,7 +304,7 @@ class OpensetDrop(DAModule):
                 {
                     "class_prediction": loss_classify,
                     "domain_prediction": dis_loss + adv_loss,
-                    "domain_adv": (adv_loss) + (adv_loss / drop_prop),
+                    "domain_adv": (adv_loss / keep_prop),
                 }
             )
         else:
