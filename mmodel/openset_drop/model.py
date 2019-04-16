@@ -162,10 +162,10 @@ class OpensetDrop(DAModule):
         }
 
         if  param.classwise_valid:
-            iters['valid'] = {k: ELoaderIter(v) for k,v in valid_ld.items()}
+            iters['valid'] = {k: ELoaderIter(v, max=30) for k,v in valid_ld.items()}
             
         else:
-            iters['valid'] = ELoaderIter(valid_ld)
+            iters['valid'] = ELoaderIter(valid_ld, max=30)
                 
         return None, iters
 
