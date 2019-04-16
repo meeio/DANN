@@ -251,7 +251,7 @@ class OpensetDrop(DAModule):
 
     def example_selection(self, target_entropy, base_line, mode="upper"):
         if self.current_step > param.task_ajust_step:
-            allowed_idx = target_entropy - base_line < self.dynamic_offset
+            allowed_idx = base_line - target_entropy < self.dynamic_offset
         else:
             allowed_idx = (
                 torch.abs(target_entropy - base_line) < self.dynamic_offset
