@@ -285,7 +285,7 @@ class OpensetDrop(DAModule):
         keep_prop = torch.sum(allowed_idx) / self.params.batch_size
         drop_prop = 1 - keep_prop
         dis_loss = torch.mean(ew_dis_loss * (1 - allowed_idx))
-        adv_loss = torch.mean(ew_dis_loss * allowed_idx) * keep_prop
+        adv_loss = torch.mean(ew_dis_loss * allowed_idx)
 
         self._update_logs(
             {
@@ -303,8 +303,8 @@ class OpensetDrop(DAModule):
             self._update_losses(
                 {
                     "class_prediction": loss_classify,
-                    "domain_prediction": dis_loss + (adv_loss),
-                    "domain_adv": adv_loss / keep_prop,
+                    "domain_prediction": dis_loss + adv_loss,
+                    "domain_adv": (adv_loss) + (adv_loss / drop_prop),
                 }
             )
         else:
