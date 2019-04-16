@@ -84,8 +84,8 @@ from mtrain.watcher import parse_losses_record, parse_watcher_dict
 
 def curve_graph(smooth_ration=10, **kwargs):
 
-    color = ["red", "green", "red"]
-    idx = 0
+    # color = ["red", "green", "red"]
+    # idx = 0
 
     for name, records in kwargs.items():
 
@@ -102,7 +102,7 @@ def curve_graph(smooth_ration=10, **kwargs):
         y_smooth = interpolate.spline(x, y, x_smooth)
 
         # tck = interpolate.spline(x, y)
-        plt.plot(x, y, "-", label=name, linewidth=2.5, color=color[idx])
+        plt.plot(x, y, "-", label=name, linewidth=2.5)
         plt.minorticks_on()
         plt.grid(which="major", color="gray", linestyle="-", linewidth=1)
         plt.grid(which="minor", color="gray", linestyle=":", linewidth=0.5)
@@ -117,7 +117,7 @@ def curve_graph(smooth_ration=10, **kwargs):
             color="gray",
         )
         # plt.axvline(x=2.20589566)
-        idx += 1
+        # idx += 1
 
     plt.legend(loc="best")
     plt.title("A10 to W10+10")
@@ -142,43 +142,53 @@ def for_bias(file):
     return losses["bias"]
 
 
-def bias(p, alpha=20, center=0.2, high=0.06, low=0):
+# def bias(p, alpha=20, center=0.2, high=0.06, low=0):
 
-    z = (
-        (
-            1 / (1 + np.exp(-alpha * (p - center)))
-            - 1 / (1 + np.exp(-alpha * (-center)))
-        )
-        * ((1 + np.exp(alpha * center)) / np.exp(alpha * center))
-        * (high - low)
-    )
+#     z = (
+#         (
+#             1 / (1 + np.exp(-alpha * (p - center)))
+#             - 1 / (1 + np.exp(-alpha * (-center)))
+#         )
+#         * ((1 + np.exp(alpha * center)) / np.exp(alpha * center))
+#         * (high - low)
+#     )
 
-    return high - z
-
-
-x = [i / 10000 for i in range(10000)]
-y = [bias(xi) for xi in x]
+#     return high - z
 
 
-plt.plot(x, y, "-", linewidth=2.5)
-plt.show()
+# x = [i / 10000 for i in range(10000)]
+# y = [bias(xi) for xi in x]
 
-assert False
 
-file_name = r"C:\Code\MSDA\RECORDS\BY_0411_2113.NO TAG.json"
+# plt.plot(x, y, "-", linewidth=2.5)
+# plt.show()
+
+# assert False
+
+file_name = r"C:\Code\MSDA\RECORDS\OPENDP_0416_0349.VisDA.json"
 
 file2_name = r"keeps\sigmoid_changing\fixed_back_coffe\alpha20_center015_upper006_coeff_{}.json"
 
-accu = {
-    # "1": for_('tolorate', file_name.format(1)),
-    "outlier ": for_('a1', file_name),
-    "valid ": for_("a2", file_name),
-    # "outlier": for_('outlier_data', file_name.format(3)),
-    # "3": for_('valid_accu', file_name.format(3)),
-    # "4": for_('valid_accu', file_name.format(4)),
-    # "11": for_("outlier_data", file_name),
-    # "12": for_("valid_accu", file_name.format(2)),
-}
+VISDA_CLASS = [
+    "bicycle",
+    "bus",
+    "car",
+    "motorcycle",
+    "train",
+    "truck",
+    "unkonw",
+]
+accu = {i: for_('valid_'+i, file_name) for i in VISDA_CLASS}
+# accu = {
+#     # "1": for_('tolorate', file_name.format(1)),
+#     "outlier ": for_('a1', file_name),
+#     "valid ": for_("a2", file_name),
+#     # "outlier": for_('outlier_data', file_name.format(3)),
+#     # "3": for_('valid_accu', file_name.format(3)),
+#     # "4": for_('valid_accu', file_name.format(4)),
+#     # "11": for_("outlier_data", file_name),
+#     # "12": for_("valid_accu", file_name.format(2)),
+# }
 
 
 curve_graph(**accu)
