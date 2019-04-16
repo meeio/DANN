@@ -281,19 +281,22 @@ class OpensetDrop(DAModule):
         loss_classify = self.ce(s_predcition, s_label)
         ew_dis_loss = self.element_bce(t_domain, self.DECISION_BOUNDARY)
         
-
         target_entropy = norm_entropy(t_prediction, reduction="none")
         if self.current_step > param.task_ajust_step:
             allowed_idx = (
-                target_entropy - norm_entropy(s_predcition, reduction="mean")
+                target_entropy
+                - norm_entropy(s_predcition, reduction="mean")
                 < self.dynamic_offset
             )
         else:
             allowed_idx = (
-                torch.abs(target_entropy - norm_entropy(s_predcition, reduction="mean"))
+                torch.abs(
+                    target_entropy
+                    - norm_entropy(s_predcition, reduction="mean")
+                )
                 < self.dynamic_offset
-            
-
+            )
+        
         allowed_data_label = torch.masked_select(t_label, mask=allowed_idx)
         valid = torch.sum(allowed_data_label != self.class_num - 1)
         outlier = torch.sum(allowed_data_label == self.class_num - 1)
