@@ -125,7 +125,7 @@ class OpensetDrop(DAModule):
 
         self.element_bce = torch.nn.BCELoss(reduction="none")
         self.element_ce = torch.nn.CrossEntropyLoss(reduction="none")
-        self.DECISION_BOUNDARY = self.TARGET.fill_(0.5)
+        self.DECISION_BOUNDARY = self.TARGET.fill_(1)
 
         self._all_ready()
 
