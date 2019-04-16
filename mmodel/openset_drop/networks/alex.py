@@ -138,9 +138,9 @@ class AlexGFC(WeightedModule):
             nn.BatchNorm1d(100),
             nn.LeakyReLU(),
 
-            # nn.Linear(100, 100),
-            # nn.BatchNorm1d(100),
-            # nn.LeakyReLU(),
+            nn.Linear(100, 100),
+            nn.BatchNorm1d(100),
+            nn.LeakyReLU(),
         )
 
         weights_init_helper(self)
