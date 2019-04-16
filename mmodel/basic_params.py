@@ -27,7 +27,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--batch_size", type=int, default=128, help="Size for Mini-Batch Optimization"
+    "--batch_size", type=int, default=50, help="Size for Mini-Batch Optimization"
 )
 
 parser.add_argument(
@@ -52,15 +52,15 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--dataset", type=str, default="VisDA", help="data base we will use"
+    "--dataset", type=str, default="Office", help="data base we will use"
 )
 
 parser.add_argument(
-    "--source", type=str, default="train", help="data base we will use"
+    "--source", type=str, default="A", help="data base we will use"
 )
 
 parser.add_argument(
-    "--target", type=str, default="validation", help="data base we will use"
+    "--target", type=str, default="W", help="data base we will use"
 )
 
 parser.add_argument(

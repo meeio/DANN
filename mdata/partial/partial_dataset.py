@@ -411,26 +411,45 @@ def require_openset_dataloader(
     else:
         class_idx = sorted(set(target_cls_dix.values()))
         valid = dict()
-        for i in class_idx:
-            cid = {k:v for k,v in target_cls_dix.items() if v == i}
 
-            v = PartialImageFolder(
-            root="./_PUBLIC_DATASET_/" + dataset + "/" + targetset,
-            class_to_idx=cid,
-            transform=valid_transform,
-            )
+        cid = {k:v for k,v in target_cls_dix.items() if v != unknow_idx}
 
-            v = torch.utils.data.DataLoader(
-                v,
-                batch_size=params.eval_batch_size,
-                drop_last=True,
-                shuffle=True,
-                num_workers=params.num_workers,
-            )
+        v = PartialImageFolder(
+        root="./_PUBLIC_DATASET_/" + dataset + "/" + targetset,
+        class_to_idx=cid,
+        transform=valid_transform,
+        )
 
-            keys = list(cid.keys())
-            key = keys[0] if len(keys) == 1 else 'unkonw'
-            valid[key] = v
+        v = torch.utils.data.DataLoader(
+        v,
+        batch_size=params.eval_batch_size,
+        drop_last=True,
+        shuffle=True,
+        num_workers=params.num_workers,
+        )
+
+        valid['konwn_class'] = v
+
+        # for i in class_idx:
+        #     cid = {k:v for k,v in target_cls_dix.items() if v != unknow_idx}
+
+        #     v = PartialImageFolder(
+        #     root="./_PUBLIC_DATASET_/" + dataset + "/" + targetset,
+        #     class_to_idx=cid,
+        #     transform=valid_transform,
+        #     )
+
+        #     v = torch.utils.data.DataLoader(
+        #         v,
+        #         batch_size=params.eval_batch_size,
+        #         drop_last=True,
+        #         shuffle=True,
+        #         num_workers=params.num_workers,
+        #     )
+
+        #     keys = list(cid.keys())
+        #     key = keys[0] if len(keys) == 1 else 'unkonw'
+        #     valid[key] = v
 
     return source, target, valid
 

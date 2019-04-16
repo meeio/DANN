@@ -10,7 +10,7 @@ from .params import get_params
 
 
 from mdata.partial.partial_dataset import require_openset_dataloader
-from mdata.partial.partial_dataset import VISDA_CLASS
+from mdata.partial.partial_dataset import OFFICE_CLASS
 from mdata.transfrom import get_transfrom
 import numpy as np
 
@@ -33,7 +33,7 @@ def norm_entropy(p, reduction="None"):
         ne = torch.mean(ne)
     elif reduction == "top5_m":
         global old_ne
-        ne, _ = torch.topk(ne, 64, dim=0, largest=False)
+        ne, _ = torch.topk(ne, 5, dim=0, largest=False)
         ne = torch.mean(ne)
         if old_ne == 0:
             old_ne = ne
@@ -109,15 +109,18 @@ class OpensetDrop(DAModule):
 
         self.early_stop = self.total_steps / 2
 
-        source_class = set(VISDA_CLASS[0:6])
-        target_class = set(VISDA_CLASS[0:12])
+        source_class = set(OFFICE_CLASS[0:10])
+        target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
+
+        assert len(source_class.intersection(target_class)) == 10
+        assert len(source_class) == 10 and len(target_class) == 21
 
         # class validation
-        assert source_class == set(
-            ["bicycle", "bus", "car", "motorcycle", "train", "truck"]
-        )
-        assert len(source_class.intersection(target_class)) == 6
-        assert len(source_class) == 6 and len(target_class) == 12
+        # assert source_class == set(
+        #     ["bicycle", "bus", "car", "motorcycle", "train", "truck"]
+        # )
+        # assert len(source_class.intersection(target_class)) == 6
+        # assert len(source_class) == 6 and len(target_class) == 12
 
         self.source_class = source_class
         self.target_class = target_class
@@ -178,10 +181,10 @@ class OpensetDrop(DAModule):
             G = AlexGFC()
             C = AlexClassifer(
                 class_num=self.class_num,
-                reversed_coeff=lambda: get_lambda(
-                    self.current_step, self.total_steps
-                ),
-                # reversed_coeff=lambda: 1,
+                # reversed_coeff=lambda: get_lambda(
+                #     self.current_step, self.total_steps
+                # ),
+                reversed_coeff=lambda: 1,
             )
 
         return {"F": F, "G": G, "C": C}
@@ -284,7 +287,7 @@ class OpensetDrop(DAModule):
         allowed_idx = allowed_idx.float().unsqueeze(1)
         keep_prop = torch.sum(allowed_idx) / self.params.batch_size
         drop_prop = 1 - keep_prop
-        dis_loss = torch.mean(ew_dis_loss * (1 - allowed_idx)) * drop_prop
+        dis_loss = torch.mean(ew_dis_loss * (1 - allowed_idx)) * drop_prop * get_lambda(self.current_step, self.total_steps)
         adv_loss = torch.mean(ew_dis_loss * allowed_idx) * keep_prop
 
         self._update_logs(

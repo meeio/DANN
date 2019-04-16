@@ -133,6 +133,7 @@ class ELoaderIter:
             i = next(self.it)
         except Exception:
             self.it = iter(self.l)
+            self.current_iter = 0
             i = next(self.it) if not need_end else None
 
         return i
@@ -577,6 +578,7 @@ class DAModule(TrainableModule):
         def handle_datas(datas):
 
             img, label = datas
+
             # get result from a valid_step
             predict = self._valid_step(img)
 
@@ -607,7 +609,7 @@ class DAModule(TrainableModule):
             self.corret += right
         else:
             logger.log(VALID, "End a evaling {}.".format(valid_target))
-            accu = self.corret / (self.total - 00.00000001)
+            accu = self.corret / (self.total)
             self.best_accurace = max((self.best_accurace, accu))
             self.total = 0
             self.corret = 0
