@@ -103,10 +103,12 @@ class ELoaderIter:
     
     """
 
-    def __init__(self, dataloader):
+    def __init__(self, dataloader, max = -1):
         assert dataloader is not None
         self.l = dataloader
         self.it = None
+        self.current_iter = 0
+        self.max_iter = max
 
     def next(self, need_end=False):
         """ return next item of dataloader, if use 'endness' mode, 
@@ -119,6 +121,10 @@ class ELoaderIter:
         Returns:
             list -- data
         """
+        self.current_iter += 1
+        if self.max_iter > 0 and self.current_iter > self.max_iter + 1:
+            self.current_iter = 0
+            return None
 
         if self.it == None:
             self.it = iter(self.l)
@@ -205,15 +211,15 @@ class TrainableModule(ABC):
             self.__setattr__(i, j)
         self.networks = networks
 
-        # regist losses
-        # train_caps used to update networks
-        # loggers used to make logs
-        self._regist_losses()
-
         # generate train dataloaders and valid dataloaders
         # data_info is a dict contains basic data infomations
         d_info, iters = self._prepare_data()
         self.iters = iters
+
+        # regist losses
+        # train_caps used to update networks
+        # loggers used to make logs
+        self._regist_losses()
 
     @abstractclassmethod
     def _prepare_data(self):
@@ -393,18 +399,29 @@ class TrainableModule(ABC):
         for _, i in self.networks.items():
             i.eval()
 
+        if self.params.classwise_valid:
+            valid_queue = list(self.iters["valid"].keys())
+        else:
+            valid_queue = ['accu',]
+
+        current_target = valid_queue.pop()
         while True:
 
-            datas = self._feed_data(mode="valid")
+            datas = self._feed_data(mode="valid", valid_target=current_target)
+
+            # print('eval ' + current_target)
 
             if datas is not None:
                 datas = anpai(
                     datas, self.params.use_gpu, need_logging=False
                 )
-            self._eval_process(datas, **kwargs)
+            self._eval_process(datas, valid_target=current_target)
 
             if datas is None or self.eval_once:
-                break
+                if len(valid_queue) == 0:
+                    break
+                else:
+                    current_target = valid_queue.pop()
 
         losses = [
             (k, v.log_current_avg_loss(self.current_step + 1))
@@ -449,8 +466,8 @@ class DAModule(TrainableModule):
 
         self.TrainCpasule = TrainCapsule
 
-        # define valid losses
-        self.define_log("valid_loss", "valid_accu", group="valid")
+        # # define valid losses
+        # self.define_log("valid_accu", group="valid")
 
         # set total train step
         self.total_step = self.params.steps
@@ -532,7 +549,11 @@ class DAModule(TrainableModule):
             t_img, t_label = its["T"].next()
             return s_img, s_label, t_img, t_label
         else:
-            return its.next(need_end=True)
+            if self.params.classwise_valid:
+                target = kwargs['valid_target']
+                return its[target].next(need_end=True)
+            else:
+                return its.next(need_end=True)
 
     def _train_process(self, datas):
 
@@ -545,9 +566,11 @@ class DAModule(TrainableModule):
 
         return losses
 
-    def _eval_process(self, datas):
+    def _eval_process(self, datas, **kwargs):
 
         params = self.params
+        
+        valid_target = kwargs.get('valid_target','accu')
 
         end_epoch = datas is None
 
@@ -571,8 +594,7 @@ class DAModule(TrainableModule):
 
             self._update_logs(
                 {
-                    "valid_loss": self.ce(predict, label),
-                    "valid_accu": corrent_count * 100 / current_size,
+                    "valid_" + valid_target: corrent_count * 100 / current_size,
                 },
                 group="valid",
             )
@@ -584,7 +606,7 @@ class DAModule(TrainableModule):
             self.total += size
             self.corret += right
         else:
-            logger.log(VALID, "End a evaling step.")
+            logger.log(VALID, "End a evaling {}.".format(valid_target))
             accu = self.corret / self.total
             self.best_accurace = max((self.best_accurace, accu))
             self.total = 0

@@ -7,7 +7,15 @@ if __name__ == "__main__":
 
     torch.backends.cudnn.benchmark = True
     # name = input('model name:')
-    name = "pdp"
+    name = "opendp"
+
+    # import torchvision.datasets as ds
+
+    # a = ds.ImageFolder(
+    #     root="./_PUBLIC_DATASET_/" + 'VisDA' + "/" + "validation" + "/"
+    # )
+    # print(a.classes)
+    # assert False
 
     try:
         param, A = get_module(name)

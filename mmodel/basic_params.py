@@ -52,16 +52,22 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--dataset", type=str, default="Office", help="data base we will use"
+    "--dataset", type=str, default="VisDA", help="data base we will use"
 )
 
 parser.add_argument(
-    "--source", type=str, default="A", help="data base we will use"
+    "--source", type=str, default="train", help="data base we will use"
 )
 
 parser.add_argument(
-    "--target", type=str, default="W", help="data base we will use"
+    "--target", type=str, default="validation", help="data base we will use"
 )
+
+parser.add_argument(
+    "--num_workers", type=int, default=4, help="data base we will use"
+)
+
+parser.add_argument("--classwise_valid", type=bool, default=True)
 
 
 

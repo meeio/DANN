@@ -325,9 +325,29 @@ OFFICE_CLASS = [
     "trash_can",
 ]
 
+VISDA_CLASS = [
+    "bicycle",
+    "bus",
+    "car",
+    "motorcycle",
+    "train",
+    "truck",
+    "horse",
+    "knife",
+    "person",
+    "plant",
+    "aeroplane",
+    "skateboard",
+]
+
 
 def require_openset_dataloader(
-    source_class, target_class, train_transforms, valid_transform, params
+    source_class,
+    target_class,
+    train_transforms,
+    valid_transform,
+    params,
+    class_wiese_valid=False,
 ):
 
     source = set(source_class)
@@ -356,18 +376,12 @@ def require_openset_dataloader(
         transform=train_transforms,
     )
 
-    valid = PartialImageFolder(
-        root="./_PUBLIC_DATASET_/" + dataset + "/" + targetset,
-        class_to_idx=target_cls_dix,
-        transform=valid_transform,
-    )
-
     source = torch.utils.data.DataLoader(
         source,
         batch_size=params.batch_size,
         drop_last=True,
         shuffle=True,
-        # num_workers=4,
+        num_workers=params.num_workers,
     )
 
     target = torch.utils.data.DataLoader(
@@ -375,16 +389,48 @@ def require_openset_dataloader(
         batch_size=params.batch_size,
         drop_last=True,
         shuffle=True,
-        # num_workers=4,
+        num_workers=params.num_workers,
     )
 
-    valid = torch.utils.data.DataLoader(
-        valid,
-        batch_size=params.eval_batch_size,
-        drop_last=True,
-        shuffle=True,
-        # num_workers=4,
-    )
+    if class_wiese_valid is False:
+
+        valid = PartialImageFolder(
+            root="./_PUBLIC_DATASET_/" + dataset + "/" + targetset,
+            class_to_idx=target_cls_dix,
+            transform=valid_transform,
+        )
+
+        valid = torch.utils.data.DataLoader(
+            valid,
+            batch_size=params.eval_batch_size,
+            drop_last=True,
+            shuffle=True,
+            num_workers=params.num_workers,
+        )
+    
+    else:
+        class_idx = sorted(set(target_cls_dix.values()))
+        valid = dict()
+        for i in class_idx:
+            cid = {k:v for k,v in target_cls_dix.items() if v == i}
+
+            v = PartialImageFolder(
+            root="./_PUBLIC_DATASET_/" + dataset + "/" + targetset,
+            class_to_idx=cid,
+            transform=valid_transform,
+            )
+
+            v = torch.utils.data.DataLoader(
+                v,
+                batch_size=params.eval_batch_size,
+                drop_last=True,
+                shuffle=True,
+                num_workers=params.num_workers,
+            )
+
+            keys = list(cid.keys())
+            key = keys[0] if len(keys) == 1 else 'unkonw'
+            valid[key] = v
 
     return source, target, valid
 

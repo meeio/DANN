@@ -10,7 +10,7 @@ from .params import get_params
 
 
 from mdata.partial.partial_dataset import require_openset_dataloader
-from mdata.partial.partial_dataset import OFFICE_CLASS
+from mdata.partial.partial_dataset import VISDA_CLASS
 from mdata.transfrom import get_transfrom
 import numpy as np
 
@@ -109,11 +109,15 @@ class OpensetDrop(DAModule):
 
         self.early_stop = self.total_steps / 2
 
-        source_class = set(OFFICE_CLASS[0:31])
-        target_class = set(OFFICE_CLASS[0:10])
+        source_class = set(VISDA_CLASS[0:6])
+        target_class = set(VISDA_CLASS[0:12])
 
-        assert len(source_class.intersection(target_class)) == 10
-        assert len(source_class) == 31 and len(target_class) == 10
+        # class validation
+        assert source_class == set(
+            ["bicycle", "bus", "car", "motorcycle", "train", "truck"]
+        )
+        assert len(source_class.intersection(target_class)) == 6
+        assert len(source_class) == 6 and len(target_class) == 12
 
         self.source_class = source_class
         self.target_class = target_class
@@ -140,22 +144,29 @@ class OpensetDrop(DAModule):
     def _prepare_data(self):
 
         back_bone = "alexnet"
+
         source_ld, target_ld, valid_ld = require_openset_dataloader(
             source_class=self.source_class,
             target_class=self.target_class,
             train_transforms=get_transfrom(back_bone, is_train=True),
             valid_transform=get_transfrom(back_bone, is_train=False),
             params=self.params,
+            class_wiese_valid=param.classwise_valid,
         )
 
         iters = {
             "train": {
                 "S": ELoaderIter(source_ld),
                 "T": ELoaderIter(target_ld),
-            },
-            "valid": ELoaderIter(valid_ld),
+            }
         }
 
+        if  param.classwise_valid:
+            iters['valid'] = {k: ELoaderIter(v, max=10) for k,v in valid_ld.items()}
+            
+        else:
+            iters['valid'] = ELoaderIter(valid_ld, max=10)
+                
         return None, iters
 
     def _regist_networks(self):
@@ -218,7 +229,12 @@ class OpensetDrop(DAModule):
             decay_op=lr_scheduler,
         )
 
-        self.define_log("valid_loss", "valid_accu", group="valid")
+        if param.classwise_valid:
+            valid_list = ['valid_' + t for t in self.iters['valid'].keys()]
+            self.define_log(*valid_list, group="valid")
+        else:
+            self.define_log("valid_accu", group="valid")
+
         self.define_log(
             "classify",
             "adv",
@@ -254,10 +270,12 @@ class OpensetDrop(DAModule):
         ew_dis_loss = self.element_bce(t_domain, self.DECISION_BOUNDARY)
 
         target_entropy = norm_entropy(t_prediction, reduction="none")
-        base_line = norm_entropy(s_predcition, reduction=param.base_entropy_mode)
+        base_line = norm_entropy(
+            s_predcition, reduction=param.base_entropy_mode
+        )
 
         allowed_idx = self.example_selection(target_entropy, base_line)
-        
+
         allowed_data_label = torch.masked_select(t_label, mask=allowed_idx)
         valid = torch.sum(allowed_data_label != self.class_num - 1)
         outlier = torch.sum(allowed_data_label == self.class_num - 1)
@@ -297,4 +315,5 @@ class OpensetDrop(DAModule):
     def _valid_step(self, img):
         feature = self.G(self.F(img))
         prediction, _ = self.C(feature, adapt=False)
-        return torch.split(prediction, self.class_num-1, dim=1)[0]
+        return torch.split(prediction, self.class_num - 1, dim=1)[0]
+
