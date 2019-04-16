@@ -27,7 +27,7 @@ parser.add_argument(
 )
 
 parser.add_argument(
-    "--batch_size", type=int, default=50, help="Size for Mini-Batch Optimization"
+    "--batch_size", type=int, default=128, help="Size for Mini-Batch Optimization"
 )
 
 parser.add_argument(
