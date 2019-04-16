@@ -38,7 +38,7 @@ def norm_entropy(p, reduction="None"):
         if old_ne == 0:
             old_ne = ne
         else:
-            old_ne = 0.2 * old_ne + 0.75 * ne
+            old_ne = 0.1 * old_ne + 0.9 * ne
         return old_ne
     return ne
 
