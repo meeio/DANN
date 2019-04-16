@@ -67,7 +67,7 @@ parser.add_argument(
     "--num_workers", type=int, default=4, help="data base we will use"
 )
 
-parser.add_argument("--classwise_valid", type=bool, default=True)
+parser.add_argument("--classwise_valid", type=bool, default=False)
 
 
 

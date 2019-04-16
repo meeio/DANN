@@ -164,7 +164,7 @@ class OpensetDrop(DAModule):
             }
         }
 
-        if  param.classwise_valid:
+        if param.classwise_valid:
             iters['valid'] = {k: ELoaderIter(v, max=30) for k,v in valid_ld.items()}
             
         else:
@@ -274,7 +274,7 @@ class OpensetDrop(DAModule):
 
         target_entropy = norm_entropy(t_prediction, reduction="none")
         base_line = norm_entropy(
-            s_predcition, reduction=param.base_entropy_mode
+            s_predcition, reduction='mean'
         )
 
         allowed_idx = self.example_selection(target_entropy, base_line)
