@@ -142,6 +142,7 @@ class AlexGFC(WeightedModule):
             nn.Linear(100, 100),
             nn.BatchNorm1d(100),
             nn.LeakyReLU(),
+            
             # nn.Dropout(),
         )
 
