@@ -33,7 +33,7 @@ def norm_entropy(p, reduction="None"):
         ne = torch.mean(ne)
     elif reduction == "top5_m":
         global old_ne
-        ne, _ = torch.topk(ne, 20, dim=0, largest=False)
+        ne, _ = torch.topk(ne, 50, dim=0, largest=False)
         ne = torch.mean(ne)
         if old_ne == 0:
             old_ne = ne
