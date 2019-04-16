@@ -126,6 +126,7 @@ def weights_init_helper(modul, params=None):
         elif isinstance(m, nn.Module):
             weights_init_helper(m)
 
+
         if isinstance(m, WeightedModule):
             m.has_init = True
 
