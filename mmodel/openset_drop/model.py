@@ -214,19 +214,19 @@ class OpensetDrop(DAModule):
             "class_prediction",
             networks=["G", "C"],
             optimer=optimer,
-            decay_op=lr_scheduler,
+            # decay_op=lr_scheduler,
         )
         self.define_loss(
             "domain_prediction",
             networks=["C"],
             optimer=optimer,
-            decay_op=lr_scheduler,
+            # decay_op=lr_scheduler,
         )
         self.define_loss(
             "domain_adv",
             networks=["G"],
             optimer=optimer,
-            decay_op=lr_scheduler,
+            # decay_op=lr_scheduler,
         )
 
         if param.classwise_valid:
