@@ -178,10 +178,10 @@ class OpensetDrop(DAModule):
             G = AlexGFC()
             C = AlexClassifer(
                 class_num=self.class_num,
-                # reversed_coeff=lambda: get_lambda(
-                #     self.current_step, self.total_steps
-                # ),
-                reversed_coeff=lambda: 1,
+                reversed_coeff=lambda: get_lambda(
+                    self.current_step, self.total_steps
+                ),
+                # reversed_coeff=lambda: 1,
             )
 
         return {"F": F, "G": G, "C": C}
