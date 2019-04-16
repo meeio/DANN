@@ -87,9 +87,9 @@ class AlexNetFc(WeightedModule):
 
         self.has_init = True
 
-        if not need_train:
-            for i in self.parameters():
-                i.requires_grad = False
+        # if not need_train:
+        #     for i in self.parameters():
+        #         i.requires_grad = False
 
     def forward(self, input_data):
         feature = self.features(input_data)

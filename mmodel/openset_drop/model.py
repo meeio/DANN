@@ -18,7 +18,6 @@ param = get_params()
 
 old_ne = 0
 
-
 def norm_entropy(p, reduction="None"):
     p = p.detach()
     n = p.size()[1] - 1
@@ -28,22 +27,33 @@ def norm_entropy(p, reduction="None"):
     ne = -torch.sum(e, dim=1)
     if reduction == "mean":
         ne = torch.mean(ne)
-    elif reduction == "top5":
-        ne, _ = torch.topk(ne, 5, dim=0, largest=False)
-        ne = torch.mean(ne)
-    elif reduction == "top5_m":
-        global old_ne
-        ne, _ = torch.topk(ne, 5, dim=0, largest=False)
-        ne = torch.mean(ne)
-        if old_ne == 0:
-            old_ne = ne
-        else:
-            old_ne = 0.1 * old_ne + 0.9 * ne
-        return old_ne
     return ne
 
+# def norm_entropy(p, reduction="None"):
+#     p = p.detach()
+#     n = p.size()[1] - 1
+#     p = torch.split(p, n, dim=1)[0]
+#     p = torch.nn.Softmax(dim=1)(p)
+#     e = p * torch.log((p)) / np.log(n)
+#     ne = -torch.sum(e, dim=1)
+#     if reduction == "mean":
+#         ne = torch.mean(ne)
+#     elif reduction == "top5":
+#         ne, _ = torch.topk(ne, 5, dim=0, largest=False)
+#         ne = torch.mean(ne)
+#     elif reduction == "top5_m":
+#         global old_ne
+#         ne, _ = torch.topk(ne, 5, dim=0, largest=False)
+#         ne = torch.mean(ne)
+#         if old_ne == 0:
+#             old_ne = ne
+#         else:
+#             old_ne = 0.1 * old_ne + 0.9 * ne
+#         return old_ne
+#     return ne
 
-def get_bias(iter_num, max_iter, high, alpha=30, center=0.1):
+
+def get_bias(iter_num, max_iter, high, alpha=20, center=0.15):
     zero_step = param.task_ajust_step + param.pre_adapt_step
     if iter_num < zero_step:
         return 0
@@ -248,14 +258,14 @@ class OpensetDrop(DAModule):
             group="train",
         )
 
-    def example_selection(self, target_entropy, base_line, mode="upper"):
-        if self.current_step > param.task_ajust_step:
-            allowed_idx = target_entropy - base_line < self.dynamic_offset
-        else:
-            allowed_idx = (
-                torch.abs(target_entropy - base_line) < self.dynamic_offset
-            )
-        return allowed_idx
+    # def example_selection(self, target_entropy, base_line, mode="upper"):
+    #     if self.current_step > param.task_ajust_step:
+    #         allowed_idx = target_entropy - base_line < self.dynamic_offset
+    #     else:
+    #         allowed_idx = (
+    #             torch.abs(target_entropy - base_line) < self.dynamic_offset
+    #         )
+    #     return allowed_idx
 
     def _train_step(self, s_img, s_label, t_img, t_label):
 
@@ -270,6 +280,7 @@ class OpensetDrop(DAModule):
 
         loss_classify = self.ce(s_predcition, s_label)
         ew_dis_loss = self.element_bce(t_domain, self.DECISION_BOUNDARY)
+        
 
         target_entropy = norm_entropy(t_prediction, reduction="none")
         if self.current_step > param.task_ajust_step:
@@ -281,7 +292,7 @@ class OpensetDrop(DAModule):
             allowed_idx = (
                 torch.abs(target_entropy - norm_entropy(s_predcition, reduction="mean"))
                 < self.dynamic_offset
-            )
+            
 
         allowed_data_label = torch.masked_select(t_label, mask=allowed_idx)
         valid = torch.sum(allowed_data_label != self.class_num - 1)
@@ -293,6 +304,7 @@ class OpensetDrop(DAModule):
         drop_prop = 1 - keep_prop
         dis_loss = torch.mean(ew_dis_loss * (1 - allowed_idx)) * drop_prop
         adv_loss = torch.mean(ew_dis_loss * allowed_idx) * keep_prop
+
 
         self._update_logs(
             {
@@ -311,7 +323,7 @@ class OpensetDrop(DAModule):
                 {
                     "class_prediction": loss_classify,
                     "domain_prediction": dis_loss + adv_loss,
-                    "domain_adv": (adv_loss / keep_prop),
+                    "domain_adv": adv_loss / keep_prop,
                 }
             )
         else:

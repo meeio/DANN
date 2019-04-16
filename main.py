@@ -23,7 +23,6 @@ if __name__ == "__main__":
         if param.make_record:
             watcher.prepare_notes(name, param.tag)
         A.train_module()
-
     finally:
         watcher.to_json()
 
