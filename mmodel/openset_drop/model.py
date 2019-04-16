@@ -287,7 +287,7 @@ class OpensetDrop(DAModule):
         allowed_idx = allowed_idx.float().unsqueeze(1)
         keep_prop = torch.sum(allowed_idx) / self.params.batch_size
         drop_prop = 1 - keep_prop
-        dis_loss = torch.mean(ew_dis_loss * (1 - allowed_idx)) * drop_prop * get_lambda(self.current_step, self.total_steps)
+        dis_loss = torch.mean(ew_dis_loss * (1 - allowed_idx)) * drop_prop
         adv_loss = torch.mean(ew_dis_loss * allowed_idx) * keep_prop
 
         self._update_logs(
