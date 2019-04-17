@@ -10,7 +10,7 @@ from .params import get_params
 
 
 from mdata.partial.partial_dataset import require_openset_dataloader
-from mdata.partial.partial_dataset import OFFICE_HOME_CLASS
+from mdata.partial.partial_dataset import OFFICE_CLASS
 from mdata.transfrom import get_transfrom
 
 param = get_params()
@@ -37,11 +37,13 @@ class OpensetBackprop(DAModule):
         super().__init__(param)
 
 
-        source_class = set(OFFICE_HOME_CLASS[0:20])
-        target_class = set(OFFICE_HOME_CLASS[0:20] + OFFICE_HOME_CLASS[40:65])
+        self.early_stop = self.total_steps / 2
 
-        assert len(source_class.intersection(target_class)) == 20
-        assert len(source_class) == 20 and len(target_class) == 45
+        source_class = set(OFFICE_CLASS[0:10])
+        target_class = set(OFFICE_CLASS[0:10] + OFFICE_CLASS[20:31])
+
+        assert len(source_class.intersection(target_class)) == 10
+        assert len(source_class) == 10 and len(target_class) == 21
 
         class_num = len(source_class) + 1
 
@@ -62,16 +64,22 @@ class OpensetBackprop(DAModule):
             train_transforms=get_transfrom(back_bone, is_train=True),
             valid_transform=get_transfrom(back_bone, is_train=False),
             params=self.params,
+            class_wiese_valid=param.classwise_valid,
         )
 
         iters = {
             "train": {
                 "S": ELoaderIter(source_ld),
                 "T": ELoaderIter(target_ld),
-            },
-            "valid": ELoaderIter(valid_ld),
+            }
         }
 
+        if param.classwise_valid:
+            iters['valid'] = {k: ELoaderIter(v) for k,v in valid_ld.items()}
+            
+        else:
+            iters['valid'] = ELoaderIter(valid_ld)
+                
         return None, iters
 
     def _regist_networks(self):
@@ -94,14 +102,11 @@ class OpensetBackprop(DAModule):
             "lr": param.lr,
             "momentum": 0.9,
             "weight_decay": 0.001,
-            # "nesterov": True,
-            # "lr_mult": {"F": 0.1},
         }
 
 
         self.define_loss("global_looss", networks=["C"], optimer=optimer)
 
-        self.define_log("valid_loss", "valid_accu", group="valid")
         self.define_log("classify", "adv", group="train")
 
     def _train_step(self, s_img, s_label, t_img, t_label):

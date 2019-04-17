@@ -21,7 +21,7 @@ def get_module(name):
         return model.param, model.OpensetDA()
     elif name == 'OPENBB':
         from .openset_by_backprop import oldmodel
-        return model.param, oldmodel.OpensetBackprop()
+        return oldmodel.param, oldmodel.OpensetBackprop()
     elif name == 'OPENBBTEST':
         from .openset_by_backprop import model
         return model.param, model.OpensetBackprop()

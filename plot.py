@@ -165,7 +165,7 @@ def for_bias(file):
 
 # assert False
 
-file_name = r"C:\Code\MSDA\RECORDS\VisDA.json"
+file_name = r"RECORDS\OPENDP_0416_0952.NO TAG.json"
 
 file2_name = r"keeps\sigmoid_changing\fixed_back_coffe\alpha20_center015_upper006_coeff_{}.json"
 
@@ -178,17 +178,17 @@ VISDA_CLASS = [
     "truck",
     "unkonw",
 ]
-accu = {i: for_('valid_'+i, file_name) for i in VISDA_CLASS}
-# accu = {
-#     # "1": for_('tolorate', file_name.format(1)),
-#     "outlier ": for_('a1', file_name),
-#     "valid ": for_("a2", file_name),
-#     # "outlier": for_('outlier_data', file_name.format(3)),
-#     # "3": for_('valid_accu', file_name.format(3)),
-#     # "4": for_('valid_accu', file_name.format(4)),
-#     # "11": for_("outlier_data", file_name),
-#     # "12": for_("valid_accu", file_name.format(2)),
-# }
+# accu = {i: for_('valid_'+i, file_name) for i in VISDA_CLASS}
+accu = {
+    # "1": for_('tolorate', file_name.format(1)),
+    "all ": for_('valid_all_class', file_name),
+    "knonw ": for_("valid_know_class", file_name),
+    # "outlier": for_('outlier_data', file_name.format(3)),
+    # "3": for_('valid_accu', file_name.format(3)),
+    # "4": for_('valid_accu', file_name.format(4)),
+    # "11": for_("outlier_data", file_name),
+    # "12": for_("valid_accu", file_name.format(2)),
+}
 
 
 curve_graph(**accu)

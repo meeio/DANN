@@ -98,18 +98,22 @@ class OpensetBackprop(DAModule):
             train_transforms=get_transfrom(back_bone, is_train=True),
             valid_transform=get_transfrom(back_bone, is_train=False),
             params=self.params,
+            class_wiese_valid=param.classwise_valid,
         )
 
         iters = {
             "train": {
                 "S": ELoaderIter(source_ld),
                 "T": ELoaderIter(target_ld),
-                "B": ELoaderIter(bias_ld),
-                # "A": ELoaderIter(all_ld)
-            },
-            "valid": ELoaderIter(valid_ld),
+            }
         }
 
+        if param.classwise_valid:
+            iters['valid'] = {k: ELoaderIter(v) for k,v in valid_ld.items()}
+            
+        else:
+            iters['valid'] = ELoaderIter(valid_ld)
+                
         return None, iters
 
     def _regist_networks(self):

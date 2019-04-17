@@ -215,6 +215,11 @@ class TrainableModule(ABC):
         # generate train dataloaders and valid dataloaders
         # data_info is a dict contains basic data infomations
         d_info, iters = self._prepare_data()
+        if self.params.classwise_valid:
+            valid_list = ['valid_' + t for t in iters['valid'].keys()]
+            self.define_log(*valid_list, group="valid")
+        else:
+            self.define_log("valid_accu", group="valid")
         self.iters = iters
 
         # regist losses

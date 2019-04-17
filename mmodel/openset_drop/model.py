@@ -18,17 +18,6 @@ param = get_params()
 
 old_ne = 0
 
-def norm_entropy(p, reduction="None"):
-    p = p.detach()
-    n = p.size()[1] - 1
-    p = torch.split(p, n, dim=1)[0]
-    p = torch.nn.Softmax(dim=1)(p)
-    e = p * torch.log((p)) / np.log(n)
-    ne = -torch.sum(e, dim=1)
-    if reduction == "mean":
-        ne = torch.mean(ne)
-    return ne
-
 # def norm_entropy(p, reduction="None"):
 #     p = p.detach()
 #     n = p.size()[1] - 1
@@ -38,19 +27,30 @@ def norm_entropy(p, reduction="None"):
 #     ne = -torch.sum(e, dim=1)
 #     if reduction == "mean":
 #         ne = torch.mean(ne)
-#     elif reduction == "top5":
-#         ne, _ = torch.topk(ne, 5, dim=0, largest=False)
-#         ne = torch.mean(ne)
-#     elif reduction == "top5_m":
-#         global old_ne
-#         ne, _ = torch.topk(ne, 5, dim=0, largest=False)
-#         ne = torch.mean(ne)
-#         if old_ne == 0:
-#             old_ne = ne
-#         else:
-#             old_ne = 0.1 * old_ne + 0.9 * ne
-#         return old_ne
 #     return ne
+
+def norm_entropy(p, reduction="None"):
+    p = p.detach()
+    n = p.size()[1] - 1
+    p = torch.split(p, n, dim=1)[0]
+    p = torch.nn.Softmax(dim=1)(p)
+    e = p * torch.log((p)) / np.log(n)
+    ne = -torch.sum(e, dim=1)
+    if reduction == "mean":
+        ne = torch.mean(ne)
+    elif reduction == "top5":
+        ne, _ = torch.topk(ne, 5, dim=0, largest=False)
+        ne = torch.mean(ne)
+    elif reduction == "top5_m":
+        global old_ne
+        ne, _ = torch.topk(ne, 5, dim=0, largest=False)
+        ne = torch.mean(ne)
+        if old_ne == 0:
+            old_ne = ne
+        else:
+            old_ne = 0.1 * old_ne + 0.9 * ne
+        return old_ne
+    return ne
 
 
 def get_bias(iter_num, max_iter, high, alpha=20, center=0.15):
@@ -241,11 +241,11 @@ class OpensetDrop(DAModule):
             # decay_op=lr_scheduler,
         )
 
-        if param.classwise_valid:
-            valid_list = ['valid_' + t for t in self.iters['valid'].keys()]
-            self.define_log(*valid_list, group="valid")
-        else:
-            self.define_log("valid_accu", group="valid")
+        # if param.classwise_valid:
+        #     valid_list = ['valid_' + t for t in self.iters['valid'].keys()]
+        #     self.define_log(*valid_list, group="valid")
+        # else:
+        #     self.define_log("valid_accu", group="valid")
 
         self.define_log(
             "classify",
@@ -258,14 +258,14 @@ class OpensetDrop(DAModule):
             group="train",
         )
 
-    # def example_selection(self, target_entropy, base_line, mode="upper"):
-    #     if self.current_step > param.task_ajust_step:
-    #         allowed_idx = target_entropy - base_line < self.dynamic_offset
-    #     else:
-    #         allowed_idx = (
-    #             torch.abs(target_entropy - base_line) < self.dynamic_offset
-    #         )
-    #     return allowed_idx
+    def example_selection(self, target_entropy, base_line, mode="upper"):
+        if self.current_step > param.task_ajust_step:
+            allowed_idx = target_entropy - base_line < self.dynamic_offset
+        else:
+            allowed_idx = (
+                torch.abs(target_entropy - base_line) < self.dynamic_offset
+            )
+        return allowed_idx
 
     def _train_step(self, s_img, s_label, t_img, t_label):
 
@@ -282,20 +282,8 @@ class OpensetDrop(DAModule):
         ew_dis_loss = self.element_bce(t_domain, self.DECISION_BOUNDARY)
         
         target_entropy = norm_entropy(t_prediction, reduction="none")
-        if self.current_step > param.task_ajust_step:
-            allowed_idx = (
-                target_entropy
-                - norm_entropy(s_predcition, reduction="mean")
-                < self.dynamic_offset
-            )
-        else:
-            allowed_idx = (
-                torch.abs(
-                    target_entropy
-                    - norm_entropy(s_predcition, reduction="mean")
-                )
-                < self.dynamic_offset
-            )
+        base_line = norm_entropy(s_predcition, reduction="mean")
+        allowed_idx = self.example_selection(target_entropy, base_line)
         
         allowed_data_label = torch.masked_select(t_label, mask=allowed_idx)
         valid = torch.sum(allowed_data_label != self.class_num - 1)

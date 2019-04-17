@@ -7,7 +7,7 @@ if __name__ == "__main__":
 
     torch.backends.cudnn.benchmark = True
     # name = input('model name:')
-    name = "opendp"
+    name = "openbb"
 
     # import torchvision.datasets as ds
 
