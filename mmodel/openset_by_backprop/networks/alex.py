@@ -140,12 +140,12 @@ class AlexClassifer(WeightedModule):
             nn.Linear(1000, 100),
             nn.BatchNorm1d(100),
             nn.LeakyReLU(),
-            # nn.Dropout(),
+            nn.Dropout(),
 
-            # nn.Linear(100, 100),
-            # nn.BatchNorm1d(100),
-            # nn.LeakyReLU(),
-            # nn.Dropout(),
+            nn.Linear(100, 100),
+            nn.BatchNorm1d(100),
+            nn.LeakyReLU(),
+            nn.Dropout(),
         )
 
         self.classifer = nn.Linear(100, class_num)
