@@ -36,7 +36,6 @@ class OpensetBackprop(DAModule):
     def __init__(self):
         super().__init__(param)
 
-
         self.early_stop = self.total_steps / 2
 
         source_class = set(OFFICE_CLASS[0:10])
@@ -90,8 +89,8 @@ class OpensetBackprop(DAModule):
             F = AlexNetFc()
             C = AlexClassifer(
                 class_num=self.class_num,
-                # reversed_coeff=lambda: get_lambda(self.current_step, self.total_steps),
-                reversed_coeff=lambda: 1
+                reversed_coeff=lambda: get_lambda(self.current_step, self.total_steps),
+                # reversed_coeff=lambda: 1
             )
 
         return {"F": F, "C": C}
